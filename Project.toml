@@ -1,0 +1,7 @@
+name = "DEBBase"
+uuid = "0e91d03b-6562-4ef9-a38e-775ced00eaf8"
+authors = ["SimonHansul <simonhansul@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
