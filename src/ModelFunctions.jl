@@ -73,7 +73,7 @@ function Idot(
     life_stage::Int64,
     S::Float64,
     Idot_max_rel::Float64,
-    K_X::Float64 # TODO: replace this with K_X
+    K_X::Float64 
     )
     
     if sum([juvenile(life_stage), adult(life_stage)]) > 0 # these life stages feed from external resource
@@ -87,7 +87,6 @@ function Idot(
     end
 end
 
-
 """
 Assimilation rate
 $(TYPEDSIGNATURES)
@@ -96,7 +95,6 @@ function Adot(Idot::Float64, eta_IA::Float64, Cdot::Float64, eta_SA::Float64)
     return Idot * eta_IA + Cdot * eta_SA
 end
 
-
 """
 Somatic maintenance rate
 $(TYPEDSIGNATURES)
@@ -104,8 +102,6 @@ $(TYPEDSIGNATURES)
 function Mdot(S::Float64, k_M::Float64)
     return max(0, S * k_M)
 end
-
-
 
 """
 Maturity maintenance rate
