@@ -3,12 +3,14 @@ abstract type Params end
 @with_kw mutable struct GlobalParams <: Params
     t_max::Float64 = 21.
     Xdot_in::Float64 = 10.
+    volume = 2.
+    units::NamedTuple = (time = "d", mass = "g")
 end
 
 @with_kw mutable struct DEBParams <: Params
-    X_emb_int::Float64 = 0.001
+    Xemb_int::Float64 = 0.001
     K_X::Float64 = 1.
-    Idot_max_rel::Float64 = 0.75
+    Idotmax_rel::Float64 = 1.
     kappa::Float64 = 0.75
     eta_IA::Float64 = 0.8
     eta_AS::Float64 = 0.8

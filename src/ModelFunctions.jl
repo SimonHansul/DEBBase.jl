@@ -6,11 +6,11 @@ $(TYPEDSIGNATURES)
 function determine_life_stage(
     p::DEBParams;
     H::Float64,
-    X_emb::Float64,
+    Xemb::Float64,
 )
     if H >= p.H_p
         return 3 # adult
-    elseif X_emb <= 0
+    elseif Xemb <= 0
         return 2 # juvenile
     else
         return 1 # embryo
@@ -53,17 +53,17 @@ function Idot(
     g::GlobalParams,
     p::DEBParams;
     X_p::Float64,
-    X_emb::Float64,
+    Xemb::Float64,
     life_stage::Int64,
     S::Float64
     )
     
     if sum([juvenile(life_stage), adult(life_stage)]) > 0 # these life stages feed from external resource
         let X_p_V = X_p / g.volume, f_X = X_p_V / (X_p_V + p.K_X)
-            return f_X * p.Idot_max_rel * S^(2/3) 
+            return f_X * p.Idotmax_rel * S^(2/3) 
         end
     elseif embryo(life_stage) # embryos feed from the vitellus
-        return min(X_emb, S^(2 / 3) * p.Idot_max_rel)
+        return min(Xemb, S^(2 / 3) * p.Idotmax_rel)
     else 
         error("Life stage not recognized: $(life_stage)")
     end
@@ -182,13 +182,13 @@ $(TYPEDSIGNATURES)
 function DEB!(du, u, p, t)
     glb, anm = p
     # unpack state variables
-    X_p, X_emb, S, H, R = u
+    X_p, Xemb, S, H, R = u
 
     S = max(0, S) # control for negative values
 
-    life_stage = determine_life_stage(anm; H = H, X_emb = X_emb)
+    life_stage = determine_life_stage(anm; H = H, Xemb = Xemb)
    
-    idot = Idot(glb, anm; X_p = X_p, X_emb = X_emb, life_stage = life_stage, S = S)
+    idot = Idot(glb, anm; X_p = X_p, Xemb = Xemb, life_stage = life_stage, S = S)
     xdot = embryo(life_stage) ? 0. : glb.Xdot_in - idot
     xembdot = embryo(life_stage) ? -idot : 0.0
     adot = Adot(anm; Idot = idot, )
