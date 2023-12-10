@@ -2,7 +2,7 @@ using Parameters
 using DifferentialEquations
 using Plots
 
-@with_kw mutable struct Params
+@with_kw mutable struct Param
     mu::Float64 = 0.2
     K::Float64 = 10.0
 end
