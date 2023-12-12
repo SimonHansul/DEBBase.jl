@@ -1,6 +1,6 @@
 
 """
-Run the DEBBase Model. 
+Run any DEBBase-compatible model. 
 $(TYPEDSIGNATURES)
 """
 function run_model(
