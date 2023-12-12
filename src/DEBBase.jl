@@ -3,6 +3,7 @@ module DEBBase
 using Parameters
 using DifferentialEquations
 using DocStringExtensions
+using PrecompileTools
 
 include("Structures.jl")
 include("IO.jl")
