@@ -4,8 +4,8 @@ Run the DEBBase Model.
 $(TYPEDSIGNATURES)
 """
 function run_model(
-    glb::GlobalBaseParams,
-    deb::DEBBaseParams
+    glb::AbstractParams,
+    deb::AbstractParams
     )
 
     u0 = [glb.Xdot_in, deb.X_emb_int, deb.X_emb_int * 0.01, 0., 0.]
