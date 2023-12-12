@@ -4,7 +4,7 @@ Determine the current life stage.
 $(TYPEDSIGNATURES)
 """
 function determine_life_stage(
-    deb::DEBBaseParams;
+    deb::AbstractParams;
     H::Float64,
     X_emb::Float64,
 )
@@ -41,7 +41,7 @@ function adult(life_stage::Int64)
 end
 
 
-function functional_response(deb::DEBBaseParams; X_V::Float64)
+function functional_response(deb::AbstractParams; X_V::Float64)
     return X_V / (X_V + deb.K_X)
 end
 
@@ -51,7 +51,7 @@ $(TYPEDSIGNATURES)
 """
 function Idot(
     g::GlobalBaseParams,
-    deb::DEBBaseParams;
+    deb::AbstractParams;
     X_p::Float64,
     life_stage::Int64,
     S::Float64
@@ -72,7 +72,7 @@ end
 Assimilation rate
 $(TYPEDSIGNATURES)
 """
-function Adot(deb::DEBBaseParams; Idot::Float64)
+function Adot(deb::AbstractParams; Idot::Float64)
     return Idot * deb.eta_IA
 end
 
@@ -80,7 +80,7 @@ end
 Somatic maintenance rate
 $(TYPEDSIGNATURES)
 """
-function Mdot(deb::DEBBaseParams; S::Float64)
+function Mdot(deb::AbstractParams; S::Float64)
     return max(0, S * deb.k_M)
 end
 
@@ -88,7 +88,7 @@ end
 Maturity maintenance rate
 $(TYPEDSIGNATURES)
 """
-function Jdot(deb::DEBBaseParams; H::Float64)
+function Jdot(deb::AbstractParams; H::Float64)
     return H * deb.k_J
 end
 
@@ -96,7 +96,7 @@ end
 Positive somatic growth
 $(TYPEDSIGNATURES)
 """
-function Sdot_positive(deb::DEBBaseParams; Adot::Float64, Mdot::Float64)
+function Sdot_positive(deb::AbstractParams; Adot::Float64, Mdot::Float64)
     return deb.eta_AS * (deb.kappa * Adot - Mdot)
 end
 
@@ -104,7 +104,7 @@ end
 Negative somatic growth
 ($(TYPEDSIGNATURES))
 """
-function Sdot_negative(deb::DEBBaseParams; Mdot::Float64, Adot::Float64)
+function Sdot_negative(deb::AbstractParams; Mdot::Float64, Adot::Float64)
     return -(Mdot / deb.eta_SA - deb.kappa * Adot)
 end
 
@@ -113,7 +113,7 @@ Somatic growth rate
 $(TYPEDSIGNATURES)
 """
 function Sdot(
-    deb::DEBBaseParams;
+    deb::AbstractParams;
     Mdot::Float64,
     Adot::Float64
 )
@@ -131,7 +131,7 @@ Maturity is dissipated energy and can therefore not be burned to cover maintenan
 For simplicity, we currently assume that maturity maintenance will not be covered of the 1-kappa flux is insufficient.
 $(TYPEDSIGNATURES)
 """
-function Hdot(deb::DEBBaseParams; Adot::Float64, Jdot::Float64, adult::Bool)
+function Hdot(deb::AbstractParams; Adot::Float64, Jdot::Float64, adult::Bool)
     if adult == false
         return max(0, ((1 - deb.kappa) * Adot) - Jdot)
     else
@@ -143,7 +143,7 @@ end
 Reproduction rate.
 $(TYPEDSIGNATURES)
 """
-function Rdot(deb::DEBBaseParams; Adot::Float64, Jdot::Float64, adult::Bool)
+function Rdot(deb::AbstractParams; Adot::Float64, Jdot::Float64, adult::Bool)
     if adult
         return (1 - deb.kappa) * Adot - Jdot
     else
@@ -157,7 +157,7 @@ Calculation of the total dissipation flux, equal to the sum of maintenance costs
 $(TYPEDSIGNATURES)
 """
 function Qdot(
-    deb::DEBBaseParams;
+    deb::AbstractParams;
     Idot::Float64, 
     Sdot::Float64, 
     Mdot::Float64, 

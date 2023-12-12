@@ -12,7 +12,9 @@ include("ModelFunctions.jl")
 include("Simulators.jl")
 include("ImpliedTraits.jl")
 
-export GlobalBaseParams, 
+export AbstractParams,
+AbstractStatevars,
+GlobalBaseParams, 
 GlobalBaseStatevars, 
 DEBBaseParams, 
 DEBBaseStatevars,
