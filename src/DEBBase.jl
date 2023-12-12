@@ -17,4 +17,10 @@ DEBBaseParams,
 DEBBaseStatevars,
 DEBBaseOrganism
 
+@compile_workload begin
+    glb = GlobalBaseParams()
+    anm = DEBBaseParams()
+    sol = DEBBase.run_model(glb, anm)
+end
+
 end # module DEBBase

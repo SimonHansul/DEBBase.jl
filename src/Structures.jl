@@ -7,9 +7,9 @@ abstract type AbstractStatevars end
 
 @with_kw mutable struct GlobalBaseParams <: AbstractParams
     t_max::Float64 = 21.
-    Xdot_in::Float64 = 10.
-    V_patch = 2.
-    units::NamedTuple = (time = "d", mass = "mug")
+    Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default DEBBaseParams
+    V_patch = 0.05
+    units::NamedTuple = (time = "d", mass = "mug", volume = "L")
 end
 
 @with_kw mutable struct GlobalBaseStatevars <: AbstractStatevars
@@ -21,7 +21,7 @@ DEBBase Parameters with default values for Daphnia magna.
 $(TYPEDSIGNATURES)
 """
 @with_kw mutable struct DEBBaseParams <: AbstractParams
-    X_emb_int::Float64 = 0.001
+    X_emb_int::Float64 = 19.42
     K_X::Float64 = 1.
     Idot_max_rel::Float64 = 22.9
     Idot_max_rel_emb::Float64 = 22.9
@@ -32,7 +32,7 @@ $(TYPEDSIGNATURES)
     eta_AR::Float64 = 0.95
     k_M::Float64 = 0.59
     k_J::Float64 = 0.
-    H_p::Float64 = 2.
+    H_p::Float64 = 100.
 end
 
 @with_kw mutable struct DEBBaseStatevars <: AbstractStatevars
