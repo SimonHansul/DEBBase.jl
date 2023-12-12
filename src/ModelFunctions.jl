@@ -50,7 +50,7 @@ Calculate ingestion rate for a single resource.
 $(TYPEDSIGNATURES)
 """
 function Idot(
-    g::GlobalBaseParams,
+    glb::GlobalBaseParams,
     deb::AbstractParams;
     X_p::Float64,
     life_stage::Int64,
@@ -58,7 +58,8 @@ function Idot(
     )
     
     if sum([juvenile(life_stage), adult(life_stage)]) > 0 # these life stages feed from external resource
-        let X_p_V = X_p / g.V_patch, f_X = X_p_V / (X_p_V + deb.K_X)
+        let X_p_V = X_p / glb.V_patch, 
+            f_X = functional_response(deb; X_V = X_p_V)
             return f_X * deb.Idot_max_rel_emb * S^(2/3) 
         end
     elseif embryo(life_stage) # embryos feed from the vitellus
