@@ -57,15 +57,13 @@ function Idot(
     S::Float64
     )
     
-    if sum([juvenile(life_stage), adult(life_stage)]) > 0 # these life stages feed from external resource
+    if life_stage > 1 # juveniles and adults feed from external resource
         let X_p_V = X_p / glb.V_patch, 
             f_X = functional_response(deb; X_V = X_p_V)
             return f_X * deb.Idot_max_rel_emb * S^(2/3) 
         end
-    elseif embryo(life_stage) # embryos feed from the vitellus
+    else # embryos feed from the vitellus
         return S^(2 / 3) * deb.Idot_max_rel
-    else 
-        error("Life stage not recognized: $(life_stage)")
     end
 end
 
