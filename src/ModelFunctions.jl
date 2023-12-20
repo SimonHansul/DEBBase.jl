@@ -50,7 +50,7 @@ Calculate ingestion rate for a single resource.
 $(TYPEDSIGNATURES)
 """
 function Idot(
-    glb::GlobalBaseParams,
+    glb::AbstractParams,
     deb::AbstractParams;
     X_p::Float64,
     life_stage::Int64,
