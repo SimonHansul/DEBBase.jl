@@ -16,10 +16,10 @@ To do so, you first need to add `DEBBase.jl` and `Parameters` as a dependency to
 In order to extend the DEBBase model, there are four implementation steps to take:
 
 
-1. If new parameters are introduced: Define parameter objects
-2. If new model equations are introduced: Define new model functions
+1. Define parameter objects
+2. Define new model functions
 3. Adapt the ODE system
-4. If new state variables are introduced: Adapt the simulator
+4. Adapt the simulator function
 
 
 In case you are adding new parameters to the model, 
@@ -52,7 +52,6 @@ Some conventions for defining these functions in DEBBase:
 - State variables which are arguments to the model function are given as keyword arguments with no default. <br>
 
 Finally, you need to adapt the definition of the ODE system:
-
 
 ```
 function NeWDEB!(du, u, p, t)
@@ -91,7 +90,10 @@ Compared to the original ODE system defined in `DEBBase.DEB!`, we made three mod
 - Include `Edot` in the calculation of derivatives
 - Include `edot` in the update of du/dt
 
-Finally, if new state variables have been introduced, a small change to the simulator has to be made:
+In the definition of `NewDEB!`, we can easily see which variables are calculated according to the base model (`DEBBase.Idot`, `DEBBase.Adot`, etc.) and which functions are part of the extension (`Edot`). <br>
+
+
+Finally, if new state variables have been introduced, the simulator also has to be adapted:
 
 ```Julia
 function simulator(
@@ -115,8 +117,14 @@ Here we have made the following changes:
 - `ODEProblem` depends on `NewDEB!` instead of `DEB!`. <br>
 - Exchanged `deb::AbstractParams` with `deb::NewDEBParams` in the function signature
 
-The last step is optional - `AbstractParams` would also work, but specifiying the type is useful to add more methods to `simulator` 
-(you might have many versions of `simulator` which all evaluate different parameter objects).
+The last step is optional - `AbstractParams` would also work, but specifiying the type is useful to add more methods to `simulator`.  
+You might have many versions of `simulator` which all evaluate different parameter objects. 
+
+### Tips on re-defining functions
+
+A useful Julia function is `less()`, which prints the definition of a function. 
+So you can for example use `less(DEBBase.DEB!)` to print the definition of the ODE system as given in the base model. <br>
+Alternatively, most IDEs also have functions to navigate to the definition of a symbol (e.g. `Ctrl+Alt+Click` in VSCode - does not seem to always work well for functions defined in packages).
 
 ## TODO
 

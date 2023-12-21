@@ -26,4 +26,6 @@ DEBBaseOrganism
     sol = DEBBase.run_model(glb, anm)
 end
 
+export simulator
+
 end # module DEBBase
