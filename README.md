@@ -33,7 +33,7 @@ using Parameters
 end
 ```
 
-`NewDEBParams` will replace `DEBBaseParams`, so it also needs to include those parameters which were are already defined in `DEBBaseParams`. <br>
+`NewDEBParams` will replace `DEBBaseParams`, so it also needs to include those parameters that were are already defined in `DEBBaseParams`. <br>
 
 Next, you need to define model functions which are additonally needed. For example, the function to calculate the derivative of some newly introduced state variable `E`:
 
