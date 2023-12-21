@@ -1,6 +1,7 @@
 module DEBBase
 
 using Parameters
+using DoseResponse
 using DifferentialEquations
 using DocStringExtensions
 using DataFrames

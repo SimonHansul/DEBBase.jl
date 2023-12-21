@@ -35,11 +35,11 @@ $(TYPEDSIGNATURES)
     H_p::Float64 = 100.
     
     k_D::Vector{Float64} = [1.0] # # dominant rate constant(s)
-    drc_funct_G::Function = [LL2]
-    drc_funct_M::Function = [LL2M]
-    drc_funct_A::Function = [LL2]
-    drc_funct_R::Function = [LL2]
-    drc_funct_h::Function = [LL2h]
+    drc_funct_G::Vector{Function} = [LL2]
+    drc_funct_M::Vector{Function} = [LL2M]
+    drc_funct_A::Vector{Function} = [LL2]
+    drc_funct_R::Vector{Function} = [LL2]
+    drc_funct_h::Vector{Function} = [LL2h]
 
     drcparams_G::Vector{NTuple} = [(1., 2.)]
     drcparams_M::Vector{NTuple} = [(1., 2.)]

@@ -174,6 +174,26 @@ end
 
 
 """
+TK for DEB-TKTD model, including effect of surface area to volume ratio and dilution by growth.
+$(TYPEDSIGNATURES)
+"""
+function DEBTK(
+    deb::AbstractParams,
+    z::Int64; 
+    C_W::Float64, 
+    D::Float64, 
+    S::Float64, 
+    Sdot::Float64, 
+    S_max::Float64
+    )
+    # surface area / volume ratio
+    let AV_ratio = S^(2/3) / S, AV_max_ratio = S_max^(2/3) / S_max
+        # TK with account for body size: smaller A/V ration = higher elimination rate, diluation by growth
+        return deb.k_D[z] * (AV_max_ratio / AV_ratio) * (C_W[z] - D[z]) - D[z] * (Sdot/S)
+    end
+end
+
+"""
 Definition of reserveless DEB derivatives. 
 $(TYPEDSIGNATURES)
 """
@@ -205,20 +225,4 @@ function DEB!(du, u, p, t)
 end
 
 
-"""
-TK for DEB-TKTD model, including effect of surface area to volume ratio and dilution by growth.
-$(TYPEDSIGNATURES)
-"""
-function DEBTK(
-    tktd::TKTDParams; 
-    C_W::Float64, 
-    D::Float64, 
-    S::Float64, 
-    Sdot::Float64, 
-    S_max::Float64
-    )
-    let AV_ratio = S^(2/3) / S, AV_max_ratio = S_max^(2/3) / S_max
-        return tktd.k_D * (AV_max_ratio / AV_ratio) * (C_W - D) - D * (Sdot/S)
-    end
-end
 

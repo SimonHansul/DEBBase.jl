@@ -3,7 +3,7 @@
 Run any DEBBase-compatible model. 
 $(TYPEDSIGNATURES)
 """
-function run_model(
+function simulator(
     glb::AbstractParams,
     deb::AbstractParams
     )
