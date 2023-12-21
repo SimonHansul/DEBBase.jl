@@ -11,7 +11,8 @@ The idea of DEBBase is to serve as a simple base model for DEB-TKTD modell
 
 ## Extending the model
 
-To use DEBBase to build your own extension of the model, you first need to add `DEBBase.jl` and `Parameters` as a dependency to your project. 
+You can use DEBBase to build your own extension of the base model. 
+To do so, you first need to add `DEBBase.jl` and `Parameters` as a dependency to your project. 
 In order to extend the DEBBase model, there are four implementation steps to take:
 
 
