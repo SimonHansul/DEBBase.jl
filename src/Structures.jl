@@ -6,11 +6,12 @@ abstract type AbstractParams end
 abstract type AbstractStatevars end
 
 @with_kw mutable struct GlobalBaseParams <: AbstractParams
-    num_scalar_statevars::Int64 = 5
-    num_vector_statevars::Int64 = 2
     t_max::Float64 = 21.
     Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default DEBBaseParams
     V_patch = 0.05
+    num_scalar_statevars::Int64 = 5
+    statevars::Vector{Symbol} = [:X_p, :X_emb, :S, :H, :R, :C_W, :D]
+    sttype::Vector{DataType} = [Float64, Float64, Float64, Float64, Float64, Vector{Float64}, Vector{Float64}]
     units::NamedTuple = (time = "d", mass = "mug", volume = "L")
 end
 

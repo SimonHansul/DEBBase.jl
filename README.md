@@ -28,13 +28,18 @@ you can define your own parameter struct like so:
 using Parameters 
 @with_kw mutable struct NewDEBParams <: AbstractParams
     Idot_max_rel_emb::Float64 = 22.9 # DEBBase parameter with default 
-    k_E::Float64 = .1 # new parameter with default value 
-    num_scalar_statevars::Int64 = 7 # update the number of scalar state variables in the model. this part ensures that mixture toxicity with arbitrary numbers of stressors can be simulated efficiently
+    k_E::Float64 = .1 # new parameter with default value variables in the model. this part ensures that mixture toxicity with arbitrary numbers of stressors can be simulated efficiently
+    ...
+end
+
+@with_kw NewGlobalParams <: AbstractParams
+    num_scalar_statevars::Int64 = 7 # update the number of scalar state variables 
+    num_vector_statevars::Int64 = 2 # number of vector state variables
     ...
 end
 ```
 
-`NewDEBParams` will replace `DEBBaseParams`, so it also needs to include those parameters that were are already defined in `DEBBaseParams`. <br>
+`NewDEBParams` will replace `DEBBaseParams` and `NewGlobalParams` will replace `GlobalBaseParams`. So both need to include all the parameters, including those that were are already defined in `DEBBaseParams` and `GlobalBaseParams`. <br>
 
 Next, you need to define model functions which are additonally needed. For example, the function to calculate the derivative of some newly introduced state variable `E`:
 

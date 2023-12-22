@@ -173,6 +173,7 @@ function Qdot(
 end
 
 
+
 """
 TK for DEB-TKTD model, including effect of surface area to volume ratio and dilution by growth.
 $(TYPEDSIGNATURES)
@@ -198,12 +199,10 @@ Definition of reserveless DEB derivatives.
 $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
-    glb, deb = p
+    # unpack parameters
+    glb::GlobalBaseParams, deb::DEBBaseParams = p
     # unpack scalar state variables
-    X_p, X_emb, S, H, R = u
-
-    C_W = u[glb.num_scalar_statevars+1:Int(glb.num_scalar_statevars+(length(u)-glb.num_scalar_statevars)/glb.num_vector_statevars)]
-    D = u[Int(glb:num_scalar_statevars+1+length(C_W)):end]
+    @unpack u glb
 
     S = max(0, S) # control for negative values
 
