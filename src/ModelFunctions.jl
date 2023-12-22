@@ -202,17 +202,11 @@ function DEB!(du, u, p, t)
     # unpack parameters
     glb::GlobalBaseParams, deb::DEBBaseParams = p
     # unpack scalar state variables
-    @unpack u glb
-
+    @unpack X_p, X_emp, S, H, R = u
+    
     S = max(0, S) # control for negative values
-
     life_stage = determine_life_stage(deb; H = H, X_emb = X_emb)
     
-    ddot = zeros(len(C_W))
-    for (z,C_Wz) in enumerate(C_W)
-        ddot[z] = DDot()
-    end
-
     idot = Idot(glb, deb; X_p = X_p, life_stage = life_stage, S = S)
     xdot = embryo(life_stage) ? 0. : glb.Xdot_in - idot
     xembdot = embryo(life_stage) ? -idot : 0.0
@@ -222,6 +216,11 @@ function DEB!(du, u, p, t)
     sdot = Sdot(deb; Adot = adot, Mdot = mdot) 
     hdot = Hdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
     rdot = Rdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
+
+    ddot = zeros(len(C_W))
+    for (z,_) in enumerate(C_W)
+        ddot[z] = DDot(deb, z; C_W = C_W, D = D, S = S, Sdot = Sdot, S_max = S_max)
+    end
 
     # update du/dt
     du[01] = xdot

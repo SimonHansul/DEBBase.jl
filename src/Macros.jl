@@ -1,5 +1,8 @@
 """
-Unpack vector of state variables
+Unpack vector of state variables. 
+Global Parameters have to contain `statevars` (a `Vector{Symbol}` indicating the names of state variables) 
+and `sttypes` (a `Vector{DataType}` indicating the types of state variables).
+$(TYPEDSIGNATURES)
 """
 macro unpack(u, glb::AbstractParams)
     quote

@@ -8,6 +8,7 @@ using DataFrames
 using PrecompileTools
 
 include("Structures.jl")
+include("Macros.jl")
 include("ModelFunctions.jl")
 include("Simulators.jl")
 include("ImpliedTraits.jl")

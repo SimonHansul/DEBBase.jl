@@ -11,7 +11,7 @@ abstract type AbstractStatevars end
     V_patch = 0.05
     num_scalar_statevars::Int64 = 5
     statevars::Vector{Symbol} = [:X_p, :X_emb, :S, :H, :R, :C_W, :D]
-    sttype::Vector{DataType} = [Float64, Float64, Float64, Float64, Float64, Vector{Float64}, Vector{Float64}]
+    sttypes::Vector{DataType} = [Float64, Float64, Float64, Float64, Float64, Vector{Float64}, Vector{Float64}]
     units::NamedTuple = (time = "d", mass = "mug", volume = "L")
 end
 
