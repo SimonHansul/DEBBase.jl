@@ -177,7 +177,7 @@ end
 TK for DEB-TKTD model, including effect of surface area to volume ratio and dilution by growth.
 $(TYPEDSIGNATURES)
 """
-function DEBTK(
+function Ddot(
     deb::AbstractParams,
     z::Int64; 
     C_W::Float64, 
@@ -199,13 +199,21 @@ $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
     glb, deb = p
-    # unpack state variables
+    # unpack scalar state variables
     X_p, X_emb, S, H, R = u
+
+    C_W = u[glb.num_scalar_statevars+1:Int(glb.num_scalar_statevars+(length(u)-glb.num_scalar_statevars)/glb.num_vector_statevars)]
+    D = u[Int(glb:num_scalar_statevars+1+length(C_W)):end]
 
     S = max(0, S) # control for negative values
 
     life_stage = determine_life_stage(deb; H = H, X_emb = X_emb)
     
+    ddot = zeros(len(C_W))
+    for (z,C_Wz) in enumerate(C_W)
+        ddot[z] = DDot()
+    end
+
     idot = Idot(glb, deb; X_p = X_p, life_stage = life_stage, S = S)
     xdot = embryo(life_stage) ? 0. : glb.Xdot_in - idot
     xembdot = embryo(life_stage) ? -idot : 0.0

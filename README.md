@@ -12,7 +12,7 @@ The idea of DEBBase is to serve as a simple base model for DEB-TKTD modell
 ## Extending the model
 
 You can use DEBBase to build your own extension of the base model. 
-To do so, you first need to add `DEBBase.jl` and `Parameters` as a dependency to your project. 
+To do so, you first need to add `DEBBase.jl` and `Parameters` as a dependency to your project. <br>
 In order to extend the DEBBase model, there are four implementation steps to take:
 
 
@@ -29,6 +29,7 @@ using Parameters
 @with_kw mutable struct NewDEBParams <: AbstractParams
     Idot_max_rel_emb::Float64 = 22.9 # DEBBase parameter with default 
     k_E::Float64 = .1 # new parameter with default value 
+    num_scalar_statevars::Int64 = 7 # update the number of scalar state variables in the model. this part ensures that mixture toxicity with arbitrary numbers of stressors can be simulated efficiently
     ...
 end
 ```
@@ -123,7 +124,8 @@ You might have many versions of `simulator` which all evaluate different paramet
 ### Tips on re-defining functions
 
 A useful Julia function is `less()`, which prints the definition of a function. 
-So you can for example use `less(DEBBase.DEB!)` to print the definition of the ODE system as given in the base model. <br>
+So you can for example use `less(DEBBase.DEB!)` to print the definition of the ODE system as given in the base model. 
+Similarly, you can use `@less simulator(glb, deb)` to get the body for a specific method of `simulator` (depending on the type of `glb` and `deb`). <br>
 Alternatively, most IDEs also have functions to navigate to the definition of a symbol (e.g. `Ctrl+Alt+Click` in VSCode - does not seem to always work well for functions defined in packages).
 
 ## TODO

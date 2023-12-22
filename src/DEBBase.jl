@@ -23,7 +23,7 @@ DEBBaseOrganism
 @compile_workload begin
     glb = GlobalBaseParams()
     anm = DEBBaseParams()
-    sol = DEBBase.run_model(glb, anm)
+    sol = simulator(glb, anm)
 end
 
 export simulator

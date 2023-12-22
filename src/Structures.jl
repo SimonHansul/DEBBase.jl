@@ -6,6 +6,8 @@ abstract type AbstractParams end
 abstract type AbstractStatevars end
 
 @with_kw mutable struct GlobalBaseParams <: AbstractParams
+    num_scalar_statevars::Int64 = 5
+    num_vector_statevars::Int64 = 2
     t_max::Float64 = 21.
     Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default DEBBaseParams
     V_patch = 0.05
@@ -34,7 +36,11 @@ $(TYPEDSIGNATURES)
     k_J::Float64 = 0.
     H_p::Float64 = 100.
     
-    k_D::Vector{Float64} = [1.0] # # dominant rate constant(s)
+    k_D_G::Vector{Float64} = [1.0] # dominant rate constants
+    k_D_M::Vector{Float64} = [1.0] # dominant rate constants
+    k_D_A::Vector{Float64} = [1.0] # dominant rate constants
+    k_D_R::Vector{Float64} = [1.0] # dominant rate constants
+    k_D_h::Vector{Float64} = [1.0] # dominant rate constants
     drc_funct_G::Vector{Function} = [LL2]
     drc_funct_M::Vector{Function} = [LL2M]
     drc_funct_A::Vector{Function} = [LL2]
@@ -45,6 +51,7 @@ $(TYPEDSIGNATURES)
     drcparams_M::Vector{NTuple} = [(1., 2.)]
     drcparams_A::Vector{NTuple} = [(1., 2.)]
     drcparams_R::Vector{NTuple} = [(1., 2.)]
+    drcparams_h::Vector{NTuple} = [(2., 2.)]
 end
 
 @with_kw mutable struct DEBBaseStatevars <: AbstractStatevars
