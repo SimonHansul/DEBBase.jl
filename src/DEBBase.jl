@@ -1,6 +1,7 @@
 module DEBBase
 
 using Parameters
+using ComponentArrays
 using DoseResponse
 using DifferentialEquations
 using DocStringExtensions
@@ -8,7 +9,6 @@ using DataFrames
 using PrecompileTools
 
 include("Structures.jl")
-include("Macros.jl")
 include("ModelFunctions.jl")
 include("Simulators.jl")
 include("ImpliedTraits.jl")

@@ -181,8 +181,8 @@ $(TYPEDSIGNATURES)
 function Ddot(
     deb::AbstractParams,
     z::Int64; 
-    C_W::Float64, 
-    D::Float64, 
+    C_W::Vector{Float64}, 
+    D::Vector{Float64}, 
     S::Float64, 
     Sdot::Float64, 
     S_max::Float64
@@ -202,9 +202,10 @@ function DEB!(du, u, p, t)
     # unpack parameters
     glb::GlobalBaseParams, deb::DEBBaseParams = p
     # unpack scalar state variables
-    @unpack X_p, X_emp, S, H, R = u
-    
+    @unpack X_p, X_emb, S, H, R, D = u
+
     S = max(0, S) # control for negative values
+    S_max = calc_S_max(deb) # todo: move this out so it is only calculated once, not at every step
     life_stage = determine_life_stage(deb; H = H, X_emb = X_emb)
     
     idot = Idot(glb, deb; X_p = X_p, life_stage = life_stage, S = S)
@@ -217,9 +218,9 @@ function DEB!(du, u, p, t)
     hdot = Hdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
     rdot = Rdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
 
-    ddot = zeros(len(C_W))
-    for (z,_) in enumerate(C_W)
-        ddot[z] = DDot(deb, z; C_W = C_W, D = D, S = S, Sdot = Sdot, S_max = S_max)
+    ddot = zeros(length(glb.C_W))
+    for (z,_) in enumerate(glb.C_W)
+        ddot[z] = Ddot(deb, z; C_W = glb.C_W, D = D, S = S, Sdot = Sdot, S_max = S_max)
     end
 
     # update du/dt
@@ -228,6 +229,7 @@ function DEB!(du, u, p, t)
     du[03] = sdot
     du[04] = hdot
     du[05] = rdot
+    du[06] = ddot
 end
 
 
