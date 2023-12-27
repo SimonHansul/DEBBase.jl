@@ -35,22 +35,9 @@ $(TYPEDSIGNATURES)
     k_J::Float64 = 0.
     H_p::Float64 = 100.
     
-    k_D_G::Vector{Float64} = [1.0] # dominant rate constants
-    k_D_M::Vector{Float64} = [1.0] # dominant rate constants
-    k_D_A::Vector{Float64} = [1.0] # dominant rate constants
-    k_D_R::Vector{Float64} = [1.0] # dominant rate constants
-    k_D_h::Vector{Float64} = [1.0] # dominant rate constants
-    drc_funct_G::Vector{Function} = [LL2]
-    drc_funct_M::Vector{Function} = [LL2M]
-    drc_funct_A::Vector{Function} = [LL2]
-    drc_funct_R::Vector{Function} = [LL2]
-    drc_funct_h::Vector{Function} = [LL2h]
-
-    drcparams_G::Vector{NTuple} = [(1., 2.)]
-    drcparams_M::Vector{NTuple} = [(1., 2.)]
-    drcparams_A::Vector{NTuple} = [(1., 2.)]
-    drcparams_R::Vector{NTuple} = [(1., 2.)]
-    drcparams_h::Vector{NTuple} = [(2., 2.)]
+    k_D::Matrix{Float64} = [1.0 1.0 1.0 1.0 1.0] # dominant rate constants
+    drc_functs::Matrix{Function} = [LL2 LL2M LL2 LL2 LL2h]
+    drcparams::Matrix{NTuple} = [(1., 2.) (1., 2.) (1., 2.) (1., 2.) (1., 2.)]
 end
 
 @with_kw mutable struct DEBBaseStatevars <: AbstractStatevars

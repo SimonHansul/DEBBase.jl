@@ -33,15 +33,13 @@ using Parameters
 end
 
 @with_kw NewGlobalParams <: AbstractParams
-    num_scalar_statevars::Int64 = 7 # update the number of scalar state variables 
-    num_vector_statevars::Int64 = 2 # number of vector state variables
     ...
 end
 ```
 
-`NewDEBParams` will replace `DEBBaseParams` and `NewGlobalParams` will replace `GlobalBaseParams`. So both need to include all the parameters, including those that were are already defined in `DEBBaseParams` and `GlobalBaseParams`. <br>
+`NewDEBParams` will replace `DEBBaseParams` and `NewGlobalParams` will replace `GlobalBaseParams`. So both need to include all the parameters, including those that were are already defined in `DEBBaseParams` and `GlobalBaseParams`. The definition of a new global parameter structure is optional, but a new DEB parameter structure should always be defined, even if no new parameters are introduced, because we will use multiple dispatch to differentiate between the base model and the extended model. <br>
 
-Next, you need to define model functions which are additonally needed. For example, the function to calculate the derivative of some newly introduced state variable `E`:
+Next, you need to define model functions which are additionally needed. For example, the function to calculate the derivative of some newly introduced state variable `E`:
 
 ```Julia
 function Edot(

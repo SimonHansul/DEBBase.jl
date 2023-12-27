@@ -173,24 +173,24 @@ function Qdot(
 end
 
 
-
 """
 TK for DEB-TKTD model, including effect of surface area to volume ratio and dilution by growth.
 $(TYPEDSIGNATURES)
 """
 function Ddot(
     deb::AbstractParams,
-    z::Int64; 
+    z::Int64,
+    j::Int64; 
     C_W::Vector{Float64}, 
-    D::Vector{Float64}, 
+    D::Union{Matrix{Float64},T},
     S::Float64, 
     Sdot::Float64, 
     S_max::Float64
-    )
-    # surface area / volume ratio
-    let AV_ratio = S^(2/3) / S, AV_max_ratio = S_max^(2/3) / S_max
-        # TK with account for body size: smaller A/V ration = higher elimination rate, diluation by growth
-        return deb.k_D[z] * (AV_max_ratio / AV_ratio) * (C_W[z] - D[z]) - D[z] * (Sdot/S)
+    ) where T <: Base.ReshapedArray{Float64,2}
+
+    let L_S = S^(1/3) / S, # strucutral length (g^(1/3))
+        L_S_max = S_max^(1/3) # maximum structural length (g^(1/3))
+        return deb.k_D[z,j] * (L_S_max / L_S) * (C_W[z] - D[z,j]) - D[z,j] * Sdot / S
     end
 end
 
@@ -199,38 +199,46 @@ Definition of reserveless DEB derivatives.
 $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
-    # unpack parameters
-    glb::GlobalBaseParams, deb::DEBBaseParams = p
-    # unpack scalar state variables
-    @unpack X_p, X_emb, S, H, R, D = u
+
+    #### boilerplate
+
+    glb::GlobalBaseParams, deb::DEBBaseParams = p # unpack parameters
+    @unpack X_p, X_emb, S, H, R, D = u # unpack state variables
 
     S = max(0, S) # control for negative values
     S_max = calc_S_max(deb) # todo: move this out so it is only calculated once, not at every step
     life_stage = determine_life_stage(deb; H = H, X_emb = X_emb)
+
+    ddot = zeros(size(deb.k_D)) # TODO: move this out so preallocation is only done once
     
+    #### auxiliary state variables
+
     idot = Idot(glb, deb; X_p = X_p, life_stage = life_stage, S = S)
-    xdot = embryo(life_stage) ? 0. : glb.Xdot_in - idot
-    xembdot = embryo(life_stage) ? -idot : 0.0
-    adot = Adot(deb; Idot = idot, )
+    adot = Adot(deb; Idot = idot)
     mdot = Mdot(deb; S = S)
     jdot = Jdot(deb; H = H)
-    sdot = Sdot(deb; Adot = adot, Mdot = mdot) 
-    hdot = Hdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
-    rdot = Rdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
 
-    ddot = zeros(length(glb.C_W))
-    for (z,_) in enumerate(glb.C_W)
-        ddot[z] = Ddot(deb, z; C_W = glb.C_W, D = D, S = S, Sdot = Sdot, S_max = S_max)
+    #### major state variables
+
+    du.X_p = embryo(life_stage) ? 0. : glb.Xdot_in - idot
+    du.X_emb = embryo(life_stage) ? -idot : 0.0
+    du.S = Sdot(deb; Adot = adot, Mdot = mdot)
+    du.H = Hdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
+    du.R = Rdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
+
+    #### change in damage
+    for (z,_) in enumerate(eachrow(deb.k_D)) # for every stressor
+        for (j,_) in enumerate(eachcol(deb.k_D)) # for every PMoA
+            du.D[z,j] = Ddot( # calculate ddot
+                deb, 
+                z, 
+                j; 
+                C_W = glb.C_W,
+                D = D,
+                S = S,
+                Sdot = du.S, 
+                S_max = S_max
+                )
+        end
     end
-
-    # update du/dt
-    du[01] = xdot
-    du[02] = xembdot
-    du[03] = sdot
-    du[04] = hdot
-    du[05] = rdot
-    du[06] = ddot
 end
-
-
-

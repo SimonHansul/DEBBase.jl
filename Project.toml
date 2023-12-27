@@ -13,6 +13,7 @@ DoseResponse = "a19d1f18-07bc-4e4c-ae0b-82c6f40a4140"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [extras]

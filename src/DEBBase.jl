@@ -8,6 +8,12 @@ using DocStringExtensions
 using DataFrames
 using PrecompileTools
 
+const G::Int64 = 1
+const M::Int64 = 2
+const A::Int64 = 3
+const R::Int64 = 4
+const H::Int64 = 5
+
 include("Structures.jl")
 include("ModelFunctions.jl")
 include("Simulators.jl")
@@ -19,14 +25,13 @@ GlobalBaseParams,
 GlobalBaseStatevars, 
 DEBBaseParams, 
 DEBBaseStatevars,
-DEBBaseOrganism
+DEBBaseOrganism,
+simulator
 
 @compile_workload begin
     glb = GlobalBaseParams()
     anm = DEBBaseParams()
     sol = simulator(glb, anm)
 end
-
-export simulator
 
 end # module DEBBase
