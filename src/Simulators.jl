@@ -8,6 +8,8 @@ function simulator(
     deb::AbstractParams
     )
     
+    @assert size(deb.k_D)[2] == length(glb.C_W) "Number of rows in deb.k_D ($(size(deb.k_D)[2])) has to match number of stressors indicated in glb.C_W ($(length(glb.C_W)))."
+
     u = ComponentArray( # initial states
         X_p = glb.Xdot_in, # initial resource abundance equal to influx rate
         X_emb = deb.X_emb_int, # initial mass of vitellus
