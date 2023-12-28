@@ -4,13 +4,14 @@ Determine the current life stage.
 $(TYPEDSIGNATURES)
 """
 @inline function determine_life_stage(
-    deb::AbstractParams;
-    H::Float64,
-    X_emb::Float64,
+    glb::AbstractParams,
+    deb::AbstractParams,
+    du::ComponentArray,
+    u::ComponentArray
 )
-    if H >= deb.H_p
+    if u.H >= deb.H_p
         return 3 # adult
-    elseif X_emb <= 0
+    elseif u.X_emb <= 0
         return 2 # juvenile
     else
         return 1 # embryo
@@ -238,6 +239,40 @@ $(TYPEDSIGNATURES)
     end
 end
 
+"""
+Get index of matrix, returning last element if bounds are exceeded.
+$(TYPEDSIGNATURES)
+"""
+@inline function get_idx(i::Int64, M::AbstractMatrix; ax = 2)
+    return min(i, size(M)[ax])
+end
+
+
+"""
+Compute responses to chemical stressors for all PMoAs and stressors. Assuming Independent Action for stressors with shared PMoA.
+"""
+function compute_responses(
+    glb::AbstractParams, 
+    deb::AbstractParams, 
+    du::ComponentArray,
+    u::ComponentArray)
+
+    let y = ones(5)
+    
+        for j in 1:4 # for every (multiplicative) PMoA
+            y_j = 1. 
+            for z in 1:length(u.C_W) # for every stressor
+                y_j *= deb.drc_functs[z,get_idx(j, deb.drc_functs)](u.D[z,j], deb.drc_params[z,j]) # multiply the responses per stressor
+            end
+            y[j] = y_j # update y 
+        end
+
+        # hazard rates are additive
+        y[5] = sum([deb.drc_functs[z,get_idx(5, deb.drc_functs)](u.D[z,5], deb.drc_params[z,5] for z in 1:length(u.C_W))])
+        return y
+    end
+end
+
 
 
 """
@@ -249,25 +284,28 @@ function DEB!(du, u, p, t)
     #### boilerplate
 
     glb::GlobalBaseParams, deb::DEBBaseParams = p # unpack parameters
-    @unpack X_p, X_emb, S, H, R, D, C_W = u # unpack state variables
 
-    S = max(0, S) # control for negative values
-    life_stage = determine_life_stage(deb; H = H, X_emb = X_emb)
-    
+    u.S = max(0, u.S) # control for negative values
+    life_stage = determine_life_stage(glb, deb, du, u)
+
+    #### stressor responses
+
+    y = compute_responses(glb, deb, du, u)
+        
     #### auxiliary state variables
 
     idot = Idot(glb, deb, du, u; life_stage = life_stage)
-    adot = Adot(glb, deb, du, u; Idot = idot)
-    mdot = Mdot(glb, deb, du, u)
+    adot = Adot(glb, deb, du, u; Idot = idot) * y[3]
+    mdot = Mdot(glb, deb, du, u) * y[2]
     jdot = Jdot(glb, deb, du, u)
 
     #### major state variables
 
     du.X_p = embryo(life_stage) ? 0. : glb.Xdot_in - idot
     du.X_emb = embryo(life_stage) ? -idot : 0.0
-    du.S = Sdot(glb, deb, du, u; Adot = adot, Mdot = mdot)
+    du.S = Sdot(glb, deb, du, u; Adot = adot, Mdot = mdot) * y[1]
     du.H = Hdot(glb, deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage)
-    du.R = Rdot(glb, deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage)
+    du.R = Rdot(glb, deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage) * y[4]
     du.D = Ddot(glb, deb, du, u)
     du.C_W = zeros(length(glb.C_W))
 end
