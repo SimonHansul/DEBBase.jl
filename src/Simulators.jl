@@ -8,7 +8,7 @@ function simulator(
     deb::AbstractParams
     )
     
-    @assert size(deb.k_D)[1] == length(glb.C_W) "Size of k_D ($(size(deb.k_D))) does not match number of stressors indicated in glb.C_W ($(length(glb.C_W)))."
+    @assert size(deb.k_D)[1] >= length(glb.C_W) "Size of k_D ($(size(deb.k_D))) does not match number of stressors indicated in glb.C_W ($(length(glb.C_W)))."
     @assert size(deb.drc_functs)[1] >= length(glb.C_W) "Size of drc_functs ($(size(deb.drc_functs))) does not match number of stressors indicated in glb.C_W ($(length(glb.C_W)))."
     @assert size(deb.drc_params)[1] >= length(glb.C_W) "Size of drc_params ($(size(deb.drc_params))) does not match number of stressors indicated in glb.C_W ($(length(glb.C_W)))."
 
