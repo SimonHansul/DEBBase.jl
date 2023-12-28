@@ -150,7 +150,6 @@ function Rdot(deb::AbstractParams; Adot::Float64, Jdot::Float64, adult::Bool)
     end
 end
 
-
 """
 Calculation of the total dissipation flux, equal to the sum of maintenance costs and overheads paid for assimilation, mobilization, growth and reproduction.
 $(TYPEDSIGNATURES)
@@ -172,27 +171,26 @@ function Qdot(
     end
 end
 
-
 """
-TK for DEB-TKTD model, including effect of surface area to volume ratio and dilution by growth.
+TK for DEB-TKTD model, including effect of surface area to volume ratio and dilution by growth. 
+If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-specific. 
 $(TYPEDSIGNATURES)
 """
 function Ddot(
+    glb::AbstractParams,
     deb::AbstractParams,
-    z::Int64,
-    j::Int64; 
-    C_W::Vector{Float64}, 
-    D::Union{Matrix{Float64},T},
-    S::Float64, 
-    Sdot::Float64, 
-    S_max::Float64
-    ) where T <: Base.ReshapedArray{Float64,2}
+    du::ComponentVector,
+    u::ComponentVector
+    )
 
-    let L_S = S^(1/3) / S, # strucutral length (g^(1/3))
-        L_S_max = S_max^(1/3) # maximum structural length (g^(1/3))
-        return deb.k_D[z,j] * (L_S_max / L_S) * (C_W[z] - D[z,j]) - D[z,j] * Sdot / S
+    let L_S = u.S^(1/3) / u.S, # strucutral length (g^(1/3))
+        # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
+        L_S_max = calc_S_max(deb)^(1/3) # maximum structural length (g^(1/3))
+        return @. deb.k_D * (L_S_max / L_S) * (u.C_W - u.D) - u.D * du.S / u.S
     end
 end
+
+
 
 """
 Definition of reserveless DEB derivatives. 
@@ -203,13 +201,10 @@ function DEB!(du, u, p, t)
     #### boilerplate
 
     glb::GlobalBaseParams, deb::DEBBaseParams = p # unpack parameters
-    @unpack X_p, X_emb, S, H, R, D = u # unpack state variables
+    @unpack X_p, X_emb, S, H, R, D, C_W = u # unpack state variables
 
     S = max(0, S) # control for negative values
-    S_max = calc_S_max(deb) # todo: move this out so it is only calculated once, not at every step
     life_stage = determine_life_stage(deb; H = H, X_emb = X_emb)
-
-    ddot = zeros(size(deb.k_D)) # TODO: move this out so preallocation is only done once
     
     #### auxiliary state variables
 
@@ -225,20 +220,6 @@ function DEB!(du, u, p, t)
     du.S = Sdot(deb; Adot = adot, Mdot = mdot)
     du.H = Hdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
     du.R = Rdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
-
-    #### change in damage
-    for (z,_) in enumerate(eachrow(deb.k_D)) # for every stressor
-        for (j,_) in enumerate(eachcol(deb.k_D)) # for every PMoA
-            du.D[z,j] = Ddot( # calculate ddot
-                deb, 
-                z, 
-                j; 
-                C_W = glb.C_W,
-                D = D,
-                S = S,
-                Sdot = du.S, 
-                S_max = S_max
-                )
-        end
-    end
+    du.D = Ddot(glb, deb, du, u)
+    du.C_W = zeros(length(glb.C_W))
 end

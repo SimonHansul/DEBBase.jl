@@ -35,9 +35,16 @@ $(TYPEDSIGNATURES)
     k_J::Float64 = 0.
     H_p::Float64 = 100.
     
-    k_D::Matrix{Float64} = [1.0 1.0 1.0 1.0 1.0] # dominant rate constants
-    drc_functs::Matrix{Function} = [LL2 LL2M LL2 LL2 LL2h]
-    drcparams::Matrix{NTuple} = [(1., 2.) (1., 2.) (1., 2.) (1., 2.) (1., 2.)]
+    k_D::Union{Vector{Float64}, Matrix{Float64}} = [1.0, 1.0] # dominant rate constants
+    # TODO: set drc functs dynamically under the assumption of two-parameter log-logistic function
+    drc_functs::Matrix{Function} = [
+        LL2 LL2M LL2 LL2 LL2h;
+        LL2 LL2M LL2 LL2 LL2h;
+        ]
+    drc_params::Matrix{NTuple} = [
+        (1., 2.) (1., 2.) (1., 2.) (1., 2.) (1., 2.);
+        (1., 2.) (1., 2.) (1., 2.) (1., 2.) (1., 2.)
+        ]
 end
 
 @with_kw mutable struct DEBBaseStatevars <: AbstractStatevars
