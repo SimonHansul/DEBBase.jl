@@ -8,6 +8,7 @@ using DocStringExtensions
 using DataFrames
 using PrecompileTools
 
+include("IO.jl")
 include("Structures.jl")
 include("ModelFunctions.jl")
 include("Simulators.jl")

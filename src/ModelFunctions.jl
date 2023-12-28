@@ -3,7 +3,7 @@
 Determine the current life stage. 
 $(TYPEDSIGNATURES)
 """
-function determine_life_stage(
+@inline function determine_life_stage(
     deb::AbstractParams;
     H::Float64,
     X_emb::Float64,
@@ -21,7 +21,7 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function embryo(life_stage::Int64)
+@inline function embryo(life_stage::Int64)
     return life_stage == 1
 end
 
@@ -29,19 +29,19 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-function juvenile(life_stage::Int64)
+@inline function juvenile(life_stage::Int64)
     return life_stage == 2
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-function adult(life_stage::Int64)
+@inline function adult(life_stage::Int64)
     return life_stage == 3
 end
 
 
-function functional_response(deb::AbstractParams; X_V::Float64)
+@inline function functional_response(deb::AbstractParams; X_V::Float64)
     return X_V / (X_V + deb.K_X)
 end
 
@@ -49,21 +49,21 @@ end
 Calculate ingestion rate for a single resource.
 $(TYPEDSIGNATURES)
 """
-function Idot(
+@inline function Idot(
     glb::AbstractParams,
-    deb::AbstractParams;
-    X_p::Float64,
-    life_stage::Int64,
-    S::Float64
+    deb::AbstractParams,
+    du::ComponentArray,
+    u::ComponentArray;
+    life_stage::Int64
     )
     
     if life_stage > 1 # juveniles and adults feed from external resource
-        let X_p_V = X_p / glb.V_patch, 
+        let X_p_V = u.X_p / glb.V_patch, 
             f_X = functional_response(deb; X_V = X_p_V)
-            return f_X * deb.Idot_max_rel_emb * S^(2/3) 
+            return f_X * deb.Idot_max_rel_emb * u.S^(2/3) 
         end
     else # embryos feed from the vitellus
-        return S^(2 / 3) * deb.Idot_max_rel
+        return u.S^(2 / 3) * deb.Idot_max_rel
     end
 end
 
@@ -71,7 +71,13 @@ end
 Assimilation rate
 $(TYPEDSIGNATURES)
 """
-function Adot(deb::AbstractParams; Idot::Float64)
+@inline function Adot(
+    glb::AbstractParams,
+    deb::AbstractParams,
+    du::ComponentArray,
+    u::ComponentArray;
+    Idot::Float64
+    )
     return Idot * deb.eta_IA
 end
 
@@ -79,23 +85,39 @@ end
 Somatic maintenance rate
 $(TYPEDSIGNATURES)
 """
-function Mdot(deb::AbstractParams; S::Float64)
-    return max(0, S * deb.k_M)
+@inline function Mdot(
+    glb::AbstractParams,
+    deb::AbstractParams,
+    du::ComponentArray,
+    u::ComponentArray;)
+    return max(0, u.S * deb.k_M)
 end
 
 """
 Maturity maintenance rate
 $(TYPEDSIGNATURES)
 """
-function Jdot(deb::AbstractParams; H::Float64)
-    return H * deb.k_J
+@inline function Jdot(
+    glb::AbstractParams,
+    deb::AbstractParams,
+    du::ComponentArray,
+    u::ComponentArray
+    )
+    return u.H * deb.k_J
 end
 
 """
 Positive somatic growth
 $(TYPEDSIGNATURES)
 """
-function Sdot_positive(deb::AbstractParams; Adot::Float64, Mdot::Float64)
+@inline function Sdot_positive(
+    glb::AbstractParams,
+    deb::AbstractParams,
+    du::ComponentArray,
+    u::ComponentArray;
+    Adot::Float64,
+    Mdot::Float64
+    )
     return deb.eta_AS * (deb.kappa * Adot - Mdot)
 end
 
@@ -103,7 +125,14 @@ end
 Negative somatic growth
 ($(TYPEDSIGNATURES))
 """
-function Sdot_negative(deb::AbstractParams; Mdot::Float64, Adot::Float64)
+@inline function Sdot_negative(
+    glb::AbstractParams,
+    deb::AbstractParams,
+    du::ComponentArray,
+    u::ComponentArray;
+    Adot::Float64,
+    Mdot::Float64
+    )
     return -(Mdot / deb.eta_SA - deb.kappa * Adot)
 end
 
@@ -111,14 +140,17 @@ end
 Somatic growth rate
 $(TYPEDSIGNATURES)
 """
-function Sdot(
-    deb::AbstractParams;
-    Mdot::Float64,
-    Adot::Float64
-)
-    let Sdot = (Sdot_positive(deb; Mdot = Mdot, Adot = Adot)) # calculate structural growth 
+@inline function Sdot(
+    glb::AbstractParams,
+    deb::AbstractParams,
+    du::ComponentArray,
+    u::ComponentArray;
+    Adot::Float64,
+    Mdot::Float64
+    )
+    let Sdot = (Sdot_positive(glb, deb, du, u; Mdot = Mdot, Adot = Adot)) # calculate structural growth 
         if Sdot < 0 # if growth is negative, apply the shrinking equation
-            Sdot = Sdot_negative(deb; Mdot = Mdot, Adot = Adot)
+            Sdot = Sdot_negative(glb, deb, du, u; Mdot = Mdot, Adot = Adot)
         end
         return Sdot # return derivative with account for mobilized structure
     end
@@ -130,8 +162,16 @@ Maturity is dissipated energy and can therefore not be burned to cover maintenan
 For simplicity, we currently assume that maturity maintenance will not be covered of the 1-kappa flux is insufficient.
 $(TYPEDSIGNATURES)
 """
-function Hdot(deb::AbstractParams; Adot::Float64, Jdot::Float64, adult::Bool)
-    if adult == false
+@inline function Hdot(
+    glb::AbstractParams,
+    deb::AbstractParams,
+    du::ComponentArray,
+    u::ComponentArray; 
+    Adot::Float64, 
+    Jdot::Float64, 
+    life_stage::Int64
+    )
+    if adult(life_stage) == false
         return max(0, ((1 - deb.kappa) * Adot) - Jdot)
     else
         return 0.0
@@ -142,8 +182,16 @@ end
 Reproduction rate.
 $(TYPEDSIGNATURES)
 """
-function Rdot(deb::AbstractParams; Adot::Float64, Jdot::Float64, adult::Bool)
-    if adult
+@inline function Rdot(
+    glb::AbstractParams,
+    deb::AbstractParams,
+    du::ComponentArray,
+    u::ComponentArray; 
+    Adot::Float64, 
+    Jdot::Float64,
+    life_stage::Int64
+    )
+    if adult(life_stage)
         return (1 - deb.kappa) * Adot - Jdot
     else
         return 0.0
@@ -176,7 +224,7 @@ TK for DEB-TKTD model, including effect of surface area to volume ratio and dilu
 If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-specific. 
 $(TYPEDSIGNATURES)
 """
-function Ddot(
+@inline function Ddot(
     glb::AbstractParams,
     deb::AbstractParams,
     du::ComponentVector,
@@ -208,18 +256,18 @@ function DEB!(du, u, p, t)
     
     #### auxiliary state variables
 
-    idot = Idot(glb, deb; X_p = X_p, life_stage = life_stage, S = S)
-    adot = Adot(deb; Idot = idot)
-    mdot = Mdot(deb; S = S)
-    jdot = Jdot(deb; H = H)
+    idot = Idot(glb, deb, du, u; life_stage = life_stage)
+    adot = Adot(glb, deb, du, u; Idot = idot)
+    mdot = Mdot(glb, deb, du, u)
+    jdot = Jdot(glb, deb, du, u)
 
     #### major state variables
 
     du.X_p = embryo(life_stage) ? 0. : glb.Xdot_in - idot
     du.X_emb = embryo(life_stage) ? -idot : 0.0
-    du.S = Sdot(deb; Adot = adot, Mdot = mdot)
-    du.H = Hdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
-    du.R = Rdot(deb; Adot = adot, Jdot = jdot, adult = adult(life_stage))
+    du.S = Sdot(glb, deb, du, u; Adot = adot, Mdot = mdot)
+    du.H = Hdot(glb, deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage)
+    du.R = Rdot(glb, deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage)
     du.D = Ddot(glb, deb, du, u)
     du.C_W = zeros(length(glb.C_W))
 end

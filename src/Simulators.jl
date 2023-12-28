@@ -27,15 +27,7 @@ function simulator(
     
     # TODO: flatten D-Matrix into multiple columns in output dataframe
     sol = solve(prob, reltol = 1e-6, abstol = 1e-10) # get solution to the IVP
-
-    simout = DataFrame(
-        hcat(sol.t, hcat(sol.u...)'), # ODE output converted to wide matrix
-        vcat(  # column names
-        #:# TODO: assign column names for different PMoAs dynamically
-        [:t, :X, :X_emb, :S, :H, :R],
-        [:D_1_1, :D_2_1],
-        [:C_W_1]
-        ))
-
+    simout = sol_to_df(sol)
+  
     return simout
 end
