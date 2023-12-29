@@ -3,6 +3,7 @@
 Functions to run reserveless DEB and DEB-TKTD models, including mixture effects. <br>
 The idea of DEBBase is to serve as a simple base model for DEB-TKTD modelling. 
 The purpose of DEBBase is explicitly not to provide functionality for parameter estimation or other kinds of analyses. This base model should be extendable and modular. 
+The design of DEBBase generally favors code readability and transparency over performance. 
 
 ## Features
 
