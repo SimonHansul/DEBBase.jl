@@ -4,12 +4,12 @@ Determine the current life stage.
 $(TYPEDSIGNATURES)
 """
 @inline function determine_life_stage(
-    glb::AbstractParams,
-    deb::AbstractParams,
     du::ComponentArray,
-    u::ComponentArray
-)
-    if u.H >= deb.H_p
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real
+    ) 
+    if u.H >= p.deb.H_p
         return 3 # adult
     elseif u.X_emb <= 0
         return 2 # juvenile
@@ -51,10 +51,10 @@ Calculate ingestion rate for a single resource.
 $(TYPEDSIGNATURES)
 """
 @inline function Idot(
-    glb::AbstractParams,
-    deb::AbstractParams,
     du::ComponentArray,
-    u::ComponentArray;
+    u::ComponentArray, 
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}}, 
+    t::Real;
     life_stage::Int64
     )
     
@@ -220,22 +220,28 @@ function Qdot(
     end
 end
 
+ 
+
 """
 TK for DEB-TKTD model, including effect of surface area to volume ratio and dilution by growth. 
 If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-specific. 
 $(TYPEDSIGNATURES)
 """
-@inline function Ddot(
-    glb::AbstractParams,
-    deb::AbstractParams,
+@inline function Ddot!(
     du::ComponentVector,
-    u::ComponentVector
-    )
+    u::ComponentVector,
+    p::T,
+    t::R
+    ) where {T <: NamedTuple, R <: Real}
 
     let L_S = u.S^(1/3) / u.S, # strucutral length (g^(1/3))
         # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
-        L_S_max = calc_S_max(deb)^(1/3) # maximum structural length (g^(1/3))
-        return @. deb.k_D * (L_S_max / L_S) * (u.C_W - u.D) - u.D * du.S / u.S
+        L_S_max = calc_S_max(p.deb)^(1/3) # maximum structural length (g^(1/3))
+        @. du.D_G = p.deb.k_D_G * (L_S_max / L_S) * (u.C_W - u.D_G) - u.D_G * du.S / u.S
+        @. du.D_M = p.deb.k_D_M * (L_S_max / L_S) * (u.C_W - u.D_M) - u.D_M * du.S / u.S
+        @. du.D_A = p.deb.k_D_A * (L_S_max / L_S) * (u.C_W - u.D_A) - u.D_A * du.S / u.S
+        @. du.D_R = p.deb.k_D_R * (L_S_max / L_S) * (u.C_W - u.D_R) - u.D_R * du.S / u.S
+        @. du.D_h = p.deb.k_D_h * (L_S_max / L_S) * (u.C_W - u.D_h) - u.D_h * du.S / u.S
     end
 end
 
@@ -247,34 +253,6 @@ $(TYPEDSIGNATURES)
     return min(i, size(M)[ax])
 end
 
-
-"""
-Compute responses to chemical stressors for all PMoAs and stressors. Assuming Independent Action for stressors with shared PMoA.
-"""
-function compute_responses(
-    glb::AbstractParams, 
-    deb::AbstractParams, 
-    du::ComponentArray,
-    u::ComponentArray)
-
-    let y = ones(5)
-    
-        for j in 1:4 # for every (multiplicative) PMoA
-            y_j = 1. 
-            for z in 1:length(u.C_W) # for every stressor
-                y_j *= deb.drc_functs[z,get_idx(j, deb.drc_functs)](u.D[z,j], deb.drc_params[z,j]) # multiply the responses per stressor
-            end
-            y[j] = y_j # update y 
-        end
-
-        # hazard rates are additive
-        y[5] = sum([deb.drc_functs[z,get_idx(5, deb.drc_functs)](u.D[z,5], deb.drc_params[z,5] for z in 1:length(u.C_W))])
-        return y
-    end
-end
-
-
-
 """
 Definition of reserveless DEB derivatives. 
 $(TYPEDSIGNATURES)
@@ -283,29 +261,31 @@ function DEB!(du, u, p, t)
 
     #### boilerplate
 
-    glb::GlobalBaseParams, deb::DEBBaseParams = p # unpack parameters
-
     u.S = max(0, u.S) # control for negative values
-    life_stage = determine_life_stage(glb, deb, du, u)
+    life_stage = determine_life_stage(du, u, p, t)
 
     #### stressor responses
 
-    y = compute_responses(glb, deb, du, u)
+    y_G = prod([p.deb.drc_functs_G[z](u.D_G[z], p.deb.drc_params_G[z]) for z in 1:length(u.C_W)])
+    y_M = prod([p.deb.drc_functs_M[z](u.D_M[z], p.deb.drc_params_M[z]) for z in 1:length(u.C_W)])
+    y_A = prod([p.deb.drc_functs_A[z](u.D_A[z], p.deb.drc_params_A[z]) for z in 1:length(u.C_W)])
+    y_R = prod([p.deb.drc_functs_R[z](u.D_R[z], p.deb.drc_params_R[z]) for z in 1:length(u.C_W)])
+    h = sum([p.deb.drc_functs_h[z](u.D_h[z], p.deb.drc_params_h[z]) for z in 1:length(u.C_W)])
         
     #### auxiliary state variables
-
-    idot = Idot(glb, deb, du, u; life_stage = life_stage)
-    adot = Adot(glb, deb, du, u; Idot = idot) * y[3]
-    mdot = Mdot(glb, deb, du, u) * y[2]
-    jdot = Jdot(glb, deb, du, u)
+    
+    idot = Idot(du, u, p, t; life_stage = life_stage)
+    adot = Adot(p.glb, p.deb, du, u; Idot = idot) * y_A
+    mdot = Mdot(p.glb, p.deb, du, u) * y_M
+    jdot = Jdot(p.glb, p.deb, du, u)
 
     #### major state variables
 
-    du.X_p = embryo(life_stage) ? 0. : glb.Xdot_in - idot
+    du.X_p = embryo(life_stage) ? 0. : p.glb.Xdot_in - idot
     du.X_emb = embryo(life_stage) ? -idot : 0.0
-    du.S = Sdot(glb, deb, du, u; Adot = adot, Mdot = mdot) * y[1]
-    du.H = Hdot(glb, deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage)
-    du.R = Rdot(glb, deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage) * y[4]
-    du.D = Ddot(glb, deb, du, u)
-    du.C_W = zeros(length(glb.C_W))
+    du.S = Sdot(p.glb, p.deb, du, u; Adot = adot, Mdot = mdot) * y_G
+    du.H = Hdot(p.glb, p.deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage)
+    du.R = Rdot(p.glb, p.deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage) * y_R
+    Ddot!(du, u, p, t)
+    du.C_W = zeros(length(p.glb.C_W))
 end

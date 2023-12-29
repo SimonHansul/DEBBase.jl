@@ -35,31 +35,24 @@ $(TYPEDSIGNATURES)
     k_J::Float64 = 0.
     H_p::Float64 = 100.
     
-    k_D::Union{Vector{Float64}, Matrix{Float64}} = [1.0, 1.0] # dominant rate constants
-    # TODO: set drc functs dynamically under the assumption of two-parameter log-logistic function
-    drc_functs::Matrix{Function} = [
-        LL2 LL2M LL2 LL2 LL2h;
-        LL2 LL2M LL2 LL2 LL2h;
-        ]
-    drc_params::Matrix{NTuple} = [
-        (1., 2.) (1., 2.) (1., 2.) (1., 2.) (1., 2.);
-        (1., 2.) (1., 2.) (1., 2.) (1., 2.) (1., 2.)
-        ]
-end
+    # dominant rate constants
+    k_D_G::Vector{Float64} = [1., 1.]
+    k_D_M::Vector{Float64} = [1., 1.]
+    k_D_A::Vector{Float64} = [1., 1.]
+    k_D_R::Vector{Float64} = [1., 1.]
+    k_D_h::Vector{Float64} = [1., 1.]
+    
+    # DRC functions per PMoA
+    drc_functs_G::Vector{Function} = [LL2, LL2]
+    drc_functs_M::Vector{Function} = [LL2M, LL2M]
+    drc_functs_A::Vector{Function} = [LL2, LL2]
+    drc_functs_R::Vector{Function} = [LL2, LL2]
+    drc_functs_h::Vector{Function} = [LL2h, LL2h]
 
-@with_kw mutable struct DEBBaseStatevars <: AbstractStatevars
-    X_emb::Float64
-    S::Float64
-    H::Float64 = 0.
-    R::Float64 = 0.
-    life_stage::Float64 = 1.
-    Idot::Float64 = 0.
-end
-
-@with_kw mutable struct DEBBaseOrganism <: AbstractOrganism
-    debparams::DEBBaseParams = DEBBaseParams()
-    statevars::DEBBaseStatevars = DEBBaseStatevars(
-        X_emb = DEBBaseParams().X_emb_int,
-        S = DEBBaseParams().X_emb_int * 0.01
-        )
+    # DRC parameters per PMoA
+    drc_params_G::Vector{NTuple} = [(1., 2.), (1., 2.)]
+    drc_params_M::Vector{NTuple} = [(1., 2.), (1., 2.)]
+    drc_params_A::Vector{NTuple} = [(1., 2.), (1., 2.)]
+    drc_params_R::Vector{NTuple} = [(1., 2.), (1., 2.)]
+    drc_params_h::Vector{NTuple} = [(1., 2.), (1., 2.)]
 end

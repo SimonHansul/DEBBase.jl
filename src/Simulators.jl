@@ -7,27 +7,28 @@ function simulator(
     glb::AbstractParams,
     deb::AbstractParams
     )
-    
-    @assert size(deb.k_D)[1] >= length(glb.C_W) "Size of k_D ($(size(deb.k_D))) does not match number of stressors indicated in glb.C_W ($(length(glb.C_W)))."
-    @assert size(deb.drc_functs)[1] >= length(glb.C_W) "Size of drc_functs ($(size(deb.drc_functs))) does not match number of stressors indicated in glb.C_W ($(length(glb.C_W)))."
-    @assert size(deb.drc_params)[1] >= length(glb.C_W) "Size of drc_params ($(size(deb.drc_params))) does not match number of stressors indicated in glb.C_W ($(length(glb.C_W)))."
+    p = (glb = glb, deb = deb)
+    assert!(p)
 
     u = ComponentArray( # initial states
-        X_p = glb.Xdot_in, # initial resource abundance equal to influx rate
-        X_emb = deb.X_emb_int, # initial mass of vitellus
-        S = deb.X_emb_int * 0.01, # initial structure is a small fraction of initial reserve // mass of vitellus
+        X_p = p.glb.Xdot_in, # initial resource abundance equal to influx rate
+        X_emb = p.deb.X_emb_int, # initial mass of vitellus
+        S = p.deb.X_emb_int * 0.01, # initial structure is a small fraction of initial reserve // mass of vitellus
         H = 0., # maturity
         R = 0., # reproduction buffer
-        D = zeros(size(deb.k_D)),
+        D_G = zeros(length(p.deb.k_D_G)),
+        D_M = zeros(length(p.deb.k_D_M)),
+        D_A = zeros(length(p.deb.k_D_A)),
+        D_R = zeros(length(p.deb.k_D_R)),
+        D_h = zeros(length(p.deb.k_D_h)),
         C_W = glb.C_W
     )
 
-    tspan = (0, glb.t_max) # define the timespan
-    prob = ODEProblem(DEB!, u, tspan, (glb = glb, deb = deb)) # define the problem
+    prob = ODEProblem(DEB!, u, (0, glb.t_max), p) # define the problem
     
     # TODO: flatten D-Matrix into multiple columns in output dataframe
     sol = solve(prob, reltol = 1e-6, abstol = 1e-10) # get solution to the IVP
-    simout = sol_to_df(sol)
+    simout = sol_to_df(sol) # convert solution to dataframe
   
     return simout
 end
