@@ -184,16 +184,16 @@ Reproduction rate.
 $(TYPEDSIGNATURES)
 """
 @inline function Rdot(
-    glb::AbstractParams,
-    deb::AbstractParams,
     du::ComponentArray,
-    u::ComponentArray; 
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real; 
     Adot::Float64, 
     Jdot::Float64,
     life_stage::Int64
     )
     if adult(life_stage)
-        return (1 - deb.kappa) * Adot - Jdot
+        return (1 - p.deb.kappa) * Adot - Jdot
     else
         return 0.0
     end
@@ -285,7 +285,7 @@ function DEB!(du, u, p, t)
     du.X_emb = embryo(life_stage) ? -idot : 0.0
     du.S = Sdot(p.glb, p.deb, du, u; Adot = adot, Mdot = mdot) * y_G
     du.H = Hdot(p.glb, p.deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage)
-    du.R = Rdot(p.glb, p.deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage) * y_R
+    du.R = Rdot(du, u, p, t; Adot = adot, Jdot = jdot, life_stage = life_stage) * y_R
     Ddot!(du, u, p, t)
     du.C_W = zeros(length(p.glb.C_W))
 end
