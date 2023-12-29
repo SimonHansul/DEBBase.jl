@@ -22,6 +22,7 @@ DEBBase Parameters with default values for Daphnia magna.
 $(TYPEDSIGNATURES)
 """
 @with_kw mutable struct DEBBaseParams <: AbstractParams
+    # physiological baseline (DEB) parameters
     X_emb_int::Float64 = 19.42
     K_X::Float64 = 1.
     Idot_max_rel::Float64 = 22.9
