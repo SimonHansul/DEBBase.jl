@@ -51,9 +51,9 @@ $(TYPEDSIGNATURES)
     drc_functs_h::Vector{Function} = [LL2h, LL2h]
 
     # DRC parameters
-    drc_params_G::Vector{NTuple} = [(1., 2.), (1., 2.)]
-    drc_params_M::Vector{NTuple} = [(1., 2.), (1., 2.)]
-    drc_params_A::Vector{NTuple} = [(1., 2.), (1., 2.)]
-    drc_params_R::Vector{NTuple} = [(1., 2.), (1., 2.)]
-    drc_params_h::Vector{NTuple} = [(1., 2.), (1., 2.)]
+    drc_params_G::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
+    drc_params_M::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
+    drc_params_A::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
+    drc_params_R::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
+    drc_params_h::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
 end

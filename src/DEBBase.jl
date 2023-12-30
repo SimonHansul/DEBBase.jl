@@ -25,7 +25,8 @@ GlobalBaseStatevars,
 DEBBaseParams, 
 DEBBaseStatevars,
 DEBBaseOrganism,
-simulator
+simulator,
+isolate_pmoas!
 
 @compile_workload begin
     glb = GlobalBaseParams()

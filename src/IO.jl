@@ -40,6 +40,21 @@ function sol_to_df(sol::O)::DataFrame where O <: ODESolution
     return simout
 end
 
+"""
+Isolate the indicated PMoAs. 
+I.e., turn off all PMoAs (including `h`!) except for those indicated in `pmoas`-Vector. <br>
+This is done through the toxicokinetic rate constant.
+$(TYPEDSIGNATURES)
+"""
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})
+    num_stressors = length(deb.k_D_G)
+    deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R"])
+    for j in deactivate
+        setfield!(deb, Symbol("k_D_$(j)"), zeros(num_stressors))
+    end
+    return nothing
+end
+
 
 function assert!(p::T) where T <: NamedTuple
     @assert length(p.deb.k_D_G) >= length(p.glb.C_W) "Length of k_D_G is not at least length of C_W"
@@ -60,3 +75,4 @@ function assert!(p::T) where T <: NamedTuple
     @assert length(p.deb.drc_params_R) >= length(p.glb.C_W) "Length of drc_params_R is not at least length of C_W"
     @assert length(p.deb.drc_params_h) >= length(p.glb.C_W) "Length of drc_params_h is not at least length of C_W"
 end
+
