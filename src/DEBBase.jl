@@ -27,8 +27,6 @@ DEBBaseStatevars,
 DEBBaseOrganism,
 simulator
 
-
-
 @compile_workload begin
     glb = GlobalBaseParams()
     anm = DEBBaseParams()

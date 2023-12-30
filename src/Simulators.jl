@@ -16,6 +16,7 @@ function simulator(
         S = p.deb.X_emb_int * 0.01, # initial structure is a small fraction of initial reserve // mass of vitellus
         H = 0., # maturity
         R = 0., # reproduction buffer
+        life_stage = 0,
         D_G = zeros(length(p.deb.k_D_G)),
         D_M = zeros(length(p.deb.k_D_M)),
         D_A = zeros(length(p.deb.k_D_A)),

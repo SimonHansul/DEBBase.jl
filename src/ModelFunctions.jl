@@ -8,7 +8,7 @@ $(TYPEDSIGNATURES)
     u::ComponentArray,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
     t::Real
-    ) 
+    )
     if u.H >= p.deb.H_p
         return 3 # adult
     elseif u.X_emb <= 0
@@ -22,22 +22,21 @@ end
 """
 $(TYPEDSIGNATURES)
 """
-@inline function embryo(life_stage::Int64)
+@inline function embryo(life_stage::Float64)
     return life_stage == 1
 end
-
 
 """
 $(TYPEDSIGNATURES)
 """
-@inline function juvenile(life_stage::Int64)
+@inline function juvenile(life_stage::Float64)
     return life_stage == 2
 end
 
 """
 $(TYPEDSIGNATURES)
 """
-@inline function adult(life_stage::Int64)
+@inline function adult(life_stage::Float64)
     return life_stage == 3
 end
 
@@ -61,11 +60,10 @@ $(TYPEDSIGNATURES)
     du::ComponentArray,
     u::ComponentArray, 
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}}, 
-    t::Real;
-    life_stage::Int64
+    t::Real
     )
     
-    if life_stage > 1 # juveniles and adults feed from external resource
+    if u.life_stage > 1 # juveniles and adults feed from external resource
         return functional_response(du, u, p, t) * p.deb.Idot_max_rel_emb * u.S^(2/3) 
     else # embryos feed from the vitellus
         return u.S^(2/3) * p.deb.Idot_max_rel
@@ -174,10 +172,9 @@ $(TYPEDSIGNATURES)
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
     t::Real;
     Adot::Float64, 
-    Jdot::Float64, 
-    life_stage::Int64
+    Jdot::Float64
     )
-    if !adult(life_stage)
+    if !adult(u.life_stage)
         du.H =  max(0, ((1 - p.deb.kappa) * Adot) - Jdot)
     else
         du.H = 0.0
@@ -194,10 +191,9 @@ $(TYPEDSIGNATURES)
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
     t::Real; 
     Adot::Float64, 
-    Jdot::Float64,
-    life_stage::Int64
+    Jdot::Float64
     )
-    if adult(life_stage)
+    if adult(u.life_stage)
         du.R = (1 - p.deb.kappa) * Adot - Jdot
     else
         du.R =  0.0
@@ -264,10 +260,9 @@ end
     u::ComponentVector,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
     t::Real;
-    life_stage::Int64,
     Idot::Float64
     )
-    du.X_p = embryo(life_stage) ? 0. : p.glb.Xdot_in - Idot
+    du.X_p = embryo(u.life_stage) ? 0. : p.glb.Xdot_in - Idot
 end
 
 @inline function X_embdot!(
@@ -275,10 +270,9 @@ end
     u::ComponentVector,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
     t::Real;
-    life_stage::Int64,
     Idot::Float64
     )
-    du.X_emb = embryo(life_stage) ? -Idot : 0.0
+    du.X_emb = embryo(u.life_stage) ? -Idot : 0.0
 end
 
 """
@@ -298,7 +292,7 @@ function DEB!(du, u, p, t)
     #### boilerplate
 
     u.S = max(0, u.S) # control for negative values
-    life_stage = determine_life_stage(du, u, p, t)
+    u.life_stage = determine_life_stage(du, u, p, t)
 
     #### stressor responses
 
@@ -310,18 +304,18 @@ function DEB!(du, u, p, t)
         
     #### auxiliary state variables
     
-    idot = Idot(du, u, p, t; life_stage = life_stage)
+    idot = Idot(du, u, p, t)
     adot = Adot(du, u, p, t; Idot = idot) * y_A
     mdot = Mdot(du, u, p, t) * y_M
     jdot = Jdot(du, u, p, t)
 
     #### major state variables
 
-    X_pdot!(du, u, p, t; life_stage = life_stage, Idot = idot) # resource abundance
-    X_embdot!(du, u, p, t; life_stage = life_stage, Idot = idot) # vitellus
+    X_pdot!(du, u, p, t; Idot = idot) # resource abundance
+    X_embdot!(du, u, p, t; Idot = idot) # vitellus
     Sdot!(du, u, p, t; Adot = adot, Mdot = mdot) * y_G # structure
-    Hdot!(du, u, p, t; Adot = adot, Jdot = jdot, life_stage = life_stage) # maturity 
-    Rdot!(du, u, p, t; Adot = adot, Jdot = jdot, life_stage = life_stage) * y_R # reproduction buffer
+    Hdot!(du, u, p, t; Adot = adot, Jdot = jdot) # maturity 
+    Rdot!(du, u, p, t; Adot = adot, Jdot = jdot) * y_R # reproduction buffer
     Ddot!(du, u, p, t) # damage
     C_Wdot!(du, u, p, t) # external stressor concentration
 end
