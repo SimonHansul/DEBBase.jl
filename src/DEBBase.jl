@@ -14,6 +14,10 @@ include("ModelFunctions.jl")
 include("Simulators.jl")
 include("ImpliedTraits.jl")
 
+glb = GlobalBaseParams()
+anm = DEBBaseParams()
+sol = simulator(glb, anm)
+
 export AbstractParams,
 AbstractStatevars,
 GlobalBaseParams, 
@@ -22,6 +26,8 @@ DEBBaseParams,
 DEBBaseStatevars,
 DEBBaseOrganism,
 simulator
+
+
 
 @compile_workload begin
     glb = GlobalBaseParams()

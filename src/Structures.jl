@@ -43,14 +43,14 @@ $(TYPEDSIGNATURES)
     k_D_R::Vector{Float64} = [1., 1.]
     k_D_h::Vector{Float64} = [1., 1.]
     
-    # DRC functions per PMoA
+    # DRC functions
     drc_functs_G::Vector{Function} = [LL2, LL2]
     drc_functs_M::Vector{Function} = [LL2M, LL2M]
     drc_functs_A::Vector{Function} = [LL2, LL2]
     drc_functs_R::Vector{Function} = [LL2, LL2]
     drc_functs_h::Vector{Function} = [LL2h, LL2h]
 
-    # DRC parameters per PMoA
+    # DRC parameters
     drc_params_G::Vector{NTuple} = [(1., 2.), (1., 2.)]
     drc_params_M::Vector{NTuple} = [(1., 2.), (1., 2.)]
     drc_params_A::Vector{NTuple} = [(1., 2.), (1., 2.)]

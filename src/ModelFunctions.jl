@@ -42,8 +42,15 @@ $(TYPEDSIGNATURES)
 end
 
 
-@inline function functional_response(deb::AbstractParams; X_V::Float64)
-    return X_V / (X_V + deb.K_X)
+@inline function functional_response(
+    du::ComponentArray,
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real
+    )
+    let X_V = u.X_p / p.glb.V_patch
+        return X_V / (X_V + p.deb.K_X)
+    end
 end
 
 """
@@ -59,12 +66,9 @@ $(TYPEDSIGNATURES)
     )
     
     if life_stage > 1 # juveniles and adults feed from external resource
-        let X_p_V = u.X_p / glb.V_patch, 
-            f_X = functional_response(deb; X_V = X_p_V)
-            return f_X * deb.Idot_max_rel_emb * u.S^(2/3) 
-        end
+        return functional_response(du, u, p, t) * p.deb.Idot_max_rel_emb * u.S^(2/3) 
     else # embryos feed from the vitellus
-        return u.S^(2 / 3) * deb.Idot_max_rel
+        return u.S^(2/3) * p.deb.Idot_max_rel
     end
 end
 
@@ -73,13 +77,13 @@ Assimilation rate
 $(TYPEDSIGNATURES)
 """
 @inline function Adot(
-    glb::AbstractParams,
-    deb::AbstractParams,
     du::ComponentArray,
-    u::ComponentArray;
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real;
     Idot::Float64
     )
-    return Idot * deb.eta_IA
+    return Idot * p.deb.eta_IA
 end
 
 """
@@ -87,11 +91,11 @@ Somatic maintenance rate
 $(TYPEDSIGNATURES)
 """
 @inline function Mdot(
-    glb::AbstractParams,
-    deb::AbstractParams,
     du::ComponentArray,
-    u::ComponentArray;)
-    return max(0, u.S * deb.k_M)
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real)
+    return max(0, u.S * p.deb.k_M)
 end
 
 """
@@ -99,12 +103,12 @@ Maturity maintenance rate
 $(TYPEDSIGNATURES)
 """
 @inline function Jdot(
-    glb::AbstractParams,
-    deb::AbstractParams,
     du::ComponentArray,
-    u::ComponentArray
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real
     )
-    return u.H * deb.k_J
+    return u.H * p.deb.k_J
 end
 
 """
@@ -112,14 +116,14 @@ Positive somatic growth
 $(TYPEDSIGNATURES)
 """
 @inline function Sdot_positive(
-    glb::AbstractParams,
-    deb::AbstractParams,
     du::ComponentArray,
-    u::ComponentArray;
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real;
     Adot::Float64,
     Mdot::Float64
     )
-    return deb.eta_AS * (deb.kappa * Adot - Mdot)
+    return p.deb.eta_AS * (p.deb.kappa * Adot - Mdot)
 end
 
 """
@@ -127,33 +131,34 @@ Negative somatic growth
 ($(TYPEDSIGNATURES))
 """
 @inline function Sdot_negative(
-    glb::AbstractParams,
-    deb::AbstractParams,
     du::ComponentArray,
-    u::ComponentArray;
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real;
     Adot::Float64,
     Mdot::Float64
     )
-    return -(Mdot / deb.eta_SA - deb.kappa * Adot)
+    return -(Mdot / p.deb.eta_SA - p.deb.kappa * Adot)
 end
 
 """
 Somatic growth rate
 $(TYPEDSIGNATURES)
 """
-@inline function Sdot(
-    glb::AbstractParams,
-    deb::AbstractParams,
+@inline function Sdot!(
     du::ComponentArray,
-    u::ComponentArray;
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real;
     Adot::Float64,
     Mdot::Float64
     )
-    let Sdot = (Sdot_positive(glb, deb, du, u; Mdot = Mdot, Adot = Adot)) # calculate structural growth 
+    let Sdot = (Sdot_positive(du, u, p, t; Mdot = Mdot, Adot = Adot)) # calculate structural growth 
         if Sdot < 0 # if growth is negative, apply the shrinking equation
-            Sdot = Sdot_negative(glb, deb, du, u; Mdot = Mdot, Adot = Adot)
+            du.S =  Sdot_negative(du, u, p, t; Mdot = Mdot, Adot = Adot)
+        else
+            du.S = Sdot
         end
-        return Sdot # return derivative with account for mobilized structure
     end
 end
 
@@ -163,19 +168,19 @@ Maturity is dissipated energy and can therefore not be burned to cover maintenan
 For simplicity, we currently assume that maturity maintenance will not be covered of the 1-kappa flux is insufficient.
 $(TYPEDSIGNATURES)
 """
-@inline function Hdot(
-    glb::AbstractParams,
-    deb::AbstractParams,
+@inline function Hdot!(
     du::ComponentArray,
-    u::ComponentArray; 
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real;
     Adot::Float64, 
     Jdot::Float64, 
     life_stage::Int64
     )
-    if adult(life_stage) == false
-        return max(0, ((1 - deb.kappa) * Adot) - Jdot)
+    if !adult(life_stage)
+        du.H =  max(0, ((1 - p.deb.kappa) * Adot) - Jdot)
     else
-        return 0.0
+        du.H = 0.0
     end
 end
 
@@ -183,7 +188,7 @@ end
 Reproduction rate.
 $(TYPEDSIGNATURES)
 """
-@inline function Rdot(
+@inline function Rdot!(
     du::ComponentArray,
     u::ComponentArray,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
@@ -193,9 +198,9 @@ $(TYPEDSIGNATURES)
     life_stage::Int64
     )
     if adult(life_stage)
-        return (1 - p.deb.kappa) * Adot - Jdot
+        du.R = (1 - p.deb.kappa) * Adot - Jdot
     else
-        return 0.0
+        du.R =  0.0
     end
 end
 
@@ -203,24 +208,24 @@ end
 Calculation of the total dissipation flux, equal to the sum of maintenance costs and overheads paid for assimilation, mobilization, growth and reproduction.
 $(TYPEDSIGNATURES)
 """
-function Qdot(
-    deb::AbstractParams;
+function Qdot!(
+    du::ComponentArray,
+    u::ComponentArray,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real; 
     Idot::Float64, 
-    Sdot::Float64, 
     Mdot::Float64, 
     Jdot::Float64,
-    Hdot::Float64
     )
     # dissipation fluxes for the individual processes
     let Qdot_A, Qdot_S, Qdot_C, Qdot_R
         Qdot_A = Idot * (1 - deb.eta_IA)
-        Qdot_S = Sdot >= 0 ? Sdot * (1 - deb.eta_AS)/deb.eta_AS : Sdot * (deb.eta_SA - 1)
-        Qdot_R = Rdot * (1 - deb.eta_AR)/deb.eta_AR
-        return Qdot_A + Qdot_S + Qdot_C + Qdot_R + Mdot + Jdot + Hdot
+        Qdot_S = du.S >= 0 ? du.S * (1 - p.deb.eta_AS)/p.deb.eta_AS : du.S * (p.deb.eta_SA - 1)
+        Qdot_R = du.R * (1 - p.deb.eta_AR)/p.deb.eta_AR
+        du.Q =  Qdot_A + Qdot_S + Qdot_C + Qdot_R + Mdot + Jdot + Hdot
     end
 end
 
- 
 
 """
 TK for DEB-TKTD model, including effect of surface area to volume ratio and dilution by growth. 
@@ -230,9 +235,9 @@ $(TYPEDSIGNATURES)
 @inline function Ddot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::T,
-    t::R
-    ) where {T <: NamedTuple, R <: Real}
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real
+    ) 
 
     let L_S = u.S^(1/3) / u.S, # strucutral length (g^(1/3))
         # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
@@ -243,6 +248,37 @@ $(TYPEDSIGNATURES)
         @. du.D_R = p.deb.k_D_R * (L_S_max / L_S) * (u.C_W - u.D_R) - u.D_R * du.S / u.S
         @. du.D_h = p.deb.k_D_h * (L_S_max / L_S) * (u.C_W - u.D_h) - u.D_h * du.S / u.S
     end
+end
+
+@inline function C_Wdot!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real
+    )
+    du.C_W = zeros(length(u.C_W))
+end
+
+@inline function X_pdot!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real;
+    life_stage::Int64,
+    Idot::Float64
+    )
+    du.X_p = embryo(life_stage) ? 0. : p.glb.Xdot_in - Idot
+end
+
+@inline function X_embdot!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real;
+    life_stage::Int64,
+    Idot::Float64
+    )
+    du.X_emb = embryo(life_stage) ? -Idot : 0.0
 end
 
 """
@@ -275,17 +311,17 @@ function DEB!(du, u, p, t)
     #### auxiliary state variables
     
     idot = Idot(du, u, p, t; life_stage = life_stage)
-    adot = Adot(p.glb, p.deb, du, u; Idot = idot) * y_A
-    mdot = Mdot(p.glb, p.deb, du, u) * y_M
-    jdot = Jdot(p.glb, p.deb, du, u)
+    adot = Adot(du, u, p, t; Idot = idot) * y_A
+    mdot = Mdot(du, u, p, t) * y_M
+    jdot = Jdot(du, u, p, t)
 
     #### major state variables
 
-    du.X_p = embryo(life_stage) ? 0. : p.glb.Xdot_in - idot
-    du.X_emb = embryo(life_stage) ? -idot : 0.0
-    du.S = Sdot(p.glb, p.deb, du, u; Adot = adot, Mdot = mdot) * y_G
-    du.H = Hdot(p.glb, p.deb, du, u; Adot = adot, Jdot = jdot, life_stage = life_stage)
-    du.R = Rdot(du, u, p, t; Adot = adot, Jdot = jdot, life_stage = life_stage) * y_R
-    Ddot!(du, u, p, t)
-    du.C_W = zeros(length(p.glb.C_W))
+    X_pdot!(du, u, p, t; life_stage = life_stage, Idot = idot) # resource abundance
+    X_embdot!(du, u, p, t; life_stage = life_stage, Idot = idot) # vitellus
+    Sdot!(du, u, p, t; Adot = adot, Mdot = mdot) * y_G # structure
+    Hdot!(du, u, p, t; Adot = adot, Jdot = jdot, life_stage = life_stage) # maturity 
+    Rdot!(du, u, p, t; Adot = adot, Jdot = jdot, life_stage = life_stage) * y_R # reproduction buffer
+    Ddot!(du, u, p, t) # damage
+    C_Wdot!(du, u, p, t) # external stressor concentration
 end
