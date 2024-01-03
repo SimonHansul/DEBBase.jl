@@ -2,7 +2,7 @@
 Initialize the component vector of state variables, `u`, based on model parameters `p`.
 $(TYPEDSIGNATURES)
 """
-function initialize_statevars(p::AbstractParams)
+function initialize_statevars(p::AbstractParamCollection)
     return ComponentArray( # initial states
         X_p = p.glb.Xdot_in, # initial resource abundance equal to influx rate
         X_emb = p.deb.X_emb_int, # initial mass of vitellus

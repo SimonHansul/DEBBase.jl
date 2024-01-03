@@ -223,11 +223,11 @@ $(TYPEDSIGNATURES)
     let SL = u.S^(1/3) / u.S, # strucutral length (g^(1/3))
         # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
         SL_max = calc_SL_max(p.deb) # maximum structural length (g^(1/3))
-        @. du.D_G = p.deb.k_D_G * (SL_max / SL) * (u.C_W - u.D_G) - u.D_G * du.S / max(u.S, 0.01 * p.deb.X_emb_int)
-        @. du.D_M = p.deb.k_D_M * (SL_max / SL) * (u.C_W - u.D_M) - u.D_M * du.S / max(u.S, 0.01 * p.deb.X_emb_int)
-        @. du.D_A = p.deb.k_D_A * (SL_max / SL) * (u.C_W - u.D_A) - u.D_A * du.S / max(u.S, 0.01 * p.deb.X_emb_int)
-        @. du.D_R = p.deb.k_D_R * (SL_max / SL) * (u.C_W - u.D_R) - u.D_R * du.S / max(u.S, 0.01 * p.deb.X_emb_int)
-        @. du.D_h = p.deb.k_D_h * (SL_max / SL) * (u.C_W - u.D_h) - u.D_h * du.S / max(u.S, 0.01 * p.deb.X_emb_int)
+        @. du.D_G = p.deb.k_D_G * (SL_max / SL) * (u.C_W - u.D_G) - u.D_G * (du.S / u.S)
+        @. du.D_M = p.deb.k_D_M * (SL_max / SL) * (u.C_W - u.D_M) - u.D_M * (du.S / u.S)
+        @. du.D_A = p.deb.k_D_A * (SL_max / SL) * (u.C_W - u.D_A) - u.D_A * (du.S / u.S)
+        @. du.D_R = p.deb.k_D_R * (SL_max / SL) * (u.C_W - u.D_R) - u.D_R * (du.S / u.S)
+        @. du.D_h = p.deb.k_D_h * (SL_max / SL) * (u.C_W - u.D_h) - u.D_h * (du.S / u.S)
     end
 end
 
@@ -279,7 +279,7 @@ function DEB!(du, u, p, t)
 
     #### boilerplate
 
-    u.S = max(0, u.S) # control for negative values
+    u.S = max(0., u.S) # control for negative values
     u.life_stage = determine_life_stage(du, u, p, t)
 
     #### stressor responses

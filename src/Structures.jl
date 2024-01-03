@@ -9,10 +9,6 @@ abstract type AbstractParamCollection end
     units::NamedTuple = (time = "d", mass = "mug C", volume = "L")
 end
 
-@with_kw mutable struct GlobalBaseStatevars <: AbstractStatevars
-    X_p::Float64 = 0.
-end
-
 """
 DEBBase Parameters with default values for Daphnia magna.
 $(TYPEDSIGNATURES)
