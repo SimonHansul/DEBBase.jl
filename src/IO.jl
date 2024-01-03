@@ -73,17 +73,13 @@ function trim!(deb::AbstractParams)
     deb.drc_params_h = deb.drc_params_h[1:num_stressors]
 end
 
+
 """
 Isolate the indicated PMoAs. 
-I.e., turn off all PMoAs (including `h`!) except for those indicated in `pmoas`-Vector. <br>
+That means, turn off all PMoAs (including lethal effects `h`) except for those indicated in `pmoas`-Vector. 
 This is done through the toxicokinetic rate constant.
 $(TYPEDSIGNATURES)
 """
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
-    deb = isolate_pmoas(deb, pmoas)
-    return nothing
-end
-
 function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
@@ -94,10 +90,17 @@ function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
     return deb
 end
 
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
+    deb = isolate_pmoas(deb, pmoas)
+    return nothing
+end
 
 
-
-function assert!(p::AbstractParams)
+"""
+Raise assertion errors
+$(TYPEDSIGNATURES)
+"""
+function assert!(p::AbstractParamColelction)
     @assert length(p.deb.k_D_G) >= length(p.glb.C_W) "Length of k_D_G is not at least length of C_W"
     @assert length(p.deb.k_D_M) >= length(p.glb.C_W) "Length of k_D_M is not at least length of C_W"
     @assert length(p.deb.k_D_A) >= length(p.glb.C_W) "Length of k_D_A is not at least length of C_W"

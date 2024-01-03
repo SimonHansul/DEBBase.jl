@@ -1,9 +1,5 @@
-# Abstract types are defined so that dispatch works as expected across model versions and Parameter / Statevar types 
-# For example, we can define a Vector{AbstractParams} to collect Global and DEB Params. 
-
-abstract type AbstractOrganism end
 abstract type AbstractParams end
-abstract type AbstractStatevars end
+abstract type AbstractParamCollection end
 
 @with_kw mutable struct GlobalBaseParams <: AbstractParams
     t_max::Float64 = 21.
@@ -59,7 +55,7 @@ $(TYPEDSIGNATURES)
     drc_params_h::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
 end
 
-@with_kw mutable struct BaseParams <: AbstractParams
+@with_kw mutable struct BaseParams <: AbstractParamCollection
     glb::AbstractParams = GlobalBaseParams()
     deb::AbstractParams = DEBBaseParams()
 end

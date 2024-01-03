@@ -6,7 +6,7 @@ $(TYPEDSIGNATURES)
 @inline function determine_life_stage(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     if u.H >= p.deb.H_p
@@ -43,7 +43,7 @@ end
 @inline function functional_response(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     let X_V = u.X_p / p.glb.V_patch
@@ -58,7 +58,7 @@ $(TYPEDSIGNATURES)
 @inline function Idot!(
     du::ComponentArray,
     u::ComponentArray, 
-    p::AbstractParams, 
+    p::AbstractParamCollection, 
     t::Real
     )
     
@@ -76,7 +76,7 @@ $(TYPEDSIGNATURES)
 @inline function Adot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     du.A = du.I * p.deb.eta_IA * u.y_A
@@ -89,7 +89,7 @@ $(TYPEDSIGNATURES)
 @inline function Mdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real)
     du.M = max(0, u.S * p.deb.k_M * u.y_M)
 end
@@ -101,7 +101,7 @@ $(TYPEDSIGNATURES)
 @inline function Jdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     du.J = u.H * p.deb.k_J
@@ -114,7 +114,7 @@ $(TYPEDSIGNATURES)
 @inline function Sdot_positive!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     du.S = p.deb.eta_AS * u.y_G * (p.deb.kappa * du.A - du.M)
@@ -127,7 +127,7 @@ Negative somatic growth
 @inline function Sdot_negative!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     du.S = -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
@@ -140,7 +140,7 @@ $(TYPEDSIGNATURES)
 @inline function Sdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     Sdot_positive!(du, u, p, t) # calculate structural growth 
@@ -158,7 +158,7 @@ $(TYPEDSIGNATURES)
 @inline function Hdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     if !adult(u.life_stage)
@@ -175,7 +175,7 @@ $(TYPEDSIGNATURES)
 @inline function Rdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     if adult(u.life_stage)
@@ -192,7 +192,7 @@ $(TYPEDSIGNATURES)
 function Qdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real; 
     Idot::Float64, 
     Mdot::Float64, 
@@ -216,7 +216,7 @@ $(TYPEDSIGNATURES)
 @inline function Ddot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     ) 
 
@@ -234,7 +234,7 @@ end
 @inline function C_Wdot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     du.C_W = zeros(length(u.C_W))
@@ -243,7 +243,7 @@ end
 @inline function X_pdot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     du.X_p = embryo(u.life_stage) ? 0. : p.glb.Xdot_in - du.I
@@ -252,7 +252,7 @@ end
 @inline function X_embdot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     du.X_emb = embryo(u.life_stage) ? -du.I : 0.0
@@ -261,7 +261,7 @@ end
 @inline function y!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParams,
+    p::AbstractParamCollection,
     t::Real
     )
     u.y_G = prod([p.deb.drc_functs_G[z](u.D_G[z], p.deb.drc_params_G[z]) for z in 1:length(u.C_W)])
