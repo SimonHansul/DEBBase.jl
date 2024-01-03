@@ -1,16 +1,22 @@
 # DEBBase.jl 
 
 Functions to run reserveless DEB and DEB-TKTD models, including mixture effects. <br>
-The idea of DEBBase is to serve as a simple base model for DEB-TKTD modelling. 
-The purpose of DEBBase is explicitly not to provide functionality for parameter estimation or other kinds of analyses. This base model should be extendable and modular. 
-The design of DEBBase generally favors code readability and transparency over performance. 
+The purpose of DEBBase is to serve as a simple base model for DEB-TKTD modelling and provide 
+the basic infrastucture to perform DEB-TKTD modelling. 
+The purpose of DEBBase is explicitly not to provide functionality for parameter estimation or other kinds of analyses. 
 
 ## Features
 
-- Custom datatypes to store DEB and global parameter sets
+- Custom data types to store DEB and global parameter sets
 - Default parameter sets serve as a reference for implementation and testing
 - Definition of ODE systems for DEB-TKTD with mixture exposure
-- Functions to facilitate model input / output handling, e.g. converting ODE solution output to tidy dataframe
+    - Reserveless DEB 
+    - TK with account for body size
+    - Flexible TD: DRC functions are parameters, not hard-coded (two-parameter log-logistic by default)
+    - Arbitrary number of chemical stressors
+    - Mixture toxicity simulated based on Independent Action
+
+- Functions to facilitate model input / output handling, e.g. converting ODE solution output to tidy data frame
 
 ## Quickstart
 
