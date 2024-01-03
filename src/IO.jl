@@ -41,14 +41,48 @@ function sol_to_df(sol::O)::DataFrame where O <: ODESolution
 end
 
 """
+Trim TKTD parameters to the smallest number of stressors indicated for any PMoA. <br>
+For example `k_D_G = [1., 0.], k_D_M = [1.]` will be trimmed to `k_D_G = [1.], k_D_M = [1.]`.
+$(TYPEDSIGNATURES)
+"""
+function trim!(deb::AbstractParams)
+    num_stressors = min(
+        length(deb.k_D_G),
+        length(deb.k_D_M),
+        length(deb.k_D_A),
+        length(deb.k_D_R),
+        length(deb.k_D_h)
+    )
+
+    deb.k_D_G = deb.k_D_G[1:num_stressors]
+    deb.k_D_M = deb.k_D_M[1:num_stressors]
+    deb.k_D_A = deb.k_D_A[1:num_stressors]
+    deb.k_D_R = deb.k_D_R[1:num_stressors]
+    deb.k_D_h = deb.k_D_h[1:num_stressors]
+
+    deb.drc_functs_G = deb.drc_functs_G[1:num_stressors]
+    deb.drc_functs_M = deb.drc_functs_M[1:num_stressors]
+    deb.drc_functs_A = deb.drc_functs_A[1:num_stressors]
+    deb.drc_functs_R = deb.drc_functs_R[1:num_stressors]
+    deb.drc_functs_h = deb.drc_functs_h[1:num_stressors]
+
+    deb.drc_params_G = deb.drc_params_G[1:num_stressors]
+    deb.drc_params_M = deb.drc_params_M[1:num_stressors]
+    deb.drc_params_A = deb.drc_params_A[1:num_stressors]
+    deb.drc_params_R = deb.drc_params_R[1:num_stressors]
+    deb.drc_params_h = deb.drc_params_h[1:num_stressors]
+end
+
+"""
 Isolate the indicated PMoAs. 
 I.e., turn off all PMoAs (including `h`!) except for those indicated in `pmoas`-Vector. <br>
 This is done through the toxicokinetic rate constant.
 $(TYPEDSIGNATURES)
 """
 function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})
+    trim!(deb)
     num_stressors = length(deb.k_D_G)
-    deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R"])
+    deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
         setfield!(deb, Symbol("k_D_$(j)"), zeros(num_stressors))
     end
@@ -64,10 +98,10 @@ function assert!(p::T) where T <: NamedTuple
     @assert length(p.deb.k_D_h) >= length(p.glb.C_W) "Length of k_D_h is not at least length of C_W"
 
     @assert length(p.deb.drc_functs_G) >= length(p.glb.C_W) "Length of drc_functs_G is not at least length of C_W"
-    @assert length(p.deb.drc_functs_M) >= length(p.glb.C_W) "Length of drc_functs_G is not at least length of C_W"
-    @assert length(p.deb.drc_functs_A) >= length(p.glb.C_W) "Length of drc_functs_G is not at least length of C_W"
-    @assert length(p.deb.drc_functs_R) >= length(p.glb.C_W) "Length of drc_functs_G is not at least length of C_W"
-    @assert length(p.deb.drc_functs_h) >= length(p.glb.C_W) "Length of drc_functs_G is not at least length of C_W"
+    @assert length(p.deb.drc_functs_M) >= length(p.glb.C_W) "Length of drc_functs_M is not at least length of C_W"
+    @assert length(p.deb.drc_functs_A) >= length(p.glb.C_W) "Length of drc_functs_A is not at least length of C_W"
+    @assert length(p.deb.drc_functs_R) >= length(p.glb.C_W) "Length of drc_functs_R is not at least length of C_W"
+    @assert length(p.deb.drc_functs_h) >= length(p.glb.C_W) "Length of drc_functs_h is not at least length of C_W"
 
     @assert length(p.deb.drc_params_G) >= length(p.glb.C_W) "Length of drc_params_G is not at least length of C_W"
     @assert length(p.deb.drc_params_M) >= length(p.glb.C_W) "Length of drc_params_M is not at least length of C_W"

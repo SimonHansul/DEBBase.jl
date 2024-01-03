@@ -17,12 +17,22 @@ function simulator(
         H = 0., # maturity
         R = 0., # reproduction buffer
         life_stage = 0,
+        I = 0.,
+        A = 0.,
+        M = 0.,
+        J = 0.,
         D_G = zeros(length(p.deb.k_D_G)),
         D_M = zeros(length(p.deb.k_D_M)),
         D_A = zeros(length(p.deb.k_D_A)),
         D_R = zeros(length(p.deb.k_D_R)),
         D_h = zeros(length(p.deb.k_D_h)),
-        C_W = glb.C_W
+        C_W = glb.C_W,
+        y_G = 1.,
+        y_M = 1.,
+        y_A = 1.,
+        y_R = 1.,
+        hdot = 1.
+        
     )
 
     prob = ODEProblem(DEB!, u, (0, glb.t_max), p) # define the problem

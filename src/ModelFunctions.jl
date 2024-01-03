@@ -64,9 +64,9 @@ $(TYPEDSIGNATURES)
     )
     
     if u.life_stage > 1 # juveniles and adults feed from external resource
-        return functional_response(du, u, p, t) * p.deb.Idot_max_rel_emb * u.S^(2/3) 
+        du.I = functional_response(du, u, p, t) * p.deb.Idot_max_rel_emb * u.S^(2/3) 
     else # embryos feed from the vitellus
-        return u.S^(2/3) * p.deb.Idot_max_rel
+        du.I = u.S^(2/3) * p.deb.Idot_max_rel
     end
 end
 
@@ -78,10 +78,9 @@ $(TYPEDSIGNATURES)
     du::ComponentArray,
     u::ComponentArray,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
-    t::Real;
-    Idot::Float64
+    t::Real
     )
-    return Idot * p.deb.eta_IA
+    return du.I * p.deb.eta_IA * u.y_A
 end
 
 """
@@ -93,7 +92,7 @@ $(TYPEDSIGNATURES)
     u::ComponentArray,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
     t::Real)
-    return max(0, u.S * p.deb.k_M)
+    return max(0, u.S * p.deb.k_M * u.y_M)
 end
 
 """
@@ -117,11 +116,9 @@ $(TYPEDSIGNATURES)
     du::ComponentArray,
     u::ComponentArray,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
-    t::Real;
-    Adot::Float64,
-    Mdot::Float64
+    t::Real
     )
-    return p.deb.eta_AS * (p.deb.kappa * Adot - Mdot)
+    return p.deb.eta_AS * (p.deb.kappa * du.A - du.M)
 end
 
 """
@@ -132,11 +129,9 @@ Negative somatic growth
     du::ComponentArray,
     u::ComponentArray,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
-    t::Real;
-    Adot::Float64,
-    Mdot::Float64
+    t::Real
     )
-    return -(Mdot / p.deb.eta_SA - p.deb.kappa * Adot)
+    return -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
 end
 
 """
@@ -147,15 +142,13 @@ $(TYPEDSIGNATURES)
     du::ComponentArray,
     u::ComponentArray,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
-    t::Real;
-    Adot::Float64,
-    Mdot::Float64
+    t::Real
     )
-    let Sdot = (Sdot_positive(du, u, p, t; Mdot = Mdot, Adot = Adot)) # calculate structural growth 
+    let Sdot = (Sdot_positive(du, u, p, t)) # calculate structural growth 
         if Sdot < 0 # if growth is negative, apply the shrinking equation
-            du.S =  Sdot_negative(du, u, p, t; Mdot = Mdot, Adot = Adot)
+            du.S =  Sdot_negative(du, u, p, t) 
         else
-            du.S = Sdot
+            du.S = Sdot * u.y_G
         end
     end
 end
@@ -170,12 +163,10 @@ $(TYPEDSIGNATURES)
     du::ComponentArray,
     u::ComponentArray,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
-    t::Real;
-    Adot::Float64, 
-    Jdot::Float64
+    t::Real
     )
     if !adult(u.life_stage)
-        du.H =  max(0, ((1 - p.deb.kappa) * Adot) - Jdot)
+        du.H =  max(0, ((1 - p.deb.kappa) * du.A) - du.J)
     else
         du.H = 0.0
     end
@@ -189,12 +180,10 @@ $(TYPEDSIGNATURES)
     du::ComponentArray,
     u::ComponentArray,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
-    t::Real; 
-    Adot::Float64, 
-    Jdot::Float64
+    t::Real
     )
     if adult(u.life_stage)
-        du.R = (1 - p.deb.kappa) * Adot - Jdot
+        du.R = u.y_R * p.deb.eta_AR * (1 - p.deb.kappa) * du.A - du.J 
     else
         du.R =  0.0
     end
@@ -259,20 +248,31 @@ end
     du::ComponentVector,
     u::ComponentVector,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
-    t::Real;
-    Idot::Float64
+    t::Real
     )
-    du.X_p = embryo(u.life_stage) ? 0. : p.glb.Xdot_in - Idot
+    du.X_p = embryo(u.life_stage) ? 0. : p.glb.Xdot_in - du.I
 end
 
 @inline function X_embdot!(
     du::ComponentVector,
     u::ComponentVector,
     p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
-    t::Real;
-    Idot::Float64
+    t::Real
     )
-    du.X_emb = embryo(u.life_stage) ? -Idot : 0.0
+    du.X_emb = embryo(u.life_stage) ? -du.I : 0.0
+end
+
+function y!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    t::Real
+    )
+    u.y_G = prod([p.deb.drc_functs_G[z](u.D_G[z], p.deb.drc_params_G[z]) for z in 1:length(u.C_W)])
+    u.y_M = prod([p.deb.drc_functs_M[z](u.D_M[z], p.deb.drc_params_M[z]) for z in 1:length(u.C_W)])
+    u.y_A = prod([p.deb.drc_functs_A[z](u.D_A[z], p.deb.drc_params_A[z]) for z in 1:length(u.C_W)])
+    u.y_R = prod([p.deb.drc_functs_R[z](u.D_R[z], p.deb.drc_params_R[z]) for z in 1:length(u.C_W)])
+    u.hdot = sum([p.deb.drc_functs_h[z](u.D_h[z], p.deb.drc_params_h[z]) for z in 1:length(u.C_W)])
 end
 
 """
@@ -295,27 +295,22 @@ function DEB!(du, u, p, t)
     u.life_stage = determine_life_stage(du, u, p, t)
 
     #### stressor responses
+    y!(du, u, p, t)
 
-    y_G = prod([p.deb.drc_functs_G[z](u.D_G[z], p.deb.drc_params_G[z]) for z in 1:length(u.C_W)])
-    y_M = prod([p.deb.drc_functs_M[z](u.D_M[z], p.deb.drc_params_M[z]) for z in 1:length(u.C_W)])
-    y_A = prod([p.deb.drc_functs_A[z](u.D_A[z], p.deb.drc_params_A[z]) for z in 1:length(u.C_W)])
-    y_R = prod([p.deb.drc_functs_R[z](u.D_R[z], p.deb.drc_params_R[z]) for z in 1:length(u.C_W)])
-    h = sum([p.deb.drc_functs_h[z](u.D_h[z], p.deb.drc_params_h[z]) for z in 1:length(u.C_W)])
-        
     #### auxiliary state variables
-    
-    idot = Idot(du, u, p, t)
-    adot = Adot(du, u, p, t; Idot = idot) * y_A
-    mdot = Mdot(du, u, p, t) * y_M
-    jdot = Jdot(du, u, p, t)
+    # TODO: add these to ComponentVector u
+    Idot!(du, u, p, t)
+    Adot!(du, u, p, t) 
+    Mdot!(du, u, p, t) 
+    Jdot!(du, u, p, t)
 
     #### major state variables
 
-    X_pdot!(du, u, p, t; Idot = idot) # resource abundance
-    X_embdot!(du, u, p, t; Idot = idot) # vitellus
-    Sdot!(du, u, p, t; Adot = adot, Mdot = mdot) * y_G # structure
-    Hdot!(du, u, p, t; Adot = adot, Jdot = jdot) # maturity 
-    Rdot!(du, u, p, t; Adot = adot, Jdot = jdot) * y_R # reproduction buffer
+    X_pdot!(du, u, p, t) # resource abundance
+    X_embdot!(du, u, p, t) # vitellus
+    Sdot!(du, u, p, t) # structure
+    Hdot!(du, u, p, t) # maturity 
+    Rdot!(du, u, p, t) # reproduction buffer
     Ddot!(du, u, p, t) # damage
     C_Wdot!(du, u, p, t) # external stressor concentration
 end

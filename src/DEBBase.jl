@@ -8,8 +8,10 @@ using DocStringExtensions
 using DataFrames
 using PrecompileTools
 
-include("IO.jl")
+# FIXME: "using DEBBase" takes 140 seconds and 2 GB allocs...
+
 include("Structures.jl")
+include("IO.jl")
 include("ModelFunctions.jl")
 include("Simulators.jl")
 include("ImpliedTraits.jl")

@@ -44,6 +44,7 @@ $(TYPEDSIGNATURES)
     k_D_h::Vector{Float64} = [1., 1.]
     
     # DRC functions
+    # TODO: Changing Vector{Function} to NTuple makes access slower...why?
     drc_functs_G::Vector{Function} = [LL2, LL2]
     drc_functs_M::Vector{Function} = [LL2M, LL2M]
     drc_functs_A::Vector{Function} = [LL2, LL2]
