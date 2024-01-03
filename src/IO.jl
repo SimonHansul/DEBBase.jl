@@ -80,14 +80,21 @@ This is done through the toxicokinetic rate constant.
 $(TYPEDSIGNATURES)
 """
 function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})
+    deb = isolate_pmoas(deb, pmoas)
+    return nothing
+end
+
+function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String})
     trim!(deb)
     num_stressors = length(deb.k_D_G)
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
         setfield!(deb, Symbol("k_D_$(j)"), zeros(num_stressors))
     end
-    return nothing
+    return deb
 end
+
+
 
 
 function assert!(p::AbstractParams)
