@@ -24,7 +24,8 @@ function initialize_statevars(p::AbstractParams)
         y_M = 1.,
         y_A = 1.,
         y_R = 1.,
-        hdot = 1.
+        h_z = 0.,
+        h_S = 0.
     )
 end
 

@@ -220,14 +220,14 @@ $(TYPEDSIGNATURES)
     t::Real
     ) 
 
-    let L_S = u.S^(1/3) / u.S, # strucutral length (g^(1/3))
+    let SL = u.S^(1/3) / u.S, # strucutral length (g^(1/3))
         # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
-        L_S_max = calc_S_max(p.deb)^(1/3) # maximum structural length (g^(1/3))
-        @. du.D_G = p.deb.k_D_G * (L_S_max / L_S) * (u.C_W - u.D_G) - u.D_G * du.S / u.S
-        @. du.D_M = p.deb.k_D_M * (L_S_max / L_S) * (u.C_W - u.D_M) - u.D_M * du.S / u.S
-        @. du.D_A = p.deb.k_D_A * (L_S_max / L_S) * (u.C_W - u.D_A) - u.D_A * du.S / u.S
-        @. du.D_R = p.deb.k_D_R * (L_S_max / L_S) * (u.C_W - u.D_R) - u.D_R * du.S / u.S
-        @. du.D_h = p.deb.k_D_h * (L_S_max / L_S) * (u.C_W - u.D_h) - u.D_h * du.S / u.S
+        SL_max = calc_SL_max(p.deb) # maximum structural length (g^(1/3))
+        @. du.D_G = p.deb.k_D_G * (SL_max / SL) * (u.C_W - u.D_G) - u.D_G * du.S / max(u.S, 0.01 * p.deb.X_emb_int)
+        @. du.D_M = p.deb.k_D_M * (SL_max / SL) * (u.C_W - u.D_M) - u.D_M * du.S / max(u.S, 0.01 * p.deb.X_emb_int)
+        @. du.D_A = p.deb.k_D_A * (SL_max / SL) * (u.C_W - u.D_A) - u.D_A * du.S / max(u.S, 0.01 * p.deb.X_emb_int)
+        @. du.D_R = p.deb.k_D_R * (SL_max / SL) * (u.C_W - u.D_R) - u.D_R * du.S / max(u.S, 0.01 * p.deb.X_emb_int)
+        @. du.D_h = p.deb.k_D_h * (SL_max / SL) * (u.C_W - u.D_h) - u.D_h * du.S / max(u.S, 0.01 * p.deb.X_emb_int)
     end
 end
 
@@ -268,15 +268,7 @@ end
     u.y_M = prod([p.deb.drc_functs_M[z](u.D_M[z], p.deb.drc_params_M[z]) for z in 1:length(u.C_W)])
     u.y_A = prod([p.deb.drc_functs_A[z](u.D_A[z], p.deb.drc_params_A[z]) for z in 1:length(u.C_W)])
     u.y_R = prod([p.deb.drc_functs_R[z](u.D_R[z], p.deb.drc_params_R[z]) for z in 1:length(u.C_W)])
-    u.hdot = sum([p.deb.drc_functs_h[z](u.D_h[z], p.deb.drc_params_h[z]) for z in 1:length(u.C_W)])
-end
-
-"""
-Get index of matrix, returning last element if bounds are exceeded.
-$(TYPEDSIGNATURES)
-"""
-@inline function get_idx(i::Int64, M::AbstractMatrix; ax = 2)
-    return min(i, size(M)[ax])
+    u.h_z = sum([p.deb.drc_functs_h[z](u.D_h[z], p.deb.drc_params_h[z]) for z in 1:length(u.C_W)])
 end
 
 """
