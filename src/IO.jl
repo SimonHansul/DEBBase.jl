@@ -79,17 +79,17 @@ I.e., turn off all PMoAs (including `h`!) except for those indicated in `pmoas`-
 This is done through the toxicokinetic rate constant.
 $(TYPEDSIGNATURES)
 """
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
     deb = isolate_pmoas(deb, pmoas)
     return nothing
 end
 
-function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String})
-    trim!(deb)
-    num_stressors = length(deb.k_D_G)
+function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
-        setfield!(deb, Symbol("k_D_$(j)"), zeros(num_stressors))
+        k_D = getfield(deb, Symbol("k_D_$(j)"))
+        k_D[z] = 0.
+        setfield!(deb, Symbol("k_D_$(j)"), k_D)
     end
     return deb
 end
