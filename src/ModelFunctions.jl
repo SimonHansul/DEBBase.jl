@@ -6,7 +6,7 @@ $(TYPEDSIGNATURES)
 @inline function determine_life_stage(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
     if u.H >= p.deb.H_p
@@ -17,7 +17,6 @@ $(TYPEDSIGNATURES)
         return 1 # embryo
     end
 end
-
 
 """
 $(TYPEDSIGNATURES)
@@ -44,7 +43,7 @@ end
 @inline function functional_response(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
     let X_V = u.X_p / p.glb.V_patch
@@ -56,10 +55,10 @@ end
 Calculate ingestion rate for a single resource.
 $(TYPEDSIGNATURES)
 """
-@inline function Idot(
+@inline function Idot!(
     du::ComponentArray,
     u::ComponentArray, 
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}}, 
+    p::AbstractParams, 
     t::Real
     )
     
@@ -74,64 +73,64 @@ end
 Assimilation rate
 $(TYPEDSIGNATURES)
 """
-@inline function Adot(
+@inline function Adot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
-    return du.I * p.deb.eta_IA * u.y_A
+    du.A = du.I * p.deb.eta_IA * u.y_A
 end
 
 """
 Somatic maintenance rate
 $(TYPEDSIGNATURES)
 """
-@inline function Mdot(
+@inline function Mdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real)
-    return max(0, u.S * p.deb.k_M * u.y_M)
+    du.M = max(0, u.S * p.deb.k_M * u.y_M)
 end
 
 """
 Maturity maintenance rate
 $(TYPEDSIGNATURES)
 """
-@inline function Jdot(
+@inline function Jdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
-    return u.H * p.deb.k_J
+    du.J = u.H * p.deb.k_J
 end
 
 """
 Positive somatic growth
 $(TYPEDSIGNATURES)
 """
-@inline function Sdot_positive(
+@inline function Sdot_positive!(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
-    return p.deb.eta_AS * (p.deb.kappa * du.A - du.M)
+    du.S = p.deb.eta_AS * u.y_G * (p.deb.kappa * du.A - du.M)
 end
 
 """
 Negative somatic growth
 ($(TYPEDSIGNATURES))
 """
-@inline function Sdot_negative(
+@inline function Sdot_negative!(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
-    return -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
+    du.S = -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
 end
 
 """
@@ -141,15 +140,12 @@ $(TYPEDSIGNATURES)
 @inline function Sdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
-    let Sdot = (Sdot_positive(du, u, p, t)) # calculate structural growth 
-        if Sdot < 0 # if growth is negative, apply the shrinking equation
-            du.S =  Sdot_negative(du, u, p, t) 
-        else
-            du.S = Sdot * u.y_G
-        end
+    Sdot_positive!(du, u, p, t) # calculate structural growth 
+    if du.S < 0 # if growth is negative, apply the shrinking equation
+        Sdot_negative!(du, u, p, t) 
     end
 end
 
@@ -162,7 +158,7 @@ $(TYPEDSIGNATURES)
 @inline function Hdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
     if !adult(u.life_stage)
@@ -179,7 +175,7 @@ $(TYPEDSIGNATURES)
 @inline function Rdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
     if adult(u.life_stage)
@@ -196,7 +192,7 @@ $(TYPEDSIGNATURES)
 function Qdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real; 
     Idot::Float64, 
     Mdot::Float64, 
@@ -220,7 +216,7 @@ $(TYPEDSIGNATURES)
 @inline function Ddot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     ) 
 
@@ -238,7 +234,7 @@ end
 @inline function C_Wdot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
     du.C_W = zeros(length(u.C_W))
@@ -247,7 +243,7 @@ end
 @inline function X_pdot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
     du.X_p = embryo(u.life_stage) ? 0. : p.glb.Xdot_in - du.I
@@ -256,16 +252,16 @@ end
 @inline function X_embdot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
     du.X_emb = embryo(u.life_stage) ? -du.I : 0.0
 end
 
-function y!(
+@inline function y!(
     du::ComponentVector,
     u::ComponentVector,
-    p::NamedTuple{(:glb, :deb), Tuple{GlobalBaseParams, DEBBaseParams}},
+    p::AbstractParams,
     t::Real
     )
     u.y_G = prod([p.deb.drc_functs_G[z](u.D_G[z], p.deb.drc_params_G[z]) for z in 1:length(u.C_W)])
@@ -298,14 +294,12 @@ function DEB!(du, u, p, t)
     y!(du, u, p, t)
 
     #### auxiliary state variables
-    # TODO: add these to ComponentVector u
     Idot!(du, u, p, t)
     Adot!(du, u, p, t) 
     Mdot!(du, u, p, t) 
     Jdot!(du, u, p, t)
 
     #### major state variables
-
     X_pdot!(du, u, p, t) # resource abundance
     X_embdot!(du, u, p, t) # vitellus
     Sdot!(du, u, p, t) # structure

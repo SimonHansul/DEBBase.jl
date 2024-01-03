@@ -12,6 +12,26 @@ The design of DEBBase generally favors code readability and transparency over pe
 - Definition of ODE systems for DEB-TKTD with mixture exposure
 - Functions to facilitate model input / output handling, e.g. converting ODE solution output to tidy dataframe
 
+## Quickstart
+
+### Installation
+
+```Julia#
+using Pkg
+Pkg.add(url = "https://github.com/SimonHansul/DEBBase.jl")
+```
+
+### Usage
+
+The following Code will simulate the DEB model based on the given default parameters:
+
+```Julia
+using DEBBase
+out = simulator(BaseParams())
+```
+
+The default parameters approximate the life history of *D. magna* (model currency $\mu g\ C$).
+
 ## Extending the model
 
 You can use DEBBase to build your own extension of the base model. 

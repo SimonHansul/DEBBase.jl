@@ -90,7 +90,7 @@ function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})
 end
 
 
-function assert!(p::T) where T <: NamedTuple
+function assert!(p::AbstractParams)
     @assert length(p.deb.k_D_G) >= length(p.glb.C_W) "Length of k_D_G is not at least length of C_W"
     @assert length(p.deb.k_D_M) >= length(p.glb.C_W) "Length of k_D_M is not at least length of C_W"
     @assert length(p.deb.k_D_A) >= length(p.glb.C_W) "Length of k_D_A is not at least length of C_W"

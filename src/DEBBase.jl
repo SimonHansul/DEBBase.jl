@@ -16,24 +16,19 @@ include("ModelFunctions.jl")
 include("Simulators.jl")
 include("ImpliedTraits.jl")
 
-glb = GlobalBaseParams()
-anm = DEBBaseParams()
-sol = simulator(glb, anm)
+sol = simulator(BaseParams())
 
 export AbstractParams,
 AbstractStatevars,
 GlobalBaseParams, 
 GlobalBaseStatevars, 
 DEBBaseParams, 
-DEBBaseStatevars,
-DEBBaseOrganism,
+BaseParams,
 simulator,
 isolate_pmoas!
 
 @compile_workload begin
-    glb = GlobalBaseParams()
-    anm = DEBBaseParams()
-    sol = simulator(glb, anm)
+    sol = simulator(BaseParams())
 end
 
 end # module DEBBase

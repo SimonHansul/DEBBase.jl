@@ -1,16 +1,9 @@
-
 """
-Run any DEBBase-compatible model. 
+Initialize the component vector of state variables, `u`, based on model parameters `p`.
 $(TYPEDSIGNATURES)
 """
-function simulator(
-    glb::AbstractParams,
-    deb::AbstractParams
-    )
-    p = (glb = glb, deb = deb)
-    assert!(p)
-
-    u = ComponentArray( # initial states
+function initialize_statevars(p::AbstractParams)
+    return ComponentArray( # initial states
         X_p = p.glb.Xdot_in, # initial resource abundance equal to influx rate
         X_emb = p.deb.X_emb_int, # initial mass of vitellus
         S = p.deb.X_emb_int * 0.01, # initial structure is a small fraction of initial reserve // mass of vitellus
@@ -26,16 +19,26 @@ function simulator(
         D_A = zeros(length(p.deb.k_D_A)),
         D_R = zeros(length(p.deb.k_D_R)),
         D_h = zeros(length(p.deb.k_D_h)),
-        C_W = glb.C_W,
+        C_W = p.glb.C_W,
         y_G = 1.,
         y_M = 1.,
         y_A = 1.,
         y_R = 1.,
         hdot = 1.
-        
+    )
+end
+
+"""
+Run any DEBBase-compatible model. 
+$(TYPEDSIGNATURES)
+"""
+function simulator(
+    p::BaseParams
     )
 
-    prob = ODEProblem(DEB!, u, (0, glb.t_max), p) # define the problem
+    assert!(p)
+    u = initialize_statevars(p)
+    prob = ODEProblem(DEB!, u, (0, p.glb.t_max), p) # define the problem
     
     # TODO: flatten D-Matrix into multiple columns in output dataframe
     sol = solve(prob, reltol = 1e-6, abstol = 1e-10) # get solution to the IVP

@@ -10,7 +10,7 @@ abstract type AbstractStatevars end
     Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default DEBBaseParams
     V_patch::Float64 = 0.05
     C_W::Vector{Float64} = [0., 0.]
-    units::NamedTuple = (time = "d", mass = "mug", volume = "L")
+    units::NamedTuple = (time = "d", mass = "mug C", volume = "L")
 end
 
 @with_kw mutable struct GlobalBaseStatevars <: AbstractStatevars
@@ -57,4 +57,9 @@ $(TYPEDSIGNATURES)
     drc_params_A::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
     drc_params_R::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
     drc_params_h::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
+end
+
+@with_kw mutable struct BaseParams <: AbstractParams
+    glb::AbstractParams = GlobalBaseParams()
+    deb::AbstractParams = DEBBaseParams()
 end
