@@ -160,6 +160,49 @@ So you can for example use `less(DEBBase.DEB!)` to print the definition of the O
 Similarly, you can use `@less simulator(glb, deb)` to get the body for a specific method of `simulator` (depending on the type of `glb` and `deb`). <br>
 Alternatively, most IDEs also have functions to navigate to the definition of a symbol (e.g. `Ctrl+Alt+Click` in VSCode - does not seem to always work well for functions defined in packages).
 
+
+---
+
+# DEB Modelling: languages & tools (I)
+
+
+<style scoped>
+table {
+  font-size: 20px;
+}
+</style>
+
+
+| Tool            | Language | Open source | Individual-level | Population-level | TKTD | Mixtures |Published | Performance | Built-in functions for parameter estimation |
+|-----------------|----------|-------------|------------------|------------------|------|----------|----------|-------------|--------|
+| Debtool         | Matlab   | -           | +                | -                |  -   |    -/?   |+         | ?           |+       |
+| DEBBase         | Julia    | +           | +                | +                |  +   |     +    |-         | +           |-$^{*}$ | 
+| MEMpy           | Python   | +           | +                | +                |  +   |    +     |-         | -           |+/-     |
+| Netlogo DEB-IBM | Netlogo  | +           | +/-              | +                | +    |    +     |+         | -           | -      |   
+
+---
+
+# DEB Modelling: languages & tools (II)
+
+
+<style scoped>
+table {
+  font-size: 20px;
+}
+</style>
+
+| Tool            | Unique features                                      |
+|-----------------|------------------------------------------------------|
+| Debtool         | Tried and tested manifestation of standard DEB model |
+| DEBBase         | Performant implementation with mixture TKTD and possibility for combined PMoAs |
+| MEMpy           | Easy-to-use Python implementation for individuals and populations |
+| Netlogo DEB-IBM | Probably the most used DEB-IBM implementation |
+
+
+
+
+$^{*}$ Will be added through DEBABC package
+
 ## TODO
 
 - Add possibilities for simulating time-variable exposure (outsurce the detail work to a separate package?)

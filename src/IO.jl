@@ -83,15 +83,17 @@ $(TYPEDSIGNATURES)
 function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
-        k_D = getfield(deb, Symbol("k_D_$(j)"))
-        k_D[z] = 0.
-        setfield!(deb, Symbol("k_D_$(j)"), k_D)
+        let fieldname = Symbol("k_D_$(j)")
+            k_D = getfield(deb, fieldname)
+            k_D[z] = 0.
+            setfield!(deb, fieldname, k_D)
+        end
     end
     return deb
 end
 
 function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
-    deb = isolate_pmoas(deb, pmoas)
+    deb = isolate_pmoas(deb, pmoas; z = z)
     return nothing
 end
 
