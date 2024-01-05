@@ -3,18 +3,18 @@
 Determine the current life stage. 
 $(TYPEDSIGNATURES)
 """
-@inline function determine_life_stage(
+@inline function determine_life_stage!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
     )
     if u.H >= p.deb.H_p
-        return 3 # adult
+        u.life_stage = 3 # adult
     elseif u.X_emb <= 0
-        return 2 # juvenile
+        u.life_stage = 2 # juvenile
     else
-        return 1 # embryo
+        u.life_stage = 1 # embryo
     end
 end
 
@@ -280,7 +280,7 @@ function DEB!(du, u, p, t)
     #### boilerplate
 
     u.S = max(0., u.S) # control for negative values
-    u.life_stage = determine_life_stage(du, u, p, t)
+    determine_life_stage!(du, u, p, t)
 
     #### stressor responses
     y!(du, u, p, t)
