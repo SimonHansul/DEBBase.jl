@@ -51,7 +51,7 @@ $(TYPEDSIGNATURES)
     drc_params_h::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
 end
 
-@with_kw mutable struct BaseParams <: AbstractParamCollection
+@with_kw mutable struct BaseParamCollection <: AbstractParamCollection
     glb::AbstractParams = GlobalBaseParams()
     deb::AbstractParams = DEBBaseParams()
 end

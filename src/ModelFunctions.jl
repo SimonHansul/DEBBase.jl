@@ -278,8 +278,7 @@ $(TYPEDSIGNATURES)
 function DEB!(du, u, p, t)
 
     #### boilerplate
-
-    u.S = max(0., u.S) # control for negative values
+    
     determine_life_stage!(du, u, p, t)
 
     #### stressor responses

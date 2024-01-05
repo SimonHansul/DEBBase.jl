@@ -16,14 +16,12 @@ include("ModelFunctions.jl")
 include("Simulators.jl")
 include("ImpliedTraits.jl")
 
-sol = simulator(BaseParams())
-
 export AbstractParams,
 AbstractStatevars,
 GlobalBaseParams, 
 GlobalBaseStatevars, 
 DEBBaseParams, 
-BaseParams,
+BaseParamCollection,
 simulator,
 isolate_pmoas!
 

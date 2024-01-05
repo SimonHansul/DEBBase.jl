@@ -34,7 +34,7 @@ Run any DEBBase-compatible model.
 $(TYPEDSIGNATURES)
 """
 function simulator(
-    p::BaseParams
+    p::BaseParamCollection
     )
 
     assert!(p)
