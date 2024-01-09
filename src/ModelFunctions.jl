@@ -134,7 +134,7 @@ Negative somatic growth
 end
 
 """
-Somatic growth rate
+Somatic growth rate, including application of shrinking equation.
 $(TYPEDSIGNATURES)
 """
 @inline function Sdot!(
@@ -144,10 +144,6 @@ $(TYPEDSIGNATURES)
     t::Real
     )
     du.S = (p.deb.kappa * u.A >= du.M) * Sdot_positive(du, u, p, t) + (p.deb.kappa * u.A < du.M) * Sdot_negative(du, u, p, t)
-    #Sdot_positive!(du, u, p, t) # calculate structural growth 
-    #if du.S < 0 # if growth is negative, apply the shrinking equation
-    #    Sdot_negative!(du, u, p, t) 
-    #end
 end
 
 """
@@ -279,7 +275,6 @@ $(TYPEDSIGNATURES)
 function DEB!(du, u, p, t)
 
     #### boilerplate
-    #u.S = max(0, u.S)
     determine_life_stage!(du, u, p, t)
 
     #### stressor responses
