@@ -284,18 +284,18 @@ function DEB!(du, u, p, t)
     #### stressor responses
     y!(du, u, p, t)
 
-    #### auxiliary state variables
+    #### auxiliary state variables (record cumulative values)
     Idot!(du, u, p, t)
     Adot!(du, u, p, t) 
     Mdot!(du, u, p, t) 
     Jdot!(du, u, p, t)
 
     #### major state variables
-    X_pdot!(du, u, p, t) # resource abundance
-    X_embdot!(du, u, p, t) # vitellus
     Sdot!(du, u, p, t) # structure
     Hdot!(du, u, p, t) # maturity 
     Rdot!(du, u, p, t) # reproduction buffer
+    X_pdot!(du, u, p, t) # resource abundance
+    X_embdot!(du, u, p, t) # vitellus
     Ddot!(du, u, p, t) # damage
     C_Wdot!(du, u, p, t) # external stressor concentration
 end
