@@ -42,7 +42,7 @@ function simulator(
     prob = ODEProblem(DEB!, u, (0, p.glb.t_max), p) # define the problem
     
     # TODO: flatten D-Matrix into multiple columns in output dataframe
-    sol = solve(prob, Tsit5(), reltol = 1e-6, abstol = 1e-10) # get solution to the IVP
+    sol = solve(prob, Tsit5(), reltol = 1e-6) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
   
     return simout

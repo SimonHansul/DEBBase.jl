@@ -111,26 +111,26 @@ end
 Positive somatic growth
 $(TYPEDSIGNATURES)
 """
-@inline function Sdot_positive!(
+@inline function Sdot_positive(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
     )
-    du.S = p.deb.eta_AS * u.y_G * (p.deb.kappa * du.A - du.M)
+    return p.deb.eta_AS * u.y_G * (p.deb.kappa * du.A - du.M)
 end
 
 """
 Negative somatic growth
 ($(TYPEDSIGNATURES))
 """
-@inline function Sdot_negative!(
+@inline function Sdot_negative(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
     )
-    du.S = -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
+    return -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
 end
 
 """
@@ -143,10 +143,11 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection,
     t::Real
     )
-    Sdot_positive!(du, u, p, t) # calculate structural growth 
-    if du.S < 0 # if growth is negative, apply the shrinking equation
-        Sdot_negative!(du, u, p, t) 
-    end
+    du.S = (p.deb.kappa * u.A >= du.M) * Sdot_positive(du, u, p, t) + (p.deb.kappa * u.A < du.M) * Sdot_negative(du, u, p, t)
+    #Sdot_positive!(du, u, p, t) # calculate structural growth 
+    #if du.S < 0 # if growth is negative, apply the shrinking equation
+    #    Sdot_negative!(du, u, p, t) 
+    #end
 end
 
 """
@@ -278,7 +279,7 @@ $(TYPEDSIGNATURES)
 function DEB!(du, u, p, t)
 
     #### boilerplate
-    
+    #u.S = max(0, u.S)
     determine_life_stage!(du, u, p, t)
 
     #### stressor responses
