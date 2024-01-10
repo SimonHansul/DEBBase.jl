@@ -26,7 +26,7 @@ simulator,
 isolate_pmoas!
 
 @compile_workload begin
-    sol = simulator(BaseParams())
+    sol = simulator(BaseParamCollection())
 end
 
 end # module DEBBase

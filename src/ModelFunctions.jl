@@ -120,30 +120,30 @@ end
 Positive somatic growth
 $(TYPEDSIGNATURES)
 """
-@inline function Sdot_positive!(
+@inline function Sdot_positive(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
     )
-    du.S = p.deb.eta_AS * u.y_G * (p.deb.kappa * du.A - du.M)
+    return p.deb.eta_AS * u.y_G * (p.deb.kappa * du.A - du.M)
 end
 
 """
 Negative somatic growth
 ($(TYPEDSIGNATURES))
 """
-@inline function Sdot_negative!(
+@inline function Sdot_negative(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
     )
-    du.S = -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
+    return -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
 end
 
 """
-Somatic growth rate
+Somatic growth rate, including application of shrinking equation.
 $(TYPEDSIGNATURES)
 """
 @inline function Sdot!(
@@ -152,10 +152,7 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection,
     t::Real
     )
-    Sdot_positive!(du, u, p, t) # calculate structural growth 
-    if du.S < 0 # if growth is negative, apply the shrinking equation
-        Sdot_negative!(du, u, p, t) 
-    end
+    du.S = (p.deb.kappa * u.A >= du.M) * Sdot_positive(du, u, p, t) + (p.deb.kappa * u.A < du.M) * Sdot_negative(du, u, p, t)
 end
 
 """
@@ -293,18 +290,18 @@ function DEB!(du, u, p, t)
     #### stressor responses
     y!(du, u, p, t)
 
-    #### auxiliary state variables
+    #### auxiliary state variables (record cumulative values)
     Idot!(du, u, p, t)
     Adot!(du, u, p, t) 
     Mdot!(du, u, p, t) 
     Jdot!(du, u, p, t)
 
     #### major state variables
-    X_pdot!(du, u, p, t) # resource abundance
-    X_embdot!(du, u, p, t) # vitellus
     Sdot!(du, u, p, t) # structure
     Hdot!(du, u, p, t) # maturity 
     Rdot!(du, u, p, t) # reproduction buffer
+    X_pdot!(du, u, p, t) # resource abundance
+    X_embdot!(du, u, p, t) # vitellus
     Ddot!(du, u, p, t) # damage
     C_Wdot!(du, u, p, t) # external stressor concentration
 end
