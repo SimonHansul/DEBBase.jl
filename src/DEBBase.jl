@@ -18,6 +18,7 @@ include("ImpliedTraits.jl")
 
 export AbstractParams,
 AbstractStatevars,
+AbstractParamCollection,
 GlobalBaseParams, 
 GlobalBaseStatevars, 
 DEBBaseParams, 
