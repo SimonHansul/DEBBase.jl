@@ -4,7 +4,7 @@ Sigmoid switch function.
 `y_left` and `y_right` are the function values left and right of the threshold `x_thr`.
 $(TYPEDSIGNATURES)
 """
-function sig(
+@inline function sig(
     x::Float64, 
     x_thr::Float64,
     y_left::Float64, 
@@ -14,26 +14,14 @@ function sig(
     return 1 / (1 + exp(-β*(x - x_thr))) * (y_right - y_left) + y_left
 end
 
-
 """
 Determine the current life stage. 
+Function uses sigmoid switch instead of if/else statements for differentiability. 
 $(TYPEDSIGNATURES)
 """
-@inline function determine_life_stage!(
-    du::ComponentArray,
-    u::ComponentArray,
-    p::AbstractParamCollection,
-    t::Real
-    )
-    if u.H >= p.deb.H_p
-        u.life_stage = 3 # adult
-    elseif u.X_emb <= 0
-        u.life_stage = 2 # juvenile
-    else
-        u.life_stage = 1 # embryo
-    end
+@inline function determine_life_stage!(du, u, p, t)
+    u.life_stage = sig(u.X_emb, 0., 1., 2.; β = 1e6) + sig(u.H, p.deb.H_p, 0., 1.; β = 1e6)
 end
-
 
 """
 $(TYPEDSIGNATURES)
@@ -69,7 +57,9 @@ end
 end
 
 """
-Calculate ingestion rate for a single resource.
+Calculate ingestion rate. 
+Embryos (life_stage ≈ 1.) take up resources from the vitellus X_emb. 
+Juveniles and adults (life_stage > 1) feed on the external resource X_p.
 $(TYPEDSIGNATURES)
 """
 @inline function Idot!(
@@ -78,12 +68,10 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection, 
     t::Real
     )
-    
-    if u.life_stage > 1 # juveniles and adults feed from external resource
-        du.I = functional_response(du, u, p, t) * p.deb.Idot_max_rel_emb * u.S^(2/3) 
-    else # embryos feed from the vitellus
-        du.I = u.S^(2/3) * p.deb.Idot_max_rel
-    end
+
+    du.I_emb = sig(u.life_stage, 2., u.S^(2/3) * p.deb.Idot_max_rel, 0.)
+    du.I_p = sig(u.life_stage, 2., 0., functional_response(du, u, p, t) * p.deb.Idot_max_rel * u.S^(2/3))
+    du.I = du.I_emb + du.I_p
 end
 
 """
@@ -165,8 +153,12 @@ end
 
 """
 Maturation rate. 
-Maturity is dissipated energy and can therefore not be burned to cover maintenance costs. 
-For simplicity, we currently assume that maturity maintenance will not be covered of the 1-kappa flux is insufficient.
+Maturity is dissipated energy and can therefore not be burned to cover maintenance costs. <br>
+Currently there are no consequences for an organism not covering maturity maintenance. 
+If this turns out to be an issue, we might consider to add a damage pool D_H,
+where the amount of maturity maintenance that could not be covered is accumulated. 
+This might then lead to a fitness penalty depending on D_H, for example in the form of additional 
+mortality or embryonic hazard (TBD). 
 $(TYPEDSIGNATURES)
 """
 @inline function Hdot!(
@@ -175,11 +167,13 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection,
     t::Real
     )
-    if !adult(u.life_stage)
-        du.H =  max(0, ((1 - p.deb.kappa) * du.A) - du.J)
-    else
-        du.H = 0.0
-    end
+    du.H = sig(
+        u.H, # maturation depends on maturity
+        p.deb.H_p, # switch occurs at maturity at puberty H_p
+        # TODO: replace max(0, .) with sigmoid function
+        max(0., ((1 - p.deb.kappa) * du.A) - du.J), # maturation for embryos and juveniles
+        0., # maturation for adults
+    )
 end
 
 """
@@ -192,11 +186,12 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection,
     t::Real
     )
-    if adult(u.life_stage)
-        du.R = u.y_R * p.deb.eta_AR * (1 - p.deb.kappa) * du.A - du.J 
-    else
-        du.R =  0.0
-    end
+    du.R = sig(
+        u.H, # reproduction depends on maturity
+        p.deb.H_p, # switch occurs at maturity at puberty H_p
+        0., # reproduction for embryos and juveniles
+        u.y_R * p.deb.eta_AR * (1 - p.deb.kappa) * du.A - du.J # reproduction for adults
+    )
 end
 
 """
@@ -251,7 +246,7 @@ end
     p::AbstractParamCollection,
     t::Real
     )
-    du.C_W = zeros(length(u.C_W))
+    du.C_W = zeros(length(u.C_W)) # constant exposure : derivative is 0
 end
 
 @inline function X_pdot!(
@@ -260,7 +255,7 @@ end
     p::AbstractParamCollection,
     t::Real
     )
-    du.X_p = embryo(u.life_stage) ? 0. : p.glb.Xdot_in - du.I
+    du.X_p = p.glb.Xdot_in - du.I_p
 end
 
 @inline function X_embdot!(
@@ -269,7 +264,7 @@ end
     p::AbstractParamCollection,
     t::Real
     )
-    du.X_emb = embryo(u.life_stage) ? -du.I : 0.0
+    du.X_emb = -du.I_emb
 end
 
 @inline function y!(
