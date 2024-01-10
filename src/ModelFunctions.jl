@@ -1,5 +1,14 @@
 
 """
+Sigmoid switch function. 
+`y_left` and `y_right` are the function values left and right of the threshold `x_thr`.
+$(TYPEDSIGNATURES)
+"""
+function sig(x::Float64, x_thr::Float64, y_left::Float64, y_right::Float64; β::Float64 = 100.)
+    return (x/x_thrₜ)^β / (1 + (x / x_thr)^β) * (y_right - y_left) + y_left
+end
+
+"""
 Determine the current life stage. 
 $(TYPEDSIGNATURES)
 """
@@ -278,7 +287,7 @@ $(TYPEDSIGNATURES)
 function DEB!(du, u, p, t)
 
     #### boilerplate
-    
+
     determine_life_stage!(du, u, p, t)
 
     #### stressor responses
