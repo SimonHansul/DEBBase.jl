@@ -9,7 +9,7 @@ $(TYPEDSIGNATURES)
     x_thr::Float64,
     y_left::Float64, 
     y_right::Float64; 
-    β::Float64 = 100.
+    β::Float64 = 1e6
     )
     return 1 / (1 + exp(-β*(x - x_thr))) * (y_right - y_left) + y_left
 end
@@ -20,30 +20,9 @@ Function uses sigmoid switch instead of if/else statements for differentiability
 $(TYPEDSIGNATURES)
 """
 @inline function determine_life_stage!(du, u, p, t)
-    u.life_stage = sig(u.X_emb, 0., 1., 2.; β = 1e6) + sig(u.H, p.deb.H_p, 0., 1.; β = 1e6)
+    u.life_stage = max(u.life_stage, sig(u.X_emb, 1e-3 * p.deb.X_emb_int, 2., 1.) + 
+    sig(u.H, p.deb.H_p, 0., 1.))
 end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-@inline function embryo(life_stage::Float64)
-    return life_stage == 1
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-@inline function juvenile(life_stage::Float64)
-    return life_stage == 2
-end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-@inline function adult(life_stage::Float64)
-    return life_stage == 3
-end
-
 
 @inline function functional_response(
     du::ComponentArray,
@@ -69,8 +48,18 @@ $(TYPEDSIGNATURES)
     t::Real
     )
 
-    du.I_emb = sig(u.life_stage, 2., u.S^(2/3) * p.deb.Idot_max_rel, 0.)
-    du.I_p = sig(u.life_stage, 2., 0., functional_response(du, u, p, t) * p.deb.Idot_max_rel * u.S^(2/3))
+    du.I_emb = sig(
+        u.X_emb, # uptake from vitellus depends on mass of vitellus
+        0., # the switch occurs when vitellus is used up 
+        0., # when the vitellus is used up, there is no uptake
+        u.S^(2/3) * p.deb.Idot_max_rel # when the vitellus is not used up, uptake from vitellus occurs
+        )
+    du.I_p = sig(
+        u.X_emb, # ingestion from external resource depends on mass of vitellus
+        0., # the switch occurs when the vitellus is used up  
+        functional_response(du, u, p, t) * p.deb.Idot_max_rel * u.S^(2/3), # when the vitellus is used up, ingestion from the external resource occurs
+        0. # while there is still vitellus left, there is no uptake from the external resource
+        )
     du.I = du.I_emb + du.I_p
 end
 
@@ -96,7 +85,7 @@ $(TYPEDSIGNATURES)
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real)
-    du.M = max(0, u.S * p.deb.k_M * u.y_M)
+    du.M = u.S * p.deb.k_M * u.y_M
 end
 
 """
@@ -280,18 +269,17 @@ end
     u.h_z = sum([p.deb.drc_functs_h[z](u.D_h[z], p.deb.drc_params_h[z]) for z in 1:length(u.C_W)])
 end
 
+
 """
 Definition of reserveless DEB derivatives. 
 $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
-
     #### boilerplate
-
-    determine_life_stage!(du, u, p, t)
+    #determine_life_stage!(du, u, p, t)
 
     #### stressor responses
-    y!(du, u, p, t)
+    #y!(du, u, p, t)
 
     #### auxiliary state variables (record cumulative values)
     Idot!(du, u, p, t)
@@ -305,6 +293,6 @@ function DEB!(du, u, p, t)
     Rdot!(du, u, p, t) # reproduction buffer
     X_pdot!(du, u, p, t) # resource abundance
     X_embdot!(du, u, p, t) # vitellus
-    Ddot!(du, u, p, t) # damage
-    C_Wdot!(du, u, p, t) # external stressor concentration
+    #Ddot!(du, u, p, t) # damage
+    C_Wdot!(du, u, p, t) # external stressor concentration  
 end

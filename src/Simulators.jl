@@ -2,14 +2,14 @@
 Initialize the component vector of state variables, `u`, based on model parameters `p`.
 $(TYPEDSIGNATURES)
 """
-function initialize_statevars(p::AbstractParamCollection)
+function initialize_statevars(p::BaseParamCollection)::ComponentArray
     return ComponentArray( # initial states
         X_p = p.glb.Xdot_in, # initial resource abundance equal to influx rate
         X_emb = p.deb.X_emb_int, # initial mass of vitellus
         S = p.deb.X_emb_int * 0.01, # initial structure is a small fraction of initial reserve // mass of vitellus
         H = 0., # maturity
         R = 0., # reproduction buffer
-        life_stage = 0., # life stage 
+        life_stage = 1., # life stage 
         I_emb = 0., # uptake from vitellus
         I_p = 0., # uptake from external food resource
         I = 0., # total uptake
@@ -42,8 +42,6 @@ function simulator(
     assert!(p)
     u = initialize_statevars(p)
     prob = ODEProblem(DEB!, u, (0, p.glb.t_max), p) # define the problem
-    
-    # TODO: flatten D-Matrix into multiple columns in output dataframe
     sol = solve(prob, Tsit5(), reltol = 1e-6) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
   
