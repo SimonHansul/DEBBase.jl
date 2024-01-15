@@ -4,11 +4,11 @@ $(TYPEDSIGNATURES)
 """
 function initialize_statevars(p::BaseParamCollection)::ComponentArray
     return ComponentArray( # initial states
-        X_p = p.glb.Xdot_in, # initial resource abundance equal to influx rate
-        X_emb = p.deb.X_emb_int, # initial mass of vitellus
-        S = p.deb.X_emb_int * 0.01, # initial structure is a small fraction of initial reserve // mass of vitellus
-        H = 0., # maturity
-        R = 0., # reproduction buffer
+        X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
+        X_emb = Float64(p.deb.X_emb_int), # initial mass of vitellus
+        S = Float64(p.deb.X_emb_int * 0.01), # initial structure is a small fraction of initial reserve // mass of vitellus
+        H = Float64(0.), # maturity
+        R = Float64(0.), # reproduction buffer
         life_stage = 1., # life stage 
         I_emb = 0., # uptake from vitellus
         I_p = 0., # uptake from external food resource

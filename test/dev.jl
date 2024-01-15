@@ -2,18 +2,20 @@ using Parameters
 using DifferentialEquations
 using Plots
 
-@with_kw mutable struct Param
-    mu::Float64 = 0.2
-    K::Float64 = 10.0
-end
+using StaticArrays
+using BenchmarkTools
 
-function dN!(du, u, p, t)
-    du[1] =  p.mu * u[1] * (1 - (u[1]/p.K))
-end
 
-u0 = [1.]
-tspan = (0, 100)
-prob = ODEProblem(dN!, u0, tspan, Params())
-sol = solve(prob)
+using DEBBase
 
-plot(sol.t, vcat(sol.u...))
+@benchmark p = simulator(BaseParamCollection())
+
+
+
+V1 = [1., 2., 3.]
+V2 = [3., 3., 8.]
+f(x1, x2) = x1 / x2
+
+@benchmark @. V1 / V2 # 420 ns
+
+@benchmark [x/y for (x,y) in zip(V1,V2)] # 150 ns

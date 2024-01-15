@@ -276,10 +276,10 @@ $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
     #### boilerplate
-    #determine_life_stage!(du, u, p, t)
+    determine_life_stage!(du, u, p, t)
 
     #### stressor responses
-    #y!(du, u, p, t)
+    y!(du, u, p, t)
 
     #### auxiliary state variables (record cumulative values)
     Idot!(du, u, p, t)
@@ -293,6 +293,6 @@ function DEB!(du, u, p, t)
     Rdot!(du, u, p, t) # reproduction buffer
     X_pdot!(du, u, p, t) # resource abundance
     X_embdot!(du, u, p, t) # vitellus
-    #Ddot!(du, u, p, t) # damage
+    Ddot!(du, u, p, t) # damage
     C_Wdot!(du, u, p, t) # external stressor concentration  
 end

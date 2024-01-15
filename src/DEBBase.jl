@@ -3,12 +3,12 @@ module DEBBase
 using Parameters
 using ComponentArrays
  # TODO: add DoseResponse as dependency again...
- # FIXME: why does DoseResponse error when adding DEBBase as dependency of Pathogens?
 #using DoseResponse
 using DifferentialEquations
 using DocStringExtensions
 using DataFrames
 using PrecompileTools
+using StaticArrays
 
 # FIXME: "using DEBBase" takes 140 seconds and 2 GB allocs...
 
