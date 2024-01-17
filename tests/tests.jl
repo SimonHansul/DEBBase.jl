@@ -8,5 +8,5 @@ default(leg = false, lw = 1.5)
 
 glb = GlobalBaseParams()
 anm = DEBBaseParams()
-simout = DEBBase.run_model(glb, anm)
+simout = DEBBase.simulator(BaseParamCollection())
 
