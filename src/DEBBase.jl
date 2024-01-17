@@ -2,14 +2,17 @@ module DEBBase
 
 using Parameters
 using ComponentArrays
-using DoseResponse
+ # TODO: add DoseResponse as dependency again...
+#using DoseResponse
 using DifferentialEquations
 using DocStringExtensions
 using DataFrames
 using PrecompileTools
+using StaticArrays
 
 # FIXME: "using DEBBase" takes 140 seconds and 2 GB allocs...
 
+include("DRFunctions.jl")
 include("Structures.jl")
 include("IO.jl")
 include("ModelFunctions.jl")
@@ -18,6 +21,7 @@ include("ImpliedTraits.jl")
 
 export AbstractParams,
 AbstractStatevars,
+AbstractParamCollection,
 GlobalBaseParams, 
 GlobalBaseStatevars, 
 DEBBaseParams, 
