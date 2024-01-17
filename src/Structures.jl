@@ -1,6 +1,3 @@
-abstract type AbstractParams end
-abstract type AbstractParamCollection end
-
 @with_kw mutable struct GlobalBaseParams <: AbstractParams
     t_max::Float64 = 21.
     Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default DEBBaseParams
