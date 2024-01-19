@@ -23,10 +23,7 @@ include("ImpliedTraits.jl")
     sol = simulator(BaseParamCollection())
 end
 
-export AbstractParams,
-AbstractStatevars,
-AbstractParamCollection,
-GlobalBaseParams, 
+export GlobalBaseParams, 
 GlobalBaseStatevars, 
 DEBBaseParams, 
 BaseParamCollection,
