@@ -276,6 +276,7 @@ $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
     #### boilerplate
+    u.S = sig(u.S, 0., 0., u.S)
     determine_life_stage!(du, u, p, t)
     
     #### stressor responses
