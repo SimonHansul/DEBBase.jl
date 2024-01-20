@@ -1,9 +1,6 @@
----
-title : DEBBase: Accessible, 
-author: Simon Hansul, Andreas Focks
----
-
 # The DEBBase.jl ecosystem: accessible and extensible simulation of life-history, population dynamics and stressor effects using Dynamic Energy Budgets
+
+Simon Hansul, Andreas Focks
 
 ## Context
 
