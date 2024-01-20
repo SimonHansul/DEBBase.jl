@@ -30,9 +30,7 @@ end
     p::AbstractParamCollection,
     t::Real
     )
-    let X_V = u.X_p / p.glb.V_patch
-        return X_V / (X_V + p.deb.K_X)
-    end
+    return (u.X_p / p.glb.V_patch) / ((u.X_p / p.glb.V_patch) + p.deb.K_X)
 end
 
 """
@@ -191,14 +189,11 @@ function Qdot!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
-    t::Real; 
-    Idot::Float64, 
-    Mdot::Float64, 
-    Jdot::Float64,
+    t::Real
     )
     # dissipation fluxes for the individual processes
     let Qdot_A, Qdot_S, Qdot_C, Qdot_R
-        Qdot_A = Idot * (1 - deb.eta_IA)
+        Qdot_A = du.I * (1 - deb.eta_IA)
         Qdot_S = du.S >= 0 ? du.S * (1 - p.deb.eta_AS)/p.deb.eta_AS : du.S * (p.deb.eta_SA - 1)
         Qdot_R = du.R * (1 - p.deb.eta_AR)/p.deb.eta_AR
         du.Q =  Qdot_A + Qdot_S + Qdot_C + Qdot_R + Mdot + Jdot + Hdot
@@ -262,11 +257,20 @@ end
     p::AbstractParamCollection,
     t::Real
     )
-    u.y_G = prod([p.deb.drc_functs_G[z](u.D_G[z], p.deb.drc_params_G[z]) for z in 1:length(u.C_W)])
-    u.y_M = prod([p.deb.drc_functs_M[z](u.D_M[z], p.deb.drc_params_M[z]) for z in 1:length(u.C_W)])
-    u.y_A = prod([p.deb.drc_functs_A[z](u.D_A[z], p.deb.drc_params_A[z]) for z in 1:length(u.C_W)])
-    u.y_R = prod([p.deb.drc_functs_R[z](u.D_R[z], p.deb.drc_params_R[z]) for z in 1:length(u.C_W)])
-    u.h_z = sum([p.deb.drc_functs_h[z](u.D_h[z], p.deb.drc_params_h[z]) for z in 1:length(u.C_W)])
+
+    for (z,_) in enumerate(u.C_W)
+        u.y_G_z[z] = p.deb.drc_functs_G[z](u.D_G[z], p.deb.drc_params_G[z])
+        u.y_M_z[z] = p.deb.drc_functs_M[z](u.D_M[z], p.deb.drc_params_M[z])
+        u.y_A_z[z] = p.deb.drc_functs_A[z](u.D_A[z], p.deb.drc_params_A[z])
+        u.y_R_z[z] = p.deb.drc_functs_R[z](u.D_R[z], p.deb.drc_params_R[z])
+        u.h_z_z[z] = p.deb.drc_functs_h[z](u.D_h[z], p.deb.drc_params_h[z])
+    end
+
+    u.y_G = prod(u.y_G_z)
+    u.y_M = prod(u.y_M_z)
+    u.y_A = prod(u.y_A_z)
+    u.y_R = prod(u.y_R_z)
+    u.h_z = sum(u.h_z_z)
 end
 
 

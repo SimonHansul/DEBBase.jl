@@ -22,6 +22,11 @@ function initialize_statevars(p::BaseParamCollection)::ComponentArray
         D_A = zeros(length(p.deb.k_D_A)), # scaled damage | assimilation efficiency
         D_R = zeros(length(p.deb.k_D_R)), # scaled damage | reproduction efficiency
         D_h = zeros(length(p.deb.k_D_h)), # scaled damage | hazard rate
+        y_G_z = ones(length(p.deb.k_D_G)), # relative response | growth efficiency
+        y_M_z = ones(length(p.deb.k_D_M)), # relative response | maintenance costs 
+        y_A_z = ones(length(p.deb.k_D_A)), # relative response | assimilation efficiency
+        y_R_z = ones(length(p.deb.k_D_R)), # relative response | reproduction efficiency
+        h_z_z = zeros(length(p.deb.k_D_h)), # relative response | hazard rate
         y_G = 1., # relative response | growth efficiency
         y_M = 1., # relative response | maintenance costs 
         y_A = 1., # relative response | assimilation efficiency

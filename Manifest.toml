@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.2"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "c44a58f1a695b8d7bf66d902d59eac06970438d8"
 
@@ -281,7 +281,7 @@ uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "4.1.1"
 
 [[deps.DEBParamStructs]]
-git-tree-sha1 = "608ac6fc3bee62db1608edf35150c3fa1490c542"
+git-tree-sha1 = "20be710489a1fdee908b37705d489b092bf41b92"
 repo-rev = "main"
 repo-url = "https://github.com/simonhansul/debparamstructs.jl"
 uuid = "1778c221-a2bd-49d5-8dc0-8fa7d3af4962"

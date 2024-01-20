@@ -11,8 +11,6 @@ using DataFrames
 using PrecompileTools
 using StaticArrays
 
-# FIXME: "using DEBBase" takes 140 seconds and 2 GB allocs...
-
 include("Structures.jl")
 include("IO.jl")
 include("ModelFunctions.jl")
