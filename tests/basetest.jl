@@ -6,7 +6,12 @@ default(leg = false, lw = 1.5)
 using Revise
 @time using DEBBase
 
+
 p = BaseParamCollection()
+
+p.glb
+
+
 p.deb.k_D_G = [0.]
 p.deb.k_D_M = [0.]
 p.deb.k_D_A = [1.]
@@ -20,6 +25,8 @@ plt = @df simout plot(
     plot(:t, :R ./ p.deb.X_emb_int, ylabel = "R [#]"), 
     xlabel = "t", color = :black
 )
+
+Global
 
 p.glb.C_W = [0.5]
 simout = simulator(p)
