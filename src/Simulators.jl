@@ -43,8 +43,8 @@ function simulator(
     assert!(p)
     u = initialize_statevars(p)
     prob = ODEProblem(DEB!, u, (0, p.glb.t_max), p) # define the problem
-    sol = solve(prob, Euler(), reltol = 1e-6, dt = 1/240) # get solution to the IVP
-    #sol = solve(prob, reltol = 1e-10, abstol = 1e-10, saveat = saveat) # get solution to the IVP
+    sol = solve(prob, Euler(), reltol = 1e-6, dt = 1/24, saveat = saveat) # get solution to the IVP
+    #sol = solve(prob) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
   
     return simout
