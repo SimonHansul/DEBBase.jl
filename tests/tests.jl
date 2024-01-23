@@ -1,12 +1,11 @@
-using Revise
-@time using DEBBase
-using Plots, Plots.Measures, StatsPlots
-using DataFrames
-using BenchmarkTools
+using Pkg; Pkg.activate("tests")
 
-default(leg = false, lw = 1.5)
+tests = [
+    raw"test01_DEB_growthrepro.jl",
+    raw"test03_TD.jl"
+]
 
-glb = GlobalBaseParams()
-anm = DEBBaseParams()
-simout = DEBBase.run_model(glb, anm)
-
+for test in tests
+    @info("Running $test")
+    include(test)
+end
