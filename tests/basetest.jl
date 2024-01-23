@@ -4,15 +4,18 @@ using DataFrames, DataFramesMeta
 using BenchmarkToolsa
 using DEBBase
 
-default(leg = false, lw = 1.5)
+p = BaseParamCollection(glb = GlobalBaseParams(C_W = [1.]));
+y = simulator(p);
+@benchmark simulator(p)
 
-p = BaseParamCollection()
+isolate_pmoas!(p.deb, ["G"])
+p.glb.C_W = [0.5]
+p.deb.k_D_A = [1.]
+p.deb.drc_params_A = [(1., 2.)]
 simout = simulator(p)
 
-plt = @df simout plot(
-    plot(:t, :S, ylabel = "S [μg C]"), 
-    plot(:t, :R ./ p.deb.X_emb_int, ylabel = "R [#]"), 
-    xlabel = "t", color = :black
+@df simout plot(
+    plot(:t, :S),
+    plot(:t, :R),
+    plot(:t, :D_A_1)
 )
-savefig(plt, "plots/basetest_growthrepo.png")
-@benchmark simulator(p)
