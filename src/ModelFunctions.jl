@@ -218,14 +218,18 @@ $(TYPEDSIGNATURES)
     t::Real
     ) 
 
-    let SL = u.S^(1/3) / u.S, # strucutral length (g^(1/3))
-        # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
-        SL_max = calc_SL_max(p.deb) # maximum structural length (g^(1/3))
-        @. du.D_G = p.deb.k_D_G * (SL_max / SL) * (u.C_W - u.D_G) - u.D_G * (du.S / u.S)
-        @. du.D_M = p.deb.k_D_M * (SL_max / SL) * (u.C_W - u.D_M) - u.D_M * (du.S / u.S)
-        @. du.D_A = p.deb.k_D_A * (SL_max / SL) * (u.C_W - u.D_A) - u.D_A * (du.S / u.S)
-        @. du.D_R = p.deb.k_D_R * (SL_max / SL) * (u.C_W - u.D_R) - u.D_R * (du.S / u.S)
-        @. du.D_h = p.deb.k_D_h * (SL_max / SL) * (u.C_W - u.D_h) - u.D_h * (du.S / u.S)
+
+    # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
+    S_max = calc_S_max(p.deb) # maximum structural length (g^(1/3))
+    AV_min = S_max^(2/3) / S_max # minimum area-to-volume (AV) ratio is reached at maximum size
+    AV = u.S^(2/3) / u.S # current AV ratio
+    AV_rel = AV / AV_min # correction factor is AV ratio relative to minimum AV ratio 
+    for z in eachindex(u.C_W)
+        du.D_G[z] = sig(u.X_emb, 0., p.deb.k_D_G[z] * AV_rel * (u.C_W[z] - u.D_G[z]) - u.D_G[z] * (du.S / u.S), 0.)
+        du.D_M[z] = sig(u.X_emb, 0., p.deb.k_D_M[z] * AV_rel * (u.C_W[z] - u.D_M[z]) - u.D_M[z] * (du.S / u.S), 0.)
+        du.D_A[z] = sig(u.X_emb, 0., p.deb.k_D_A[z] * AV_rel * (u.C_W[z] - u.D_A[z]) - u.D_A[z] * (du.S / u.S), 0.)
+        du.D_R[z] = sig(u.X_emb, 0., p.deb.k_D_R[z] * AV_rel * (u.C_W[z] - u.D_R[z]) - u.D_R[z] * (du.S / u.S), 0.)
+        du.D_h[z] = sig(u.X_emb, 0., p.deb.k_D_h[z] * AV_rel * (u.C_W[z] - u.D_h[z]) - u.D_h[z] * (du.S / u.S), 0.)
     end
 end
 
@@ -276,6 +280,7 @@ $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
     #### boilerplate
+    u.S = sig(u.S, 0., 0., u.S)
     determine_life_stage!(du, u, p, t)
     
     #### stressor responses

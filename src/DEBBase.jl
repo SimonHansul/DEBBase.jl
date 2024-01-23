@@ -11,8 +11,6 @@ using DataFrames
 using PrecompileTools
 using StaticArrays
 
-# FIXME: "using DEBBase" takes 140 seconds and 2 GB allocs...
-
 include("Structures.jl")
 include("IO.jl")
 include("ModelFunctions.jl")
@@ -23,10 +21,7 @@ include("ImpliedTraits.jl")
     sol = simulator(BaseParamCollection())
 end
 
-export AbstractParams,
-AbstractStatevars,
-AbstractParamCollection,
-GlobalBaseParams, 
+export GlobalBaseParams, 
 GlobalBaseStatevars, 
 DEBBaseParams, 
 BaseParamCollection,
