@@ -9,3 +9,9 @@ for test in tests
     @info("Running $test")
     include(test)
 end
+
+
+using DEBBase
+y = simulator(BaseParamCollection(
+    deb = DEBBaseParams(kappa = 0.3)
+))

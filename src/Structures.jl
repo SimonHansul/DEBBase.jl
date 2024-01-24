@@ -7,7 +7,8 @@
 end
 
 """
-DEBBase Parameters with default values for Daphnia magna.
+DEBBase Parameters. 
+Default values are for Daphnia magna and Azoxystrobin.
 $(TYPEDSIGNATURES)
 """
 @with_kw mutable struct DEBBaseParams <: AbstractParams
@@ -26,26 +27,26 @@ $(TYPEDSIGNATURES)
     H_p::Float64 = 100.
     
     # dominant rate constants
-    k_D_G::Vector{Float64} = [1., 1.]
-    k_D_M::Vector{Float64} = [1., 1.]
-    k_D_A::Vector{Float64} = [1., 1.]
-    k_D_R::Vector{Float64} = [1., 1.]
-    k_D_h::Vector{Float64} = [1., 1.]
+    k_D_G::Vector{Float64} = [0.]
+    k_D_M::Vector{Float64} = [0.]
+    k_D_A::Vector{Float64} = [0.]
+    k_D_R::Vector{Float64} = [0.38]
+    k_D_h::Vector{Float64} = [0.]
     
     # DRC functions
     # TODO: Changing Vector{Function} to NTuple makes access slower...why?
-    drc_functs_G::Vector{Function} = [LL2, LL2]
-    drc_functs_M::Vector{Function} = [LL2M, LL2M]
-    drc_functs_A::Vector{Function} = [LL2, LL2]
-    drc_functs_R::Vector{Function} = [LL2, LL2]
-    drc_functs_h::Vector{Function} = [LL2h, LL2h]
+    drc_functs_G::Vector{Function} = [LL2]
+    drc_functs_M::Vector{Function} = [LL2M]
+    drc_functs_A::Vector{Function} = [LL2]
+    drc_functs_R::Vector{Function} = [LL2]
+    drc_functs_h::Vector{Function} = [LL2h]
 
     # DRC parameters
-    drc_params_G::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
-    drc_params_M::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
-    drc_params_A::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
-    drc_params_R::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
-    drc_params_h::Vector{NTuple} = [(1e10, 1e10), (1e10, 1e10)]
+    drc_params_G::Vector{NTuple} = [(1e10, 1e10)]
+    drc_params_M::Vector{NTuple} = [(1e10, 1e10)]
+    drc_params_A::Vector{NTuple} = [(1e10, 1e10)]
+    drc_params_R::Vector{NTuple} = [(167., 0.93)]
+    drc_params_h::Vector{NTuple} = [(1e10, 1e10)]
 end
 
 @with_kw mutable struct BaseParamCollection <: AbstractParamCollection

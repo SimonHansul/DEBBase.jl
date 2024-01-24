@@ -6,12 +6,20 @@ using Plots, StatsPlots, Plots.Measures
 default(leg = false, titlefontsize = 12, legendtitlefontsize = 10, lw = 1.5)
 using DataFrames
 
+using DEBBase
+
+deb = DEBBaseParams()
+isolate_pmoas!(deb, ["A"])
+deb.k_D_A = [1.]
+deb.drc_params_A = [(0.1, 2.)]
+
+
+
 #=
 
-This should appear as markdown cell. <br>
-But how is cell output handled?
-
 =#
+
+
 
 out = DataFrame()
 for pmoa in ["G", "M", "A", "R"]
