@@ -194,7 +194,7 @@ table {
 | Tool            | Unique features                                      |
 |-----------------|------------------------------------------------------|
 | Debtool         | Tried and tested manifestation of standard DEB model |
-| DEBBase         | Performant implementation with mixture TKTD and possibility for combined PMoAs |
+| DEBBase         | Extensible performant implementation with mixture TKTD |
 | MEMpy           | Easy-to-use Python implementation for individuals and populations |
 | Netlogo DEB-IBM | Probably the most used DEB-IBM implementation |
 
