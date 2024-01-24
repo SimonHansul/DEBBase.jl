@@ -2,7 +2,7 @@
     t_max::Float64 = 21.
     Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default DEBBaseParams
     V_patch::Float64 = 0.05
-    C_W::Vector{Float64} = [0., 0.]
+    C_W::Vector{Float64} = [0.]
     units::NamedTuple = (time = "d", mass = "mug C", volume = "L")
 end
 
