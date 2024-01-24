@@ -14,16 +14,6 @@ $(TYPEDSIGNATURES)
     return 1 / (1 + exp(-β*(x - x_thr))) * (y_right - y_left) + y_left
 end
 
-"""
-Determine the current life stage. 
-Function uses sigmoid switch instead of if/else statements for differentiability. 
-$(TYPEDSIGNATURES)
-"""
-@inline function determine_life_stage!(du, u, p, t)
-    u.life_stage = max(u.life_stage, sig(u.X_emb, 1e-3 * p.deb.X_emb_int, 2., 1.) + 
-    sig(u.H, p.deb.H_p, 0., 1.))
-end
-
 @inline function functional_response(
     du::ComponentArray,
     u::ComponentArray,
@@ -281,7 +271,6 @@ $(TYPEDSIGNATURES)
 function DEB!(du, u, p, t)
     #### boilerplate
     u.S = sig(u.S, 0., 0., u.S)
-    determine_life_stage!(du, u, p, t)
     
     #### stressor responses
     y!(du, u, p, t)

@@ -11,9 +11,18 @@ using DEBBase
 deb = DEBBaseParams()
 isolate_pmoas!(deb, ["A"])
 deb.k_D_A = [1.]
-deb.drc_params_A = [(0.1, 2.)]
+deb.drc_params_A = [(0.01, 2.)]
+glb = GlobalBaseParams()
+glb.C_W = [1.]
+θ = BaseParamCollection(glb = glb, deb = deb)
 
+using BenchmarkTools
 
+@benchmark Y = simulator(θ; dt = 1/240)
+@df Y plot(
+    plot(:t, :S),
+    plot(:t, :D_A_1)
+)
 
 #=
 
