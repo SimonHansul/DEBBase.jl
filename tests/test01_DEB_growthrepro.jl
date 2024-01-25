@@ -1,5 +1,5 @@
 using Pkg; Pkg.activate("tests")
-using Plots, StatsPlots
+using Plots, StatsPlots, Plots.Measures
 default(titlefontsize = 10, lw = 1.5, leg = false)
 using Revise 
 @time using DEBBase

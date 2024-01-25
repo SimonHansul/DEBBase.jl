@@ -117,6 +117,20 @@ Negative somatic growth
     return -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
 end
 
+function Sdot(
+    du::ComponentArray,
+    u::ComponentArray,
+    p::AbstractParamCollection,
+    t::Real
+    )
+    return sig(
+        p.deb.kappa * du.A, # growth depends on maintenance coverage
+        du.M, # switch occurs based on maintenance costs
+        Sdot_negative(du, u, p, t), # left of the threshold == maintenance costs cannot be covered == negative growth
+        Sdot_positive(du, u, p, t) # right of the threshold == maintenance costs can be covered == positive growth
+    )
+end
+
 """
 Somatic growth rate, including application of shrinking equation.
 $(TYPEDSIGNATURES)
@@ -127,7 +141,7 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection,
     t::Real
     )
-    du.S = (p.deb.kappa * u.A >= du.M) * Sdot_positive(du, u, p, t) + (p.deb.kappa * u.A < du.M) * Sdot_negative(du, u, p, t)
+    du.S = Sdot(du, u, p, t)
 end
 
 """

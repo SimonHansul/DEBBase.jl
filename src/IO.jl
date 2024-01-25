@@ -92,10 +92,7 @@ function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}; z::Int64)::Ab
     return deb
 end
 
-"""
-Isolate PMoAs for all chemical stressors. 
-$(TYPEDSIGNATURES)
-"""
+
 function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String})::AbstractParams
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
