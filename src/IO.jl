@@ -105,17 +105,15 @@ function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String})::AbstractPara
     return deb
 end
 
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64)
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64)::nothing
     deb = isolate_pmoas(deb, pmoas; z = z)
     return nothing
 end
 
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})::nothing
     deb = isolate_pmoas(deb, pmoas)
     return nothing
 end
-
-
 
 """
 Raise assertion errors
