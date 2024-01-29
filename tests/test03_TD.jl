@@ -16,19 +16,6 @@ glb = GlobalBaseParams()
 glb.C_W = [1.]
 θ = BaseParamCollection(glb = glb, deb = deb)
 
-using BenchmarkTools
-
-@benchmark Y = simulator(θ; dt = 1/240)
-@df Y plot(
-    plot(:t, :S),
-    plot(:t, :D_A_1)
-)
-
-#=
-
-=#
-
-
 
 out = DataFrame()
 for pmoa in ["G", "M", "A", "R"]
@@ -450,7 +437,12 @@ for pmoa in [["G", "G"], ["G", "M"], ["G", "A"], ["G", "R"]]
             drc_params_M = [(1., 2.), (1., 2.)],
             drc_params_A = [(1., 2.), (1., 2.)],
             drc_params_R = [(1., 2.), (1., 2.)],
-            drc_params_h = [(1., 2.), (1., 2.)]
+            drc_params_h = [(1., 2.), (1., 2.)],
+            drc_functs_G = [LL2, LL2],
+            drc_functs_M = [LL2M, LL2M],
+            drc_functs_A = [LL2, LL2],
+            drc_functs_R = [LL2, LL2],
+            drc_functs_h = [LL2h, LL2h],
             )
         p = BaseParamCollection(glb = glb, deb = deb)
         isolate_pmoas!(p.deb, [pmoa[1]], z = 1)
@@ -494,7 +486,12 @@ for pmoa in [["G", "G"], ["G", "M"], ["G", "A"], ["G", "R"]]
         drc_params_M = [(1., 2.), (1., 2.)],
         drc_params_A = [(1., 2.), (1., 2.)],
         drc_params_R = [(1., 2.), (1., 2.)],
-        drc_params_h = [(1., 2.), (1., 2.)]
+        drc_params_h = [(1., 2.), (1., 2.)],
+        drc_functs_G = [LL2, LL2],
+        drc_functs_M = [LL2M, LL2M],
+        drc_functs_A = [LL2, LL2],
+        drc_functs_R = [LL2, LL2],
+        drc_functs_h = [LL2h, LL2h]
         )
     p = BaseParamCollection(glb = glb, deb = deb)
     isolate_pmoas!(p.deb, [pmoa[1]], z = 1)
@@ -542,7 +539,12 @@ for pmoa in [["M", "G"], ["M", "M"], ["M", "A"], ["M", "R"]]
         drc_params_M = [(1., 2.), (1., 2.)],
         drc_params_A = [(1., 2.), (1., 2.)],
         drc_params_R = [(1., 2.), (1., 2.)],
-        drc_params_h = [(1., 2.), (1., 2.)]
+        drc_params_h = [(1., 2.), (1., 2.)],
+        drc_functs_G = [LL2, LL2],
+        drc_functs_M = [LL2M, LL2M],
+        drc_functs_A = [LL2, LL2],
+        drc_functs_R = [LL2, LL2],
+        drc_functs_h = [LL2h, LL2h]
         )
     p = BaseParamCollection(glb = glb, deb = deb)
     isolate_pmoas!(p.deb, [pmoa[1]], z = 1)
@@ -590,7 +592,12 @@ for pmoa in [["A", "G"], ["A", "M"], ["A", "A"], ["A", "R"]]
         drc_params_M = [(1., 2.), (1., 2.)],
         drc_params_A = [(1., 2.), (1., 2.)],
         drc_params_R = [(1., 2.), (1., 2.)],
-        drc_params_h = [(1., 2.), (1., 2.)]
+        drc_params_h = [(1., 2.), (1., 2.)],
+        drc_functs_G = [LL2, LL2],
+        drc_functs_M = [LL2M, LL2M],
+        drc_functs_A = [LL2, LL2],
+        drc_functs_R = [LL2, LL2],
+        drc_functs_h = [LL2h, LL2h]
         )
     p = BaseParamCollection(glb = glb, deb = deb)
     isolate_pmoas!(p.deb, [pmoa[1]], z = 1)
@@ -638,7 +645,12 @@ for pmoa in [["R", "G"], ["R", "M"], ["R", "A"], ["R", "R"]]
         drc_params_M = [(1., 2.), (1., 2.)],
         drc_params_A = [(1., 2.), (1., 2.)],
         drc_params_R = [(1., 2.), (1., 2.)],
-        drc_params_h = [(1., 2.), (1., 2.)]
+        drc_params_h = [(1., 2.), (1., 2.)],
+        drc_functs_G = [LL2, LL2],
+        drc_functs_M = [LL2M, LL2M],
+        drc_functs_A = [LL2, LL2],
+        drc_functs_R = [LL2, LL2],
+        drc_functs_h = [LL2h, LL2h]
         )
     p = BaseParamCollection(glb = glb, deb = deb)
     isolate_pmoas!(p.deb, [pmoa[1]], z = 1)

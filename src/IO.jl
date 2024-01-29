@@ -92,7 +92,6 @@ function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}; z::Int64)::Ab
     return deb
 end
 
-
 function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String})::AbstractParams
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
@@ -105,12 +104,12 @@ function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String})::AbstractPara
     return deb
 end
 
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64)::nothing
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64)::Nothing
     deb = isolate_pmoas(deb, pmoas; z = z)
     return nothing
 end
 
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})::nothing
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})::Nothing
     deb = isolate_pmoas(deb, pmoas)
     return nothing
 end

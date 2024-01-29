@@ -1,3 +1,9 @@
+"""
+Clip negative values.
+"""
+function clipneg(x::Float64)
+    return sig(x, 0., 0., x)
+end
 
 """
 Sigmoid switch function. 
@@ -163,8 +169,7 @@ $(TYPEDSIGNATURES)
     du.H = sig(
         u.H, # maturation depends on maturity
         p.deb.H_p, # switch occurs at maturity at puberty H_p
-        # TODO: replace max(0, .) with sigmoid function
-        max(0., ((1 - p.deb.kappa) * du.A) - du.J), # maturation for embryos and juveniles
+        clipneg(((1 - p.deb.kappa) * du.A) - du.J), # maturation for embryos and juveniles
         0., # maturation for adults
     )
 end
@@ -183,7 +188,7 @@ $(TYPEDSIGNATURES)
         u.H, # reproduction depends on maturity
         p.deb.H_p, # switch occurs at maturity at puberty H_p
         0., # reproduction for embryos and juveniles
-        u.y_R * p.deb.eta_AR * (1 - p.deb.kappa) * du.A - du.J # reproduction for adults
+        clipneg(u.y_R * p.deb.eta_AR * (1 - p.deb.kappa) * du.A - du.J) # reproduction for adults
     )
 end
 

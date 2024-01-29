@@ -23,7 +23,7 @@ $(TYPEDSIGNATURES)
     eta_SA::Float64 = 0.8
     eta_AR::Float64 = 0.95
     k_M::Float64 = 0.59
-    k_J::Float64 = 0.
+    k_J::Float64 = 0.504
     H_p::Float64 = 100.
     
     # dominant rate constants

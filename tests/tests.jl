@@ -1,17 +1,13 @@
 using Pkg; Pkg.activate("tests")
+using Revise
+@time using DEBBase
+using Glob
 
-tests = [
-    raw"test01_DEB_growthrepro.jl",
-    raw"test03_TD.jl"
-]
+tests = glob("tests/*.jl") |> 
+x -> [splitpath(xi)[end] for xi in x] |>
+x -> filter(f -> f != "tests.jl", x)
 
 for test in tests
     @info("Running $test")
     include(test)
 end
-
-
-using DEBBase
-y = simulator(BaseParamCollection(
-    deb = DEBBaseParams(kappa = 0.3)
-))
