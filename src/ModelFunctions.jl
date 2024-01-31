@@ -1,3 +1,9 @@
+"""
+Clip negative values.
+"""
+function clipneg(x::Float64)
+    return sig(x, 0., 0., x)
+end
 
 """
 Sigmoid switch function. 
@@ -12,16 +18,6 @@ $(TYPEDSIGNATURES)
     β::Float64 = 1e6
     )
     return 1 / (1 + exp(-β*(x - x_thr))) * (y_right - y_left) + y_left
-end
-
-"""
-Determine the current life stage. 
-Function uses sigmoid switch instead of if/else statements for differentiability. 
-$(TYPEDSIGNATURES)
-"""
-@inline function determine_life_stage!(du, u, p, t)
-    u.life_stage = max(u.life_stage, sig(u.X_emb, 1e-3 * p.deb.X_emb_int, 2., 1.) + 
-    sig(u.H, p.deb.H_p, 0., 1.))
 end
 
 @inline function functional_response(
@@ -127,6 +123,20 @@ Negative somatic growth
     return -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
 end
 
+function Sdot(
+    du::ComponentArray,
+    u::ComponentArray,
+    p::AbstractParamCollection,
+    t::Real
+    )
+    return sig(
+        p.deb.kappa * du.A, # growth depends on maintenance coverage
+        du.M, # switch occurs based on maintenance costs
+        Sdot_negative(du, u, p, t), # left of the threshold == maintenance costs cannot be covered == negative growth
+        Sdot_positive(du, u, p, t) # right of the threshold == maintenance costs can be covered == positive growth
+    )
+end
+
 """
 Somatic growth rate, including application of shrinking equation.
 $(TYPEDSIGNATURES)
@@ -137,7 +147,7 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection,
     t::Real
     )
-    du.S = (p.deb.kappa * u.A >= du.M) * Sdot_positive(du, u, p, t) + (p.deb.kappa * u.A < du.M) * Sdot_negative(du, u, p, t)
+    du.S = Sdot(du, u, p, t)
 end
 
 """
@@ -159,8 +169,7 @@ $(TYPEDSIGNATURES)
     du.H = sig(
         u.H, # maturation depends on maturity
         p.deb.H_p, # switch occurs at maturity at puberty H_p
-        # TODO: replace max(0, .) with sigmoid function
-        max(0., ((1 - p.deb.kappa) * du.A) - du.J), # maturation for embryos and juveniles
+        clipneg(((1 - p.deb.kappa) * du.A) - du.J), # maturation for embryos and juveniles
         0., # maturation for adults
     )
 end
@@ -179,7 +188,7 @@ $(TYPEDSIGNATURES)
         u.H, # reproduction depends on maturity
         p.deb.H_p, # switch occurs at maturity at puberty H_p
         0., # reproduction for embryos and juveniles
-        u.y_R * p.deb.eta_AR * (1 - p.deb.kappa) * du.A - du.J # reproduction for adults
+        clipneg(u.y_R * p.deb.eta_AR * (1 - p.deb.kappa) * du.A - du.J) # reproduction for adults
     )
 end
 
@@ -280,7 +289,6 @@ $(TYPEDSIGNATURES)
 function DEB!(du, u, p, t)
     #### boilerplate
     u.S = sig(u.S, 0., 0., u.S)
-    determine_life_stage!(du, u, p, t)
     
     #### stressor responses
     y!(du, u, p, t)

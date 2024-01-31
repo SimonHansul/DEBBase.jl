@@ -6,6 +6,17 @@ using Plots, StatsPlots, Plots.Measures
 default(leg = false, titlefontsize = 12, legendtitlefontsize = 10, lw = 1.5)
 using DataFrames
 
+using DEBBase
+
+deb = DEBBaseParams()
+isolate_pmoas!(deb, ["A"])
+deb.k_D_A = [1.]
+deb.drc_params_A = [(0.01, 2.)]
+glb = GlobalBaseParams()
+glb.C_W = [1.]
+θ = BaseParamCollection(glb = glb, deb = deb)
+
+
 out = DataFrame()
 for pmoa in ["G", "M", "A", "R"]
     for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
@@ -30,7 +41,6 @@ for pmoa in ["G", "M", "A", "R"]
         append!(out, out_zj)
     end
 end
-
 
 let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
     plt = plot(
@@ -94,205 +104,217 @@ let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
     display(plt)
 end
 
-out = DataFrame()
-for pmoa in ["G", "M", "A", "R"]
-    for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
-        glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
-        deb = DEBBaseParams(
-            k_D_G = [1.], 
-            k_D_M = [1.], 
-            k_D_A = [1.], 
-            k_D_R = [1.], 
-            k_D_h = [1.], 
-            drc_params_G = [(1., 6.)],
-            drc_params_M = [(1., 6.)],
-            drc_params_A = [(1., 6.)],
-            drc_params_R = [(1., 6.)],
-            drc_params_h = [(1., 6.)]
-            )
-        p = BaseParamCollection(glb = glb, deb = deb)
-        isolate_pmoas!(p.deb, [pmoa])
-        out_zj = simulator(p)
-        out_zj[!,:C_W] .= C_W
-        out_zj[!,:pmoa] .= pmoa
-        append!(out, out_zj)
+begin
+    out = DataFrame()
+    for pmoa in ["G", "M", "A", "R"]
+        for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
+            glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
+            deb = DEBBaseParams(
+                k_D_G = [1.], 
+                k_D_M = [1.], 
+                k_D_A = [1.], 
+                k_D_R = [1.], 
+                k_D_h = [1.], 
+                drc_params_G = [(1., 6.)],
+                drc_params_M = [(1., 6.)],
+                drc_params_A = [(1., 6.)],
+                drc_params_R = [(1., 6.)],
+                drc_params_h = [(1., 6.)]
+                )
+            p = BaseParamCollection(glb = glb, deb = deb)
+            isolate_pmoas!(p.deb, [pmoa])
+            out_zj = simulator(p)
+            out_zj[!,:C_W] .= C_W
+            out_zj[!,:pmoa] .= pmoa
+            append!(out, out_zj)
+        end
+    end      
+end
+
+
+begin
+    let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
+        plt = plot(
+            layout = (2, num_pmoas), 
+            title = hcat(vcat(pmoas, repeat([""], num_pmoas))...), 
+            size = (1000,450),
+            xlabel = hcat(vcat(
+                repeat([""], num_pmoas),
+                repeat(["t"], num_pmoas))...), 
+            ylabel = ["S" "" "" "" "R" "" "" ""],
+            bottommargin = 5mm, leftmargin = 5mm
+        )
+    
+        [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :S, group = :C_W, subplot = j) for (j,pmoa) in enumerate(pmoas)]
+        [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :R, group = :C_W, subplot = j+num_pmoas) for (j,pmoa) in enumerate(pmoas)]
+    
+        display(plt)
     end
 end
 
 
-let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
-    plt = plot(
-        layout = (2, num_pmoas), 
-        title = hcat(vcat(pmoas, repeat([""], num_pmoas))...), 
-        size = (1000,450),
-        xlabel = hcat(vcat(
-            repeat([""], num_pmoas),
-            repeat(["t"], num_pmoas))...), 
-        ylabel = ["S" "" "" "" "R" "" "" ""],
-        bottommargin = 5mm, leftmargin = 5mm
-    )
-
-    [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :S, group = :C_W, subplot = j) for (j,pmoa) in enumerate(pmoas)]
-    [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :R, group = :C_W, subplot = j+num_pmoas) for (j,pmoa) in enumerate(pmoas)]
-
-    display(plt)
+begin
+    out = DataFrame()
+    for pmoa in ["G", "M", "A", "R"]
+        for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
+            glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
+            deb = DEBBaseParams(
+                k_D_G = [1.], 
+                k_D_M = [1.], 
+                k_D_A = [1.], 
+                k_D_R = [1.], 
+                k_D_h = [1.], 
+                drc_params_G = [(1., 8.)],
+                drc_params_M = [(1., 8.)],
+                drc_params_A = [(1., 8.)],
+                drc_params_R = [(1., 8.)],
+                drc_params_h = [(1., 8.)]
+                )
+            p = BaseParamCollection(glb = glb, deb = deb)
+            isolate_pmoas!(p.deb, [pmoa])
+            out_zj = simulator(p)
+            out_zj[!,:C_W] .= C_W
+            out_zj[!,:pmoa] .= pmoa
+            append!(out, out_zj)
+        end
+    end      
 end
 
-out = DataFrame()
-for pmoa in ["G", "M", "A", "R"]
-    for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
-        glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
-        deb = DEBBaseParams(
-            k_D_G = [1.], 
-            k_D_M = [1.], 
-            k_D_A = [1.], 
-            k_D_R = [1.], 
-            k_D_h = [1.], 
-            drc_params_G = [(1., 8.)],
-            drc_params_M = [(1., 8.)],
-            drc_params_A = [(1., 8.)],
-            drc_params_R = [(1., 8.)],
-            drc_params_h = [(1., 8.)]
-            )
-        p = BaseParamCollection(glb = glb, deb = deb)
-        isolate_pmoas!(p.deb, [pmoa])
-        out_zj = simulator(p)
-        out_zj[!,:C_W] .= C_W
-        out_zj[!,:pmoa] .= pmoa
-        append!(out, out_zj)
+begin  
+    let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
+        plt = plot(
+            layout = (2, num_pmoas), 
+            title = hcat(vcat(pmoas, repeat([""], num_pmoas))...), 
+            size = (1000,450),
+            xlabel = hcat(vcat(
+                repeat([""], num_pmoas),
+                repeat(["t"], num_pmoas))...), 
+            ylabel = ["S" "" "" "" "R" "" "" ""],
+            bottommargin = 5mm, leftmargin = 5mm
+        )
+
+        [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :S, group = :C_W, subplot = j) for (j,pmoa) in enumerate(pmoas)]
+        [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :R, group = :C_W, subplot = j+num_pmoas) for (j,pmoa) in enumerate(pmoas)]
+
+        display(plt)
+    end
+
+    out = DataFrame()
+    for pmoa in ["G", "M", "A", "R"]
+        for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
+            glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
+            deb = DEBBaseParams(
+                k_D_G = [1.], 
+                k_D_M = [1.], 
+                k_D_A = [1.], 
+                k_D_R = [1.], 
+                k_D_h = [1.], 
+                drc_params_G = [(1., 10.)],
+                drc_params_M = [(1., 10.)],
+                drc_params_A = [(1., 10.)],
+                drc_params_R = [(1., 10.)],
+                drc_params_h = [(1., 10.)]
+                )
+            p = BaseParamCollection(glb = glb, deb = deb)
+            isolate_pmoas!(p.deb, [pmoa])
+            out_zj = simulator(p)
+            out_zj[!,:C_W] .= C_W
+            out_zj[!,:pmoa] .= pmoa
+            append!(out, out_zj)
+        end
     end
 end
 
 
-let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
-    plt = plot(
-        layout = (2, num_pmoas), 
-        title = hcat(vcat(pmoas, repeat([""], num_pmoas))...), 
-        size = (1000,450),
-        xlabel = hcat(vcat(
-            repeat([""], num_pmoas),
-            repeat(["t"], num_pmoas))...), 
-        ylabel = ["S" "" "" "" "R" "" "" ""],
-        bottommargin = 5mm, leftmargin = 5mm
-    )
+begin  
+    let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
+        plt = plot(
+            layout = (2, num_pmoas), 
+            title = hcat(vcat(pmoas, repeat([""], num_pmoas))...), 
+            size = (1000,450),
+            xlabel = hcat(vcat(
+                repeat([""], num_pmoas),
+                repeat(["t"], num_pmoas))...), 
+            ylabel = ["S" "" "" "" "R" "" "" ""],
+            bottommargin = 5mm, leftmargin = 5mm
+        )
 
-    [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :S, group = :C_W, subplot = j) for (j,pmoa) in enumerate(pmoas)]
-    [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :R, group = :C_W, subplot = j+num_pmoas) for (j,pmoa) in enumerate(pmoas)]
+        [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :S, group = :C_W, subplot = j) for (j,pmoa) in enumerate(pmoas)]
+        [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :R, group = :C_W, subplot = j+num_pmoas) for (j,pmoa) in enumerate(pmoas)]
 
-    display(plt)
-end
+        display(plt)
+    end
 
-out = DataFrame()
-for pmoa in ["G", "M", "A", "R"]
-    for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
-        glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
-        deb = DEBBaseParams(
-            k_D_G = [1.], 
-            k_D_M = [1.], 
-            k_D_A = [1.], 
-            k_D_R = [1.], 
-            k_D_h = [1.], 
-            drc_params_G = [(1., 10.)],
-            drc_params_M = [(1., 10.)],
-            drc_params_A = [(1., 10.)],
-            drc_params_R = [(1., 10.)],
-            drc_params_h = [(1., 10.)]
-            )
-        p = BaseParamCollection(glb = glb, deb = deb)
-        isolate_pmoas!(p.deb, [pmoa])
-        out_zj = simulator(p)
-        out_zj[!,:C_W] .= C_W
-        out_zj[!,:pmoa] .= pmoa
-        append!(out, out_zj)
+    out = DataFrame()
+    for pmoa in [["G"], ["G", "M"], ["G", "A"], ["G", "R"]]
+        for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
+            glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
+            deb = DEBBaseParams(
+                k_D_G = [1.], 
+                k_D_M = [1.], 
+                k_D_A = [1.], 
+                k_D_R = [1.], 
+                k_D_h = [1.], 
+                drc_params_G = [(1., 2.)],
+                drc_params_M = [(1., 2.)],
+                drc_params_A = [(1., 2.)],
+                drc_params_R = [(1., 2.)],
+                drc_params_h = [(1., 2.)]
+                )
+            p = BaseParamCollection(glb = glb, deb = deb)
+            isolate_pmoas!(p.deb, pmoa)
+            out_zj = simulator(p)
+            out_zj[!,:C_W] .= C_W
+            out_zj[!,:pmoa] .= join(pmoa)
+            append!(out, out_zj)
+        end
     end
 end
 
-
-let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
-    plt = plot(
-        layout = (2, num_pmoas), 
-        title = hcat(vcat(pmoas, repeat([""], num_pmoas))...), 
-        size = (1000,450),
-        xlabel = hcat(vcat(
-            repeat([""], num_pmoas),
-            repeat(["t"], num_pmoas))...), 
-        ylabel = ["S" "" "" "" "R" "" "" ""],
-        bottommargin = 5mm, leftmargin = 5mm
-    )
-
-    [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :S, group = :C_W, subplot = j) for (j,pmoa) in enumerate(pmoas)]
-    [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :R, group = :C_W, subplot = j+num_pmoas) for (j,pmoa) in enumerate(pmoas)]
-
-    display(plt)
-end
-
-out = DataFrame()
-for pmoa in [["G"], ["G", "M"], ["G", "A"], ["G", "R"]]
-    for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
-        glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
-        deb = DEBBaseParams(
-            k_D_G = [1.], 
-            k_D_M = [1.], 
-            k_D_A = [1.], 
-            k_D_R = [1.], 
-            k_D_h = [1.], 
-            drc_params_G = [(1., 2.)],
-            drc_params_M = [(1., 2.)],
-            drc_params_A = [(1., 2.)],
-            drc_params_R = [(1., 2.)],
-            drc_params_h = [(1., 2.)]
-            )
-        p = BaseParamCollection(glb = glb, deb = deb)
-        isolate_pmoas!(p.deb, pmoa)
-        out_zj = simulator(p)
-        out_zj[!,:C_W] .= C_W
-        out_zj[!,:pmoa] .= join(pmoa)
-        append!(out, out_zj)
+begin
+    let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
+        plt = plot(
+            layout = (2, num_pmoas), 
+            title = hcat(vcat(pmoas, repeat([""], num_pmoas))...), 
+            size = (1000,450),
+            xlabel = hcat(vcat(
+                repeat([""], num_pmoas),
+                repeat(["t"], num_pmoas))...), 
+            ylabel = ["S" "" "" "" "R" "" "" ""],
+            bottommargin = 5mm, leftmargin = 5mm
+        )
+    
+        [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :S, group = :C_W, subplot = j) for (j,pmoa) in enumerate(pmoas)]
+        [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :R, group = :C_W, subplot = j+num_pmoas) for (j,pmoa) in enumerate(pmoas)]
+    
+        display(plt)
     end
-end
-
-
-let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
-    plt = plot(
-        layout = (2, num_pmoas), 
-        title = hcat(vcat(pmoas, repeat([""], num_pmoas))...), 
-        size = (1000,450),
-        xlabel = hcat(vcat(
-            repeat([""], num_pmoas),
-            repeat(["t"], num_pmoas))...), 
-        ylabel = ["S" "" "" "" "R" "" "" ""],
-        bottommargin = 5mm, leftmargin = 5mm
-    )
-
-    [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :S, group = :C_W, subplot = j) for (j,pmoa) in enumerate(pmoas)]
-    [@df out[out.pmoa .== pmoa,:] plot!(plt, :t, :R, group = :C_W, subplot = j+num_pmoas) for (j,pmoa) in enumerate(pmoas)]
-
-    display(plt)
-end
-
-out = DataFrame()
-for pmoa in [["M"], ["M", "G"], ["M", "A"], ["M", "R"]]
-    for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
-        glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
-        deb = DEBBaseParams(
-            k_D_G = [1.], 
-            k_D_M = [1.], 
-            k_D_A = [1.], 
-            k_D_R = [1.], 
-            k_D_h = [1.], 
-            drc_params_G = [(1., 2.)],
-            drc_params_M = [(1., 2.)],
-            drc_params_A = [(1., 2.)],
-            drc_params_R = [(1., 2.)],
-            drc_params_h = [(1., 2.)]
-            )
-        p = BaseParamCollection(glb = glb, deb = deb)
-        isolate_pmoas!(p.deb, pmoa)
-        out_zj = simulator(p)
-        out_zj[!,:C_W] .= C_W
-        out_zj[!,:pmoa] .= join(pmoa)
-        append!(out, out_zj)
+    
+    out = DataFrame()
+    for pmoa in [["M"], ["M", "G"], ["M", "A"], ["M", "R"]]
+        for C_W in round.(10 .^ range(log10(0.1), log10(2.), length = 5), sigdigits = 2)
+            glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
+            deb = DEBBaseParams(
+                k_D_G = [1.], 
+                k_D_M = [1.], 
+                k_D_A = [1.], 
+                k_D_R = [1.], 
+                k_D_h = [1.], 
+                drc_params_G = [(1., 2.)],
+                drc_params_M = [(1., 2.)],
+                drc_params_A = [(1., 2.)],
+                drc_params_R = [(1., 2.)],
+                drc_params_h = [(1., 2.)]
+                )
+            p = BaseParamCollection(glb = glb, deb = deb)
+            isolate_pmoas!(p.deb, pmoa)
+            out_zj = simulator(p)
+            out_zj[!,:C_W] .= C_W
+            out_zj[!,:pmoa] .= join(pmoa)
+            append!(out, out_zj)
+        end
     end
+        
 end
 
 
@@ -415,7 +437,12 @@ for pmoa in [["G", "G"], ["G", "M"], ["G", "A"], ["G", "R"]]
             drc_params_M = [(1., 2.), (1., 2.)],
             drc_params_A = [(1., 2.), (1., 2.)],
             drc_params_R = [(1., 2.), (1., 2.)],
-            drc_params_h = [(1., 2.), (1., 2.)]
+            drc_params_h = [(1., 2.), (1., 2.)],
+            drc_functs_G = [LL2, LL2],
+            drc_functs_M = [LL2M, LL2M],
+            drc_functs_A = [LL2, LL2],
+            drc_functs_R = [LL2, LL2],
+            drc_functs_h = [LL2h, LL2h],
             )
         p = BaseParamCollection(glb = glb, deb = deb)
         isolate_pmoas!(p.deb, [pmoa[1]], z = 1)
@@ -459,7 +486,12 @@ for pmoa in [["G", "G"], ["G", "M"], ["G", "A"], ["G", "R"]]
         drc_params_M = [(1., 2.), (1., 2.)],
         drc_params_A = [(1., 2.), (1., 2.)],
         drc_params_R = [(1., 2.), (1., 2.)],
-        drc_params_h = [(1., 2.), (1., 2.)]
+        drc_params_h = [(1., 2.), (1., 2.)],
+        drc_functs_G = [LL2, LL2],
+        drc_functs_M = [LL2M, LL2M],
+        drc_functs_A = [LL2, LL2],
+        drc_functs_R = [LL2, LL2],
+        drc_functs_h = [LL2h, LL2h]
         )
     p = BaseParamCollection(glb = glb, deb = deb)
     isolate_pmoas!(p.deb, [pmoa[1]], z = 1)
@@ -507,7 +539,12 @@ for pmoa in [["M", "G"], ["M", "M"], ["M", "A"], ["M", "R"]]
         drc_params_M = [(1., 2.), (1., 2.)],
         drc_params_A = [(1., 2.), (1., 2.)],
         drc_params_R = [(1., 2.), (1., 2.)],
-        drc_params_h = [(1., 2.), (1., 2.)]
+        drc_params_h = [(1., 2.), (1., 2.)],
+        drc_functs_G = [LL2, LL2],
+        drc_functs_M = [LL2M, LL2M],
+        drc_functs_A = [LL2, LL2],
+        drc_functs_R = [LL2, LL2],
+        drc_functs_h = [LL2h, LL2h]
         )
     p = BaseParamCollection(glb = glb, deb = deb)
     isolate_pmoas!(p.deb, [pmoa[1]], z = 1)
@@ -555,7 +592,12 @@ for pmoa in [["A", "G"], ["A", "M"], ["A", "A"], ["A", "R"]]
         drc_params_M = [(1., 2.), (1., 2.)],
         drc_params_A = [(1., 2.), (1., 2.)],
         drc_params_R = [(1., 2.), (1., 2.)],
-        drc_params_h = [(1., 2.), (1., 2.)]
+        drc_params_h = [(1., 2.), (1., 2.)],
+        drc_functs_G = [LL2, LL2],
+        drc_functs_M = [LL2M, LL2M],
+        drc_functs_A = [LL2, LL2],
+        drc_functs_R = [LL2, LL2],
+        drc_functs_h = [LL2h, LL2h]
         )
     p = BaseParamCollection(glb = glb, deb = deb)
     isolate_pmoas!(p.deb, [pmoa[1]], z = 1)
@@ -603,7 +645,12 @@ for pmoa in [["R", "G"], ["R", "M"], ["R", "A"], ["R", "R"]]
         drc_params_M = [(1., 2.), (1., 2.)],
         drc_params_A = [(1., 2.), (1., 2.)],
         drc_params_R = [(1., 2.), (1., 2.)],
-        drc_params_h = [(1., 2.), (1., 2.)]
+        drc_params_h = [(1., 2.), (1., 2.)],
+        drc_functs_G = [LL2, LL2],
+        drc_functs_M = [LL2M, LL2M],
+        drc_functs_A = [LL2, LL2],
+        drc_functs_R = [LL2, LL2],
+        drc_functs_h = [LL2h, LL2h]
         )
     p = BaseParamCollection(glb = glb, deb = deb)
     isolate_pmoas!(p.deb, [pmoa[1]], z = 1)
@@ -637,8 +684,3 @@ let pmoas = unique(out.pmoa), num_pmoas = length(pmoas)
 
     display(plt)
 end
-
-using BenchmarkTools
-using DEBBase
-
-@benchmark simulator(BaseParamCollection())

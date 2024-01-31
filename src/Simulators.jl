@@ -37,14 +37,15 @@ $(TYPEDSIGNATURES)
 """
 function simulator(
     p::BaseParamCollection; 
-    saveat = 1
+    saveat = 1,
+    dt = 1/24
     )
 
     assert!(p)
     u = initialize_statevars(p)
     prob = ODEProblem(DEB!, u, (0, p.glb.t_max), p) # define the problem
-    sol = solve(prob, Euler(), reltol = 1e-6, dt = 1/24, saveat = saveat) # get solution to the IVP
-    #sol = solve(prob) # get solution to the IVP
+    sol = solve(prob, Euler(), reltol = 1e-6, dt = dt, saveat = saveat) # get solution to the IVP
+    #sol = solve(prob, Tsit5()) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
   
     return simout

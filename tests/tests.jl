@@ -1,12 +1,13 @@
+using Pkg; Pkg.activate("tests")
 using Revise
 @time using DEBBase
-using Plots, Plots.Measures, StatsPlots
-using DataFrames
-using BenchmarkTools
+using Glob
 
-default(leg = false, lw = 1.5)
+tests = glob("tests/*.jl") |> 
+x -> [splitpath(xi)[end] for xi in x] |>
+x -> filter(f -> f != "tests.jl", x)
 
-glb = GlobalBaseParams()
-anm = DEBBaseParams()
-simout = DEBBase.run_model(glb, anm)
-
+for test in tests
+    @info("Running $test")
+    include(test)
+end

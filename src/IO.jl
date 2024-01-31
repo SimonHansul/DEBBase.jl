@@ -75,12 +75,12 @@ end
 
 
 """
-Isolate the indicated PMoAs. 
+Isolate the indicated PMoAs for chemical stressor `z`. 
 That means, turn off all PMoAs (including lethal effects `h`) except for those indicated in `pmoas`-Vector. 
 This is done through the toxicokinetic rate constant.
 $(TYPEDSIGNATURES)
 """
-function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
+function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}; z::Int64)::AbstractParams
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
         let fieldname = Symbol("k_D_$(j)")
@@ -92,11 +92,27 @@ function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
     return deb
 end
 
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64 = 1)
+function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String})::AbstractParams
+    deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
+    for j in deactivate
+        let fieldname = Symbol("k_D_$(j)")
+            k_D = getfield(deb, fieldname)
+            k_D .= 0.
+            setfield!(deb, fieldname, k_D)
+        end
+    end
+    return deb
+end
+
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64)::Nothing
     deb = isolate_pmoas(deb, pmoas; z = z)
     return nothing
 end
 
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})::Nothing
+    deb = isolate_pmoas(deb, pmoas)
+    return nothing
+end
 
 """
 Raise assertion errors

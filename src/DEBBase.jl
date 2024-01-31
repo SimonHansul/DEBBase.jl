@@ -26,6 +26,8 @@ GlobalBaseStatevars,
 DEBBaseParams, 
 BaseParamCollection,
 simulator,
-isolate_pmoas!
+isolate_pmoas!,
+sig,
+clipneg
 
 end # module DEBBase
