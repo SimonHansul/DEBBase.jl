@@ -1,4 +1,4 @@
-using Pkg; Pkg.activate("../../tests")
+using Pkg; Pkg.activate("tests")
 using Revise
 @time using DEBBase
 @time using DoseResponse
