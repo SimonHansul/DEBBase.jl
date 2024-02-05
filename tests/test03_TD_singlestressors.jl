@@ -56,9 +56,9 @@ begin
 
         for (j,pmoa) in enumerate(pmoas)
             @df @subset(out, :pmoa .== pmoa) plot!(plt, :t, :S, group = :C_W, subplot = j, leg = j == 4 ? :bottomright : false, label = hcat(unique(:C_W)...), legendtitle = "C_W")
-            @df @subset(out, :pmoa .== pmoa) plot!(plt, :t, :y_S, group = :C_W, subplot = j+(1*num_pmoas))
+            @df @subset(out, :pmoa .== pmoa) plot!(plt, :t, :y_S, group = :C_W, subplot = j+(1*num_pmoas), ylim = (0, 1.01))
             @df @subset(out, :pmoa .== pmoa) plot!(plt, :t, :R, group = :C_W, subplot = j+(2*num_pmoas))
-            @df @subset(out, :pmoa .== pmoa) plot!(plt, :t, :y_R, group = :C_W, subplot = j+(3*num_pmoas))
+            @df @subset(out, :pmoa .== pmoa) plot!(plt, :t, :y_R, group = :C_W, subplot = j+(3*num_pmoas), ylim = (0, 1.01))
         end
 
         display(plt)
