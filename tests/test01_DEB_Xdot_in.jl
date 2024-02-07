@@ -6,7 +6,6 @@ using Revise
 using DataMonk
 const TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 
-
 begin 
     p = BaseParamCollection()
     out = simulator(p)
@@ -65,16 +64,4 @@ begin # effect of food input
     end
 end
 
-begin # effect of eta_AS
-end
-
-
-using BenchmarkTools
-using DEBBase
-
-@benchmark out = simulator(
-        BaseParamCollection(
-            glb = GlobalBaseParams(Xdot_in = 4800., t_max = 21.), 
-            deb = DEBBaseParams(K_X = 12e3))
-        )
 

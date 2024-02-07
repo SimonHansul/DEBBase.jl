@@ -70,52 +70,6 @@ theta = BaseParamCollection(deb = deb) # initialize parameter collection
 ```
 
 
-
-## Extending the model
-
-
----
-
-# DEB Modelling: languages & tools (I)
-
-
-<style scoped>
-table {
-  font-size: 20px;
-}
-</style>
-
-
-| Tool            | Language | Open source | Individual-level | Population-level | TKTD | Mixtures |Published | Performance | Built-in functions for parameter estimation |
-|-----------------|----------|-------------|------------------|------------------|------|----------|----------|-------------|--------|
-| Debtool         | Matlab   | -           | +                | -                |  -   |    -/?   |+         | ?           |+       |
-| DEBBase         | Julia    | +           | +                | +                |  +   |     +    |-         | +           |-$^{*}$ | 
-| MEMpy           | Python   | +           | +                | +                |  +   |    +     |-         | -           |+/-     |
-| Netlogo DEB-IBM | Netlogo  | +           | +/-              | +                | +    |    +     |+         | -           | -      |   
-
----
-
-# DEB Modelling: languages & tools (II)
-
-
-<style scoped>
-table {
-  font-size: 20px;
-}
-</style>
-
-| Tool            | Unique features                                      |
-|-----------------|------------------------------------------------------|
-| Debtool         | Tried and tested manifestation of standard DEB model |
-| DEBBase         | Extensible performant implementation with mixture TKTD |
-| MEMpy           | Easy-to-use Python implementation for individuals and populations |
-| Netlogo DEB-IBM | Probably the most used DEB-IBM implementation |
-
-
-
-
-$^{*}$ Will be added through DEBABC package
-
 ## TODO
 
 - Add possibilities for simulating time-variable exposure (outsurce the detail work to a separate package?)

@@ -287,7 +287,7 @@ $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
     #### boilerplate
-    u.S = sig(u.S, 0., 0., u.S)
+    u.S = sig(u.S, p.deb.X_emb_int, p.deb.X_emb_int, u.S)
     
     #### stressor responses
     y!(du, u, p, t)
