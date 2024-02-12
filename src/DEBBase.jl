@@ -30,6 +30,6 @@ simulator,
 isolate_pmoas!,
 sig,
 clipneg,
-relative_response!
+relative_response
 
 end # module DEBBase

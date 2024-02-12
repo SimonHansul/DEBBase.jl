@@ -173,7 +173,6 @@ function relative_response(
     identify_control = minimum
     ) where D <: AbstractDataFrame
 
-
     #=
     Calculation of the conditional control mean
     =#
