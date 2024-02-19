@@ -17,7 +17,7 @@ as well as population dynamics. Furthermore, models should be modifiable within 
 
 DEBBase.jl is designed to be lean and modular. 
 That means, instead of providing as much functionality as possible in a single package, 
-DEBBase.jl only provides the definition of a base model, default parameters and simulators for the base model. Simulations are either be executed by passing the model on to an ODE solver, 
+DEBBase.jl only provides the definition of a base model, default parameters and DEBBase.simulators for the base model. Simulations are either be executed by passing the model on to an ODE solver, 
 or by passing them on to an individual-based simulation framework. This is a novel feature of DEBBase.jl compared to existing DEB-TKTD model implementations, since those focus either on simulating individual life-history (e.g. DEBtool, BYOM) or on simulating population dynamics (e.g. the Netlogo implementation by Martin et al. (2013)). <br>
 
 Parameter estimation is outsourced to the separate DEBABC.jl, but other Julia packages could be used to perform parameter estimation (e.g. Optim.jl). Vice versa, DEBABC.jl can also be used to perform parameter estimation for models which are not part of DEBBase.jl.
@@ -30,10 +30,10 @@ DEBBase.jl can be used as a dependency to implement more specific DEB models, as
 With DEBBase.jl installed in the Julia environment, we can conduct a first simulation with just two lines of code:
 ```Julia
 using DEBBase # load package
-simout = simulator(BaseParamCollection()) # execute simulation with default parameters
+simout = DEBBase.simulator(BaseParamCollection()) # execute simulation with default parameters
 ```
 
-Here, the first line loads the DEBBase package. The second line calls the `simulator` function, which takes an object of type `BaseParamCollection` as argument. 
+Here, the first line loads the DEBBase package. The second line calls the `DEBBase.simulator` function, which takes an object of type `BaseParamCollection` as argument. 
 This will assume a set of default parameters if no parameters are specified, as done above. <br>
 The definition of `BaseParamCollections` in turn contains two fields:
 
@@ -50,18 +50,18 @@ The default parameters can be modified by specifying exactly the parameters whic
 ```Julia
 p = BaseParamCollection() # initialize default parameters
 p.deb.kappa = 0.8 # modify a DEB parameter, kappa
-simout = simulator(p) # execute simulation with modified kappa
+simout = DEBBase.simulator(p) # execute simulation with modified kappa
 ```
 
 This simulates the default parameters, except that the DEB parameter $\kappa$ (indicating the fraction of assimilated nutrients allocated to growth and somatic maintenance) is changed to 0.8 Alternatively, the following code achieves the same:
 
 ```Julia
-simout = simulator(BaseParamCollection(deb = DEBBaseParams(kappa = 0.8)))
+simout = DEBBase.simulator(BaseParamCollection(deb = DEBBaseParams(kappa = 0.8)))
 ```
 
 The same applies to global parameters, e.g. to set the food input rate:
 ```Julia
-simout = simulator(BaseParamCollection(glb = GlobalBaesParams(Xdot_in = 800.)))
+simout = DEBBase.simulator(BaseParamCollection(glb = GlobalBaesParams(Xdot_in = 800.)))
 ```
 
 ## Simulating effects of chemical stressors
@@ -163,9 +163,9 @@ abcresult = SMC(BaseData(data)) # estimate DEBBase parameters from base data
 
 Simulation of population dynamics can be achieved with the same basic mechanisms as simulation of individual life history:
 ```Julia
-simout = simulator(IBMParamCollection())
+simout = DEBBase.simulator(IBMParamCollection())
 ```
-The type `IBMBaseParams` has the same structure as `BaseParamCollection`, but defines some additional parameters (both within `glb` and `deb`) which are necessary to simulate population dynamics. The implementation makes use of multiple dispatch, so that the IBM implementation is called when `simulator` is called with `IBMParamCollection` as argument. <br>
+The type `IBMBaseParams` has the same structure as `BaseParamCollection`, but defines some additional parameters (both within `glb` and `deb`) which are necessary to simulate population dynamics. The implementation makes use of multiple dispatch, so that the IBM implementation is called when `DEBBase.simulator` is called with `IBMParamCollection` as argument. <br>
 
 
 ## Extending the base model

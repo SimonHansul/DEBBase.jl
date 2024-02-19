@@ -377,16 +377,16 @@ as well as population dynamics. Furthermore, models should be modifiable within 
 <h2 id="design-principles">Design principles</h2>
 <p>DEBBase.jl is designed to be lean and modular.
 That means, instead of providing as much functionality as possible in a single package,
-DEBBase.jl only provides the definition of a base model, default parameters and simulators for the base model. Simulations are either be executed by passing the model on to an ODE solver,
+DEBBase.jl only provides the definition of a base model, default parameters and DEBBase.simulators for the base model. Simulations are either be executed by passing the model on to an ODE solver,
 or by passing them on to an individual-based simulation framework. This is a novel feature of DEBBase.jl compared to existing DEB-TKTD model implementations, since those focus either on simulating individual life-history (e.g. DEBtool, BYOM) or on simulating population dynamics (e.g. the Netlogo implementation by Martin et al. (2013)). <br></p>
 <p>Parameter estimation is outsourced to the separate DEBABC.jl, but other Julia packages could be used to perform parameter estimation (e.g. Optim.jl). Vice versa, DEBABC.jl can also be used to perform parameter estimation for models which are not part of DEBBase.jl.
 DEBBase.jl can be used as a dependency to implement more specific DEB models, as we will later demonstrate using a DEB model for amphibians.</p>
 <h2 id="simulating-life-history">Simulating life-history</h2>
 <p>With DEBBase.jl installed in the Julia environment, we can conduct a first simulation with just two lines of code:</p>
 <pre class="hljs"><code><div><span class="hljs-keyword">using</span> DEBBase
-simout = simulator(BaseParamCollection())
+simout = DEBBase.simulator(BaseParamCollection())
 </div></code></pre>
-<p>Here, the first line loads the DEBBase package. The second line calls the <code>simulator</code> function, which takes an object of type <code>BaseParamCollection</code> as argument.
+<p>Here, the first line loads the DEBBase package. The second line calls the <code>DEBBase.simulator</code> function, which takes an object of type <code>BaseParamCollection</code> as argument.
 This will assume a set of default parameters if no parameters are specified, as done above. <br>
 The definition of <code>BaseParamCollections</code> in turn contains two fields:</p>
 <ul>
@@ -399,13 +399,13 @@ The definition of <code>BaseParamCollections</code> in turn contains two fields:
 <p>The default parameters can be modified by specifying exactly the parameters which should be modified, e.g:</p>
 <pre class="hljs"><code><div>p = BaseParamCollection()
 p.deb.kappa = <span class="hljs-number">0.8</span>
-simout = simulator(p)
+simout = DEBBase.simulator(p)
 </div></code></pre>
 <p>This simulates the default parameters, except that the DEB parameter $\kappa$ (indicating the fraction of assimilated nutrients allocated to growth and somatic maintenance) is changed to 0.8 Alternatively, the following code achieves the same:</p>
-<pre class="hljs"><code><div>simout = simulator(BaseParamCollection(deb = DEBBaseParams(kappa = <span class="hljs-number">0.8</span>)))
+<pre class="hljs"><code><div>simout = DEBBase.simulator(BaseParamCollection(deb = DEBBaseParams(kappa = <span class="hljs-number">0.8</span>)))
 </div></code></pre>
 <p>The same applies to global parameters, e.g. to set the food input rate:</p>
-<pre class="hljs"><code><div>simout = simulator(BaseParamCollection(glb = GlobalBaesParams(Xdot_in = <span class="hljs-number">800.</span>)))
+<pre class="hljs"><code><div>simout = DEBBase.simulator(BaseParamCollection(glb = GlobalBaesParams(Xdot_in = <span class="hljs-number">800.</span>)))
 </div></code></pre>
 <h2 id="simulating-effects-of-chemical-stressors">Simulating effects of chemical stressors</h2>
 <p>The TKTD component is implemented so that mixtures with an arbitrary number of mixture components can be simulated. For this reason, TKTD parameters are stored as Vectors, where each element of the Vector represents a mixture component. Furthermore, we assume that each mixture component can act via arbitrary combinations of Physiological Modes of Action (PMoA), represented by a separate parameter Vector for each PMoA. The PMoAs are indicated by the suffixes G = decrease in growth efficiency, M = increase in maintenance costs, A = decrease in assimilation efficiency, R = decrease in reproduction efficiency, h = lethal effects according to GUTS-RED-SD. <br></p>

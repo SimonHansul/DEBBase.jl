@@ -33,7 +33,7 @@ The following Code will simulate the DEB model based on the given default parame
 
 ```Julia
 using DEBBase
-out = simulator(BaseParams())
+out = DEBBase.simulator(BaseParams())
 ```
 
 The default parameters approximate the life history of *D. magna* (model currency $\mu g\ C$).
@@ -48,7 +48,7 @@ In order to extend the DEBBase model, there are four implementation steps to tak
 1. Define parameter objects
 2. Define new model functions
 3. Adapt the ODE system
-4. Adapt the simulator function
+4. Adapt the DEBBase.simulator function
 
 
 In case you are adding new parameters to the model, 
@@ -126,10 +126,10 @@ Compared to the original ODE system defined in `DEBBase.DEB!`, we made three mod
 In the definition of `NewDEB!`, we can easily see which variables are calculated according to the base model (`DEBBase.Idot`, `DEBBase.Adot`, etc.) and which functions are part of the extension (`Edot`). <br>
 
 
-Finally, if new state variables have been introduced, the simulator also has to be adapted:
+Finally, if new state variables have been introduced, the DEBBase.simulator also has to be adapted:
 
 ```Julia
-function simulator(
+function DEBBase.simulator(
     glb::AbstractParams,
     deb::NewDEBParams
     )
@@ -150,14 +150,14 @@ Here we have made the following changes:
 - `ODEProblem` depends on `NewDEB!` instead of `DEB!`. <br>
 - Exchanged `deb::AbstractParams` with `deb::NewDEBParams` in the function signature
 
-The last step is optional - `AbstractParams` would also work, but specifiying the type is useful to add more methods to `simulator`.  
-You might have many versions of `simulator` which all evaluate different parameter objects. 
+The last step is optional - `AbstractParams` would also work, but specifiying the type is useful to add more methods to `DEBBase.simulator`.  
+You might have many versions of `DEBBase.simulator` which all evaluate different parameter objects. 
 
 ### Tips on re-defining functions
 
 A useful Julia function is `less()`, which prints the definition of a function. 
 So you can for example use `less(DEBBase.DEB!)` to print the definition of the ODE system as given in the base model. 
-Similarly, you can use `@less simulator(glb, deb)` to get the body for a specific method of `simulator` (depending on the type of `glb` and `deb`). <br>
+Similarly, you can use `@less DEBBase.simulator(glb, deb)` to get the body for a specific method of `DEBBase.simulator` (depending on the type of `glb` and `deb`). <br>
 Alternatively, most IDEs also have functions to navigate to the definition of a symbol (e.g. `Ctrl+Alt+Click` in VSCode - does not seem to always work well for functions defined in packages).
 
 

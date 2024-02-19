@@ -25,7 +25,6 @@ export GlobalBaseParams,
 GlobalBaseStatevars, 
 DEBBaseParams, 
 BaseParamCollection,
-simulator,
 isolate_pmoas!,
 sig,
 clipneg

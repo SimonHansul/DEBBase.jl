@@ -35,7 +35,7 @@ for pmoa in ["G", "M", "A", "R"]
             )
         p = BaseParamCollection(glb = glb, deb = deb)
         isolate_pmoas!(p.deb, [pmoa])
-        out_zj = simulator(p)
+        out_zj = DEBBase.simulator(p)
         out_zj[!,:C_W] .= C_W
         out_zj[!,:pmoa] .= pmoa
         append!(out, out_zj)
@@ -78,7 +78,7 @@ for pmoa in ["G", "M", "A", "R"]
             )
         p = BaseParamCollection(glb = glb, deb = deb)
         isolate_pmoas!(p.deb, [pmoa])
-        out_zj = simulator(p)
+        out_zj = DEBBase.simulator(p)
         out_zj[!,:C_W] .= C_W
         out_zj[!,:pmoa] .= pmoa
         append!(out, out_zj)
@@ -123,7 +123,7 @@ begin
                 )
             p = BaseParamCollection(glb = glb, deb = deb)
             isolate_pmoas!(p.deb, [pmoa])
-            out_zj = simulator(p)
+            out_zj = DEBBase.simulator(p)
             out_zj[!,:C_W] .= C_W
             out_zj[!,:pmoa] .= pmoa
             append!(out, out_zj)
@@ -172,7 +172,7 @@ begin
                 )
             p = BaseParamCollection(glb = glb, deb = deb)
             isolate_pmoas!(p.deb, [pmoa])
-            out_zj = simulator(p)
+            out_zj = DEBBase.simulator(p)
             out_zj[!,:C_W] .= C_W
             out_zj[!,:pmoa] .= pmoa
             append!(out, out_zj)
@@ -217,7 +217,7 @@ begin
                 )
             p = BaseParamCollection(glb = glb, deb = deb)
             isolate_pmoas!(p.deb, [pmoa])
-            out_zj = simulator(p)
+            out_zj = DEBBase.simulator(p)
             out_zj[!,:C_W] .= C_W
             out_zj[!,:pmoa] .= pmoa
             append!(out, out_zj)
@@ -263,7 +263,7 @@ begin
                 )
             p = BaseParamCollection(glb = glb, deb = deb)
             isolate_pmoas!(p.deb, pmoa)
-            out_zj = simulator(p)
+            out_zj = DEBBase.simulator(p)
             out_zj[!,:C_W] .= C_W
             out_zj[!,:pmoa] .= join(pmoa)
             append!(out, out_zj)
@@ -308,7 +308,7 @@ begin
                 )
             p = BaseParamCollection(glb = glb, deb = deb)
             isolate_pmoas!(p.deb, pmoa)
-            out_zj = simulator(p)
+            out_zj = DEBBase.simulator(p)
             out_zj[!,:C_W] .= C_W
             out_zj[!,:pmoa] .= join(pmoa)
             append!(out, out_zj)
@@ -354,7 +354,7 @@ for pmoa in [["A"], ["A", "G"], ["A", "M"], ["A", "R"]]
             )
         p = BaseParamCollection(glb = glb, deb = deb)
         isolate_pmoas!(p.deb, pmoa)
-        out_zj = simulator(p)
+        out_zj = DEBBase.simulator(p)
         out_zj[!,:C_W] .= C_W
         out_zj[!,:pmoa] .= join(pmoa)
         append!(out, out_zj)
@@ -398,7 +398,7 @@ for pmoa in [["R"], ["R", "G"], ["R", "M"], ["R", "A"]]
             )
         p = BaseParamCollection(glb = glb, deb = deb)
         isolate_pmoas!(p.deb, pmoa)
-        out_zj = simulator(p)
+        out_zj = DEBBase.simulator(p)
         out_zj[!,:C_W] .= C_W
         out_zj[!,:pmoa] .= join(pmoa)
         append!(out, out_zj)
@@ -447,7 +447,7 @@ for pmoa in [["G", "G"], ["G", "M"], ["G", "A"], ["G", "R"]]
         p = BaseParamCollection(glb = glb, deb = deb)
         isolate_pmoas!(p.deb, [pmoa[1]], z = 1)
         isolate_pmoas!(p.deb, [pmoa[2]], z = 2)
-        out_zj = simulator(p)
+        out_zj = DEBBase.simulator(p)
         out_zj[!,:C_W] .= C_W
         out_zj[!,:pmoa] .= join(pmoa)
         append!(out, out_zj)
@@ -501,7 +501,7 @@ for pmoa in [["G", "G"], ["G", "M"], ["G", "A"], ["G", "R"]]
     for C_W in round.(10 .^ range(log10(0.005), log10(0.5), length = 5), sigdigits = 2)
         p.glb.C_W = [C_W, C_W]
 
-        out_zj = simulator(p)
+        out_zj = DEBBase.simulator(p)
         out_zj[!,:C_W] .= C_W
         out_zj[!,:pmoa] .= join(pmoa)
         append!(out, out_zj)
@@ -554,7 +554,7 @@ for pmoa in [["M", "G"], ["M", "M"], ["M", "A"], ["M", "R"]]
     for C_W in round.(10 .^ range(log10(0.005), log10(0.5), length = 5), sigdigits = 2)
         p.glb.C_W = [C_W, C_W]
 
-        out_zj = simulator(p)
+        out_zj = DEBBase.simulator(p)
         out_zj[!,:C_W] .= C_W
         out_zj[!,:pmoa] .= join(pmoa)
         append!(out, out_zj)
@@ -607,7 +607,7 @@ for pmoa in [["A", "G"], ["A", "M"], ["A", "A"], ["A", "R"]]
     for C_W in round.(10 .^ range(log10(0.005), log10(0.5), length = 5), sigdigits = 2)
         p.glb.C_W = [C_W, C_W]
 
-        out_zj = simulator(p)
+        out_zj = DEBBase.simulator(p)
         out_zj[!,:C_W] .= C_W
         out_zj[!,:pmoa] .= join(pmoa)
         append!(out, out_zj)
@@ -660,7 +660,7 @@ for pmoa in [["R", "G"], ["R", "M"], ["R", "A"], ["R", "R"]]
     for C_W in round.(10 .^ range(log10(0.005), log10(0.5), length = 5), sigdigits = 2)
         p.glb.C_W = [C_W, C_W]
 
-        out_zj = simulator(p)
+        out_zj = DEBBase.simulator(p)
         out_zj[!,:C_W] .= C_W
         out_zj[!,:pmoa] .= join(pmoa)
         append!(out, out_zj)
