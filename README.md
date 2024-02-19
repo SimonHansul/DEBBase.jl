@@ -22,8 +22,21 @@ The purpose of DEBBase is explicitly not to provide functionality for parameter 
 
 ### Installation
 
+DEBBase can be installed via Github, but the unregistered dependencies have to be installed manually first:
+
 ```Julia#
+# load the package manager
 using Pkg
+
+# activate project in current directory 
+# (or whatever project you want to add DEBBase to)
+Pkg.activate(".") 
+
+# add unregistered dependencies
+Pkg.add(url = "https://github.com/SimonHansul/DEBParamStructs.jl")
+Pkg.add(url = "https://github.com/SimonHansul/DoseResponse.jl")
+
+# add DEBBase
 Pkg.add(url = "https://github.com/SimonHansul/DEBBase.jl")
 ```
 
@@ -36,7 +49,9 @@ using DEBBase
 out = DEBBase.simulator(BaseParams())
 ```
 
-The default parameters approximate the life history of *D. magna* (model currency $\mu g\ C$).
+A parameter collection (`BaseParamCollection`) contains two sets of parameters: 
+- `glb::GlobalBaseParams`: These are global parameters, such as the simulated timespan, food input rate, etc.
+- `deb::DEBBaseParams`: The DEB and TKTD parameters.
 
 ## Extending the model
 
@@ -54,29 +69,17 @@ In order to extend the DEBBase model, there are four implementation steps to tak
 In case you are adding new parameters to the model, 
 you can define your own parameter struct like so: 
 ```Julia
-using Parameters 
-@with_kw mutable struct NewDEBParams <: AbstractParams
-    Idot_max_rel_emb::Float64 = 22.9 # DEBBase parameter with default 
-    k_E::Float64 = .1 # new parameter with default value variables in the model. this part ensures that mixture toxicity with arbitrary numbers of stressors can be simulated efficiently
-    ...
-end
-
-@with_kw NewGlobalParams <: AbstractParams
-    ...
-end
+# initialize default DEB parameters, but change kappa
+deb = DEBBaseParams(kappa = 0.5)
+theta = BaseParamCollection(deb = deb) # initialize parameter collection with altered DEB parameters
 ```
 
-`NewDEBParams` will replace `DEBBaseParams` and `NewGlobalParams` will replace `GlobalBaseParams`. So both need to include all the parameters, including those that were are already defined in `DEBBaseParams` and `GlobalBaseParams`. The definition of a new global parameter structure is optional, but a new DEB parameter structure should always be defined, even if no new parameters are introduced, because we will use multiple dispatch to differentiate between the base model and the extended model. <br>
-
-Next, you need to define model functions which are additionally needed. For example, the function to calculate the derivative of some newly introduced state variable `E`:
-
+Or, by accessing the parameter entry of a previously initialized parameter structure:
 ```Julia
-function Edot(
-    deb::NewDEBParams;
-    S::Float64
-    )
-    return deb.k_E * S
-end
+deb = DEBBaseParams() # initialize default DEB parameters
+deb.kappa = 0.5 # change kappa
+setproperty!(deb, :kappa, 0.5) # this does the same as the line above
+theta = BaseParamCollection(deb = deb) # initialize parameter collection
 ```
 
 Some conventions for defining these functions in DEBBase:

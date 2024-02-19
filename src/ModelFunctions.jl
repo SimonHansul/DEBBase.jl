@@ -26,8 +26,8 @@ end
     p::AbstractParamCollection,
     t::Real
     )
-    let X_V = u.X_p / p.glb.V_patch
-        return X_V / (X_V + p.deb.K_X)
+    let X_V = u.X_p / p.glb.V_patch # convert food abundance to concentration
+        return X_V / (X_V + p.deb.K_X) # calculate type II functional response
     end
 end
 
@@ -94,7 +94,7 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection,
     t::Real
     )
-    du.J = u.H * p.deb.k_J
+    du.J = u.H * p.deb.k_J * u.y_M
 end
 
 """
@@ -188,7 +188,7 @@ $(TYPEDSIGNATURES)
         u.H, # reproduction depends on maturity
         p.deb.H_p, # switch occurs at maturity at puberty H_p
         0., # reproduction for embryos and juveniles
-        clipneg(u.y_R * p.deb.eta_AR * (1 - p.deb.kappa) * du.A - du.J) # reproduction for adults
+        clipneg(u.y_R * p.deb.eta_AR * ((1 - p.deb.kappa) * du.A - du.J)) # reproduction for adults
     )
 end
 
@@ -226,8 +226,7 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection,
     t::Real
     ) 
-
-
+    
     # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
     SL_max = calc_SL_max(p.deb) # maximum structural length (g^(1/3))
     SL = u.S^(1/3)
@@ -288,7 +287,7 @@ $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
     #### boilerplate
-    u.S = sig(u.S, 0., 0., u.S)
+    u.S = sig(u.S, p.deb.X_emb_int, p.deb.X_emb_int, u.S)
     
     #### stressor responses
     y!(du, u, p, t)

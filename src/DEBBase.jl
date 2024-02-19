@@ -10,6 +10,7 @@ using DocStringExtensions
 using DataFrames
 using PrecompileTools
 using StaticArrays
+using StatsBase
 
 include("Structures.jl")
 include("IO.jl")
@@ -27,6 +28,7 @@ DEBBaseParams,
 BaseParamCollection,
 isolate_pmoas!,
 sig,
-clipneg
+clipneg,
+relative_response
 
 end # module DEBBase
