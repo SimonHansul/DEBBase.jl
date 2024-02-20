@@ -104,8 +104,8 @@ function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String})::AbstractPara
     return deb
 end
 
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64)::Nothing
-    deb = isolate_pmoas(deb, pmoas; z = z)
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}, z::Int64)::Nothing
+    deb = isolate_pmoas(deb, pmoasm, z)
     return nothing
 end
 
