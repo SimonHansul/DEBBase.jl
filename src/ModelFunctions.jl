@@ -175,6 +175,27 @@ $(TYPEDSIGNATURES)
 end
 
 """
+Update the current estimate of H_b. 
+The current estimate of maturity at birth is equal to current maturity for embryos, 
+and will be fixed to the current value upon completion of embryonic development. \n
+This way, we obtain H_b as an implied trait and can use it later (for example in `abj()`).
+"""
+@inline function H_bdot!(
+    du::ComponentArray,
+    u::ComponentArray,
+    p::AbstractParamCollection,
+    t::Real
+    )
+    # 
+    du.H_b = DEBBase.sig(
+        u.X_emb, # estimate depends on embryonic state
+        0., # switch occurs when vitellus is gone
+        0., # post-embryonic: H_b stays fixed
+        du.H # embryonic: H_b tracks H
+    )
+end
+
+"""
 Reproduction rate.
 $(TYPEDSIGNATURES)
 """
@@ -280,6 +301,28 @@ end
     u.h_z = sum([p.deb.drc_functs_h[z](u.D_h[z], p.deb.drc_params_h[z]) for z in 1:length(u.C_W)])
 end
 
+"""
+Metabolic acceleration from birth to maturity. 
+We assume that some baseline parameter `p` has value `p_b` at birth and `p_j` at metamorphosis.
+Between birth and metamorphosis, the current value of `p` is the maturity-weighted mean of `p_b` and `p_j`.
+"""
+function abj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
+    w_b = (H_j - H) / (H_j - H_b) # weight for p_b
+    w_j = 1 - w_b # weight for p_j
+    p_bj = mean([p_b, p_j], Weights([w_b, w_j])) # p_bj, i.e. value between birth and maturity
+    
+    p = DEBBase.sig( # post-metamorphosis: value stays constant at p_j
+        H,
+        H_j,
+        DEBBase.sig( # embryonic: value stays constant at p_b
+            X_emb, 
+            0., 
+            p_bj, 
+            p_b),
+        p_j
+    )
+    return p
+end
 
 """
 Definition of reserveless DEB derivatives. 
@@ -301,9 +344,13 @@ function DEB!(du, u, p, t)
     #### major state variables
     Sdot!(du, u, p, t) # structure
     Hdot!(du, u, p, t) # maturity 
+    H_bdot!(du, u, p, t) # estimate of maturity at birth
     Rdot!(du, u, p, t) # reproduction buffer
     X_pdot!(du, u, p, t) # resource abundance
     X_embdot!(du, u, p, t) # vitellus
     Ddot!(du, u, p, t) # damage
     C_Wdot!(du, u, p, t) # external stressor concentration  
 end
+
+
+

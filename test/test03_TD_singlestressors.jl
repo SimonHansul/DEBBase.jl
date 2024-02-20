@@ -39,7 +39,7 @@ begin
         end
     end
     out = DEBBase.relative_response(out, [:S, :R], :C_W; groupby_vars = [:t, :pmoa])
-
+end
 
 out = DataFrame()
 for pmoa in ["G", "M", "A", "R"]

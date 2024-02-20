@@ -8,6 +8,7 @@ function initialize_statevars(p::BaseParamCollection)::ComponentArray
         X_emb = Float64(p.deb.X_emb_int), # initial mass of vitellus
         S = Float64(p.deb.X_emb_int * 0.01), # initial structure is a small fraction of initial reserve // mass of vitellus
         H = Float64(0.), # maturity
+        H_b = 0., # maturity at birth (will be derived from model output)
         R = Float64(0.), # reproduction buffer
         life_stage = Float64(1.), # life stage 
         I_emb = Float64(0.), # uptake from vitellus
