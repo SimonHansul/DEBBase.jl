@@ -15,9 +15,9 @@ $(TYPEDSIGNATURES)
     x_thr::Float64,
     y_left::Float64, 
     y_right::Float64; 
-    β::Float64 = 1e6
+    beta::Float64 = 30.
     )
-    return 1 / (1 + exp(-β*(x - x_thr))) * (y_right - y_left) + y_left
+    return 1 / (1 + exp(-beta*(x - x_thr))) * (y_right - y_left) + y_left
 end
 
 @inline function functional_response(
