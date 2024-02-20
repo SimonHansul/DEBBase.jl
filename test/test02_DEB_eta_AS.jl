@@ -22,7 +22,7 @@ begin # effect of food input
     let eta_AS_vec = collect(0.1:0.1:1)
         for eta_AS in eta_AS_vec
             # generate the predidction
-            out = simulator(
+            out = DEBBase.simulator(
                 BaseParamCollection(
                     glb = GlobalBaseParams(t_max = 56.), 
                     deb = DEBBaseParams(eta_AS = eta_AS))
