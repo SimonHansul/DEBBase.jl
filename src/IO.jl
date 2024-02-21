@@ -80,7 +80,7 @@ That means, turn off all PMoAs (including lethal effects `h`) except for those i
 This is done through the toxicokinetic rate constant.
 $(TYPEDSIGNATURES)
 """
-function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}; z::Int64)::AbstractParams
+function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}, z::Int64)::AbstractParams
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
         let fieldname = Symbol("k_D_$(j)")
@@ -104,8 +104,8 @@ function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String})::AbstractPara
     return deb
 end
 
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}; z::Int64)::Nothing
-    deb = isolate_pmoas(deb, pmoas; z = z)
+function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}, z::Int64)::Nothing
+    deb = isolate_pmoas(deb, pmoasm, z)
     return nothing
 end
 
