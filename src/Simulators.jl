@@ -6,7 +6,7 @@ function initialize_statevars(p::BaseParamCollection)::ComponentArray
     return ComponentArray( # initial states
         X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
         X_emb = Float64(p.deb.X_emb_int), # initial mass of vitellus
-        S = Float64(p.deb.X_emb_int * 0.01), # initial structure is a small fraction of initial reserve // mass of vitellus
+        S = Float64(p.deb.X_emb_int * 0.001), # initial structure is a small fraction of initial reserve // mass of vitellus
         H = Float64(0.), # maturity
         H_b = 0., # maturity at birth (will be derived from model output)
         R = Float64(0.), # reproduction buffer

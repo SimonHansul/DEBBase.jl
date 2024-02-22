@@ -199,3 +199,29 @@ function relative_response(
     end
     return res
 end
+
+
+
+"""
+Set parameters with common prefix to the value of a reference parameter. 
+E.g. 
+
+```
+set_equal!(deb, :Idot_max_rel, :lrv)
+```
+
+sets all parameters whose names start with `Idot_max_rel` equal to `Idot_max_rel_lrv`.
+"""
+function set_equal!(deb::AbstractParams, prefix::SS, ref_suffix::SS) where SS <: Union{Symbol,String}
+    prefix = String(prefix)
+    ref_suffix = String(ref_suffix)
+
+    ref_param = prefix*"_"*ref_suffix
+    paramnames = String[String.(fieldnames(typeof(deb)))...]
+    filter!(x -> occursin(String(prefix), x), paramnames)
+    filter!(x -> x != String(ref_param), paramnames)
+
+    for param in paramnames
+        setproperty!(deb, param, ref_param)
+    end
+end

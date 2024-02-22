@@ -10,7 +10,7 @@ end
 
 begin 
     p = BaseParamCollection()
-    out = simulator(p)
+    out = DEBBase.simulator(p)
 
     plt = @df out plot(
         plot(:t, :S, ylabel = "S"), 
@@ -29,8 +29,6 @@ begin
     display(plt)
 end
 
-norm(x) = x ./ (sum(x))
-
 begin # effect of food input
     # prepare the plot
     plt = plot(
@@ -47,7 +45,7 @@ begin # effect of food input
         for _ in 1:5
             Xdot_in /= 2
             # generate the predidction
-            out = simulator(
+            out = DEBBase.simulator(
                 BaseParamCollection(
                     glb = GlobalBaseParams(Xdot_in = Xdot_in, t_max = 56.), 
                     deb = DEBBaseParams(K_X = 12e3))

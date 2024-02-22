@@ -29,6 +29,7 @@ BaseParamCollection,
 isolate_pmoas!,
 sig,
 clipneg,
-relative_response
+relative_response,
+set_equal!
 
 end # module DEBBase

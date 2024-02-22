@@ -329,8 +329,10 @@ Definition of reserveless DEB derivatives.
 $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
-    #### boilerplate
-    u.S = sig(u.S, p.deb.X_emb_int, p.deb.X_emb_int, u.S)
+    #=
+    boilerplate
+    =# 
+    u.S = sig(u.S, p.deb.X_emb_int, p.deb.X_emb_int, u.S) # S cannot go below dry mass of an egg
     
     #### stressor responses
     y!(du, u, p, t)
