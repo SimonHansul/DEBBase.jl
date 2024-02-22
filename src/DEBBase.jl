@@ -17,6 +17,7 @@ include("IO.jl")
 include("ModelFunctions.jl")
 include("Simulators.jl")
 include("ImpliedTraits.jl")
+include("ParamHandling.jl")
 
 @compile_workload begin
     sol = simulator(BaseParamCollection())
