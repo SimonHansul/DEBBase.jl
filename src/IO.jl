@@ -216,12 +216,13 @@ function set_equal!(deb::AbstractParams, prefix::SS, ref_suffix::SS) where SS <:
     prefix = String(prefix)
     ref_suffix = String(ref_suffix)
 
-    ref_param = prefix*"_"*ref_suffix
+    ref_paramname = prefix*"_"*ref_suffix
+    ref_param = getproperty(deb, Symbol(ref_paramname))
     paramnames = String[String.(fieldnames(typeof(deb)))...]
     filter!(x -> occursin(String(prefix), x), paramnames)
     filter!(x -> x != String(ref_param), paramnames)
 
     for param in paramnames
-        setproperty!(deb, Symbol(param), Symbol(ref_param))
+        setproperty!(deb, Symbol(param), ref_param)
     end
 end
