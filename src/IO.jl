@@ -222,6 +222,6 @@ function set_equal!(deb::AbstractParams, prefix::SS, ref_suffix::SS) where SS <:
     filter!(x -> x != String(ref_param), paramnames)
 
     for param in paramnames
-        setproperty!(deb, param, ref_param)
+        setproperty!(deb, Symbol(param), Symbol(ref_param))
     end
 end
