@@ -15,7 +15,7 @@ $(TYPEDSIGNATURES)
     x_thr::Float64,
     y_left::Float64, 
     y_right::Float64; 
-    beta::Float64 = 30.
+    beta::Float64 = 1e6
     )
     return 1 / (1 + exp(-beta*(x - x_thr))) * (y_right - y_left) + y_left
 end
@@ -334,7 +334,6 @@ function DEB!(du, u, p, t)
     #=
     boilerplate
     =# 
-    #u.S = sig(u.S, p.deb.X_emb_int, p.deb.X_emb_int, u.S) # S cannot go below dry mass of an egg
     
     #### stressor responses
     y!(du, u, p, t)

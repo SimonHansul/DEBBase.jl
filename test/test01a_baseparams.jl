@@ -20,52 +20,38 @@ end
 
 # TODO: implement baseparam test as in AmphiDEB
 
-
-begin # debugging for small species
+#=
+debugging for small species (S_max ≈ 1e-5)...
+we set the issues with very small species aside for a second and focus on the size range we realistically need. 
+expected egg mass for our species is in the range of 1 mg. 
+applying some margin of error, we can set X_emb_int to 0.1 mg and use this to zoom Idot_max_rel, resulting in the smallest species we may need to simulate.
+This is a species with maximum Size around 1 mg.
+=#
+begin 
     @info("Setting up parameters")
     ref = DEBBaseParams() # reference params
-    Smax_ref = DEBBase.calc_S_max(ref)
+    Smax_ref = DEBBase.calc_S_max(ref) # S_max of the reference species
 
     deb = copy(ref) # adjusted params
-    deb.Idot_max_rel = 0.1 # 
-    deb.Idot_max_rel_emb = deb.Idot_max_rel
-    deb.eta_AS = 0.9
+    deb.X_emb_int = 1e-3 # egg mass is fixed 
+    Z = deb.X_emb_int / ref.X_emb_int # zoom factor based on egg sizes
 
-    Smax_deb = DEBBase.calc_S_max(deb)
-    Z = Smax_deb / Smax_ref
-    deb.X_emb_int = ref.X_emb_int * Z
+    deb.Idot_max_rel *= Z^(1/3) # zoomed ingestion rate
+    deb.Idot_max_rel_emb = deb.Idot_max_rel # embryoinc ingestion rate equal to non-embryonic
+    deb.K_X *= Z^(1/3) # zoomed half-saturation constant (K_X ∝ Idot_max_rel)
+
+    Smax_deb = DEBBase.calc_S_max(deb) # maximum size of the reference species
 
     glb = GlobalBaseParams()
     glb.Xdot_in *= Z
+    glb.t_max = 56.
 
     println(
-        "initial reserves: $(round(deb.X_emb_int, sigdigits = 3)) \n",
+        "zoom factor: $(round(Z, sigdigits = 2)) \n",
+        "initial reserves: $(round(deb.X_emb_int, sigdigits = 4)) \n",
         "expected maximum structure: $(round(Smax_deb, sigdigits = 3))"
         )
-
-    #=
-    Why no growth during larval phase for low Idot_max_rel?
-
-    Observations:
-    - S stays way below theoretical S_max
-    - Idot_p stays constant
-
-
-    Problem?
-
-    - f(X) -> no
-    - Idot_p -> stays constant, makes sense
-    - Adot -> stays constant, makes sense
-    - Sdot -> goes to 0, does not make sense!!!
-    - MCov -> satys constant and >0, makes sense
-
-
-    So the problem has to be in the calculation of Sdot for larvae?
-
-
-
-    =#
-
+    
 
     @info("Running simulations")
     y = DEBBase.simulator(
@@ -77,15 +63,16 @@ begin # debugging for small species
         plot(:t, :S, ylabel = "S"),
         plot(:t, (:X_p ./ 0.05) ./ ((:X_p ./ 0.05) .+ deb.K_X), ylim = (0,1.01), ylabel = "f(X)"),
         plot(:t, :X_p, ylabel = "X_p"),
-        plot(:t, diffvec(:M) ./ diffvec(:t), ylabel = "Mdot"),
+        plot(:t, diffvec(:I) ./ diffvec(:t), ylabel = "Idot"),
         plot(:t, diffvec(:A) ./ diffvec(:t), ylabel = "Adot"), 
+        plot(:t, diffvec(:M) ./ diffvec(:t), ylabel = "Mdot"),
         plot(:t, diffvec(:S) ./ diffvec(:t), ylabel = "Sdot"),
         plot(:t, (deb.kappa .* (diffvec(:A) ./ diffvec(:t)) .- diffvec(:M) ./ diffvec(:t)), ylabel = "Mcov", ylim = (0, Inf)),
         xlabel = "t", 
         size = (800,500), lw = 2, 
         leftmargin = 5mm
     )
+    
     hline!([Smax_deb], color = :gray, linestyle = :dash, subplot = 1)
+    hline!([deb.Idot_max_rel * Smax_deb^(2/3)], color = :gray, linestyle = :dash, subplot = 4)
 end
-
-
