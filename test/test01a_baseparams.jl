@@ -33,7 +33,7 @@ begin
     Smax_ref = DEBBase.calc_S_max(ref) # S_max of the reference species
 
     deb = copy(ref) # adjusted params
-    deb.X_emb_int = 1e-3 # egg mass is fixed 
+    deb.X_emb_int = 1e-4 # egg mass is fixed 
     Z = deb.X_emb_int / ref.X_emb_int # zoom factor based on egg sizes
 
     deb.Idot_max_rel *= Z^(1/3) # zoomed ingestion rate
@@ -44,7 +44,7 @@ begin
 
     glb = GlobalBaseParams()
     glb.Xdot_in *= Z
-    glb.t_max = 56.
+    glb.t_max = 30.
 
     println(
         "zoom factor: $(round(Z, sigdigits = 2)) \n",
@@ -55,8 +55,7 @@ begin
 
     @info("Running simulations")
     y = DEBBase.simulator(
-        BaseParamCollection(glb = glb, deb = deb), 
-        dt = 1/280
+        BaseParamCollection(glb = glb, deb = deb)
         )
 
     @df y plot(
@@ -72,7 +71,7 @@ begin
         size = (800,500), lw = 2, 
         leftmargin = 5mm
     )
-    
+
     hline!([Smax_deb], color = :gray, linestyle = :dash, subplot = 1)
     hline!([deb.Idot_max_rel * Smax_deb^(2/3)], color = :gray, linestyle = :dash, subplot = 4)
 end

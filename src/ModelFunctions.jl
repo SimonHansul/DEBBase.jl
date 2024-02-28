@@ -15,7 +15,7 @@ $(TYPEDSIGNATURES)
     x_thr::Float64,
     y_left::Float64, 
     y_right::Float64; 
-    beta::Float64 = 1e6
+    beta::Float64 = 1e16
     )
     return 1 / (1 + exp(-beta*(x - x_thr))) * (y_right - y_left) + y_left
 end
@@ -48,13 +48,13 @@ $(TYPEDSIGNATURES)
         u.X_emb, # uptake from vitellus depends on mass of vitellus
         0., # the switch occurs when vitellus is used up 
         0., # when the vitellus is used up, there is no uptake
-        u.S^(2/3) * p.deb.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
+        (Complex(u.S)^(2/3)).re * p.deb.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
         beta = 1e20 # for switches around 0, we need very high beta values
         )
     du.I_p = sig(
         u.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
-        functional_response(du, u, p, t) * p.deb.Idot_max_rel * u.S^(2/3), # when the vitellus is used up, ingestion from the external resource occurs
+        functional_response(du, u, p, t) * p.deb.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
         0.; # while there is still vitellus left, there is no uptake from the external resource
         beta = 1e20
         )
@@ -252,7 +252,7 @@ $(TYPEDSIGNATURES)
     
     # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
     SL_max = calc_SL_max(p.deb) # maximum structural length (g^(1/3))
-    SL = u.S^(1/3)
+    SL = (Complex(u.S)^(1/3)).re
     for z in eachindex(u.C_W)
         # the sigmoid function causes Ddot to be 0 for embryos (assumption)
         du.D_G[z] = sig(u.X_emb, 0., p.deb.k_D_G[z] * (SL_max / SL) * (u.C_W[z] - u.D_G[z]) - u.D_G[z] * (du.S / u.S), 0.)
