@@ -15,7 +15,7 @@ $(TYPEDSIGNATURES)
     x_thr::Float64,
     y_left::Float64, 
     y_right::Float64; 
-    beta::Float64 = 1e6
+    beta::Float64 = 30.
     )
     return 1 / (1 + exp(-beta*(x - x_thr))) * (y_right - y_left) + y_left
 end
@@ -33,8 +33,8 @@ end
 
 """
 Calculate ingestion rate. 
-Embryos (life_stage ≈ 1.) take up resources from the vitellus X_emb. 
-Juveniles and adults (life_stage > 1) feed on the external resource X_p.
+Embryos (X_emb <= 0) take up resources from the vitellus X_emb. 
+Juveniles and adults (X_emb > 0) feed on the external resource X_p.
 $(TYPEDSIGNATURES)
 """
 @inline function Idot!(
@@ -49,14 +49,14 @@ $(TYPEDSIGNATURES)
         0., # the switch occurs when vitellus is used up 
         0., # when the vitellus is used up, there is no uptake
         u.S^(2/3) * p.deb.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
-        beta = 1e6 # for switches around 0, we need very high beta values
+        beta = 1e20 # for switches around 0, we need very high beta values
         )
     du.I_p = sig(
         u.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
         functional_response(du, u, p, t) * p.deb.Idot_max_rel * u.S^(2/3), # when the vitellus is used up, ingestion from the external resource occurs
         0.; # while there is still vitellus left, there is no uptake from the external resource
-        beta = 1e6
+        beta = 1e20
         )
     du.I = du.I_emb + du.I_p
 end
@@ -334,7 +334,7 @@ function DEB!(du, u, p, t)
     #=
     boilerplate
     =# 
-    u.S = sig(u.S, p.deb.X_emb_int, p.deb.X_emb_int, u.S) # S cannot go below dry mass of an egg
+    #u.S = sig(u.S, p.deb.X_emb_int, p.deb.X_emb_int, u.S) # S cannot go below dry mass of an egg
     
     #### stressor responses
     y!(du, u, p, t)
@@ -355,6 +355,3 @@ function DEB!(du, u, p, t)
     Ddot!(du, u, p, t) # damage
     C_Wdot!(du, u, p, t) # external stressor concentration  
 end
-
-
-
