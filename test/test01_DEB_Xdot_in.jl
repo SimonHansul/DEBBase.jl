@@ -1,11 +1,11 @@
-begin
+@time begin
     using Pkg; Pkg.activate("test")
     using Plots, StatsPlots, Plots.Measures
     default(titlefontsize = 10, lw = 1.5, leg = false)
     using Revise 
-    @time using DEBBase
+    using DEBBase
     using DataMonk
-    const TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
+    TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 end
 
 begin 

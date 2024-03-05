@@ -38,14 +38,16 @@ $(TYPEDSIGNATURES)
 """
 function simulator(
     p::BaseParamCollection; 
+    alg = TsitPap8(),
     saveat = 1,
-    dt = 1/24
+    reltol = 1e-6,
+    kwargs...
     )
 
     assert!(p)
     u = initialize_statevars(p)
     prob = ODEProblem(DEB!, u, (0, p.glb.t_max), p) # define the problem
-    sol = solve(prob, Euler(), reltol = 1e-6, dt = dt, saveat = saveat) # get solution to the IVP
+    sol = solve(prob, alg, reltol = reltol, saveat = saveat; kwargs...) # get solution to the IVP
     #sol = solve(prob, Tsit5()) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
   
