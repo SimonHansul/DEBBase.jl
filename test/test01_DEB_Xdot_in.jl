@@ -4,7 +4,7 @@
     default(titlefontsize = 10, lw = 1.5, leg = false)
     using Revise 
     using DEBBase
-    using DataMonk
+    using SHUtils
     TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 end
 
@@ -17,7 +17,6 @@ begin
         plot(:t, :H, ylabel = "H"),
         plot(:t, :R, ylabel = "R"), 
         plot(:t, [diffvec(:I), diffvec(:I_p), diffvec(:I_emb), diffvec(:A)], ylabel = "Idot"), 
-        plot(:t, :life_stage, ylabel = "life_stage"),
         plot(:t, :X_p, ylabel = "X_p"), 
         plot(:t, :X_emb, ylabel = "X_emb"),
         xlabel = "t", 
@@ -30,6 +29,7 @@ begin
 end
 
 begin # effect of food input
+    norm(x) = x ./ sum(x)
     # prepare the plot
     plt = plot(
         layout = grid(1,3, widths = norm([2, 1, 1])),
