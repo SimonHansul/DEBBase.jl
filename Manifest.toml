@@ -443,7 +443,7 @@ version = "0.9.3"
 
 [[deps.DoseResponse]]
 deps = ["DocStringExtensions", "LsqFit", "Plots", "Reexport", "Revise"]
-git-tree-sha1 = "b024b640ec670435e3873232bf604e890fbf9a76"
+git-tree-sha1 = "c1b40bc125dc98961cc24c9a33b7c98abbe0ee4d"
 repo-rev = "main"
 repo-url = "https://github.com/simonhansul/doseresponse.jl"
 uuid = "a19d1f18-07bc-4e4c-ae0b-82c6f40a4140"

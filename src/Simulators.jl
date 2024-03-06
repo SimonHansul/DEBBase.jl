@@ -10,7 +10,6 @@ function initialize_statevars(p::BaseParamCollection)::ComponentArray
         H = Float64(0.), # maturity
         H_b = 0., # maturity at birth (will be derived from model output)
         R = Float64(0.), # reproduction buffer
-        life_stage = Float64(1.), # life stage 
         I_emb = Float64(0.), # uptake from vitellus
         I_p = Float64(0.), # uptake from external food resource
         I = Float64(0.), # total uptake
@@ -48,7 +47,6 @@ function simulator(
     u = initialize_statevars(p)
     prob = ODEProblem(DEB!, u, (0, p.glb.t_max), p) # define the problem
     sol = solve(prob, alg, reltol = reltol, saveat = saveat; kwargs...) # get solution to the IVP
-    #sol = solve(prob, Tsit5()) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
   
     return simout
