@@ -1,4 +1,6 @@
 
+@enum PMoA G M A R # these are the valid PMoAs
+
 """
 Apply zoom factor from reference species `deb_ref` to species of interest `deb`, 
 given observed maximum structural mass `S_max` of the species of interest. \n
