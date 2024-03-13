@@ -1,5 +1,5 @@
 
-@enum PMoA G M A R # these are the valid PMoAs
+@enum PMoA NA G M A R # these are the valid PMoAs
 
 """
 Apply zoom factor from reference species `deb_ref` to species of interest `deb`, 
