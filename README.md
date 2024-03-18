@@ -57,19 +57,21 @@ A parameter collection (`BaseParamCollection`) contains two sets of parameters:
 
 # DEB Modelling: languages & tools (I)
 
-How does DEBBase.jl fit into the landscape of DEB-TKTD/IBM tools? Here is an attempt to briefly describe the differences between tools:
+How does DEBBase.jl fit into the landscape of DEB-TKTD/IBM tools? Here is an attempt to briefly describe the strenghts of different tools:
 
 
 | Tool            | Language | Open source | Individual-level | Population-level | TKTD | Mixtures |Published | Performance |Parameter estimation |
 |-----------------|----------|-------------|------------------|------------------|------|----------|----------|-------------|--------|
-| Debtool         | Matlab   | -           | +                | -                |  -   |    -/?   |+         | ?           |+       |
+| Debtool         | Matlab   | -^***       | +                | -                |  -   |    -/?   |+         | ?           |+       |
 | DEBBase         | Julia    | +           | +                | +                |  +   |     +    |-         | +           |+* | 
 | MEMpy           | Python   | +           | +                | +                |  +   |    +     |-         | -           |-** |
 | Netlogo DEB-IBM | Netlogo  | +           | +/-              | +                | +    |    +     |+         | -           |-** |   
 
-$^{*}$ Added through DEBABC package
+* Added through DEBABC package
 
-$^{**}$ These tools can of course be used for parameter inference, but there are no convenient built-in functions
+** These tools can of course be used for parameter inference, but there are no convenient built-in functions
+
+*** DEBtool itself is open source, but Matlab is not
 
 
 Or, to summarize:
