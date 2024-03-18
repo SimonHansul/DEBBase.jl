@@ -4,19 +4,19 @@ Testing for changes in baseline parameters
 We conduct parameter sweeps to test whether growth, maturation and reproduction respond to changes in baseline parameters as expected.
 =#
 
-@info("Loading packages")
-@time begin
+if abspath(PROGRAM_FILE) == @__FILE__ 
+    @info("Loading packages")
     using Pkg; Pkg.activate("test")
     using Plots, StatsPlots, Plots.Measures
     using SHUtils
     using DataFrames, DataFramesMeta
     using ProgressMeter
     default(leg = false, lw = 1.5)
-    TAG = splitpath(@__FILE__)[end] |> x -> split(x, ".")[1] |> String    
 
     using Revise
     using DEBBase
 end
+TAG = splitpath(@__FILE__)[end] |> x -> split(x, ".")[1] |> String    
 
 # TODO: implement baseparam test as in AmphiDEB
 
@@ -51,8 +51,9 @@ begin
         "initial reserves: $(round(deb.X_emb_int, sigdigits = 4)) \n",
         "expected maximum structure: $(round(Smax_deb, sigdigits = 3))"
         )
-    
+end
 
+begin
     @info("Running simulations")
     y = DEBBase.simulator(
         BaseParamCollection(glb = glb, deb = deb)

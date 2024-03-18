@@ -1,4 +1,17 @@
-TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"") 
+if abspath(PROGRAM_FILE) == @__FILE__ 
+    @info("Loading packages")
+    using Pkg; Pkg.activate("test")
+    using Plots, StatsPlots, Plots.Measures
+    using SHUtils
+    using DataFrames, DataFramesMeta
+    using ProgressMeter
+    default(leg = false, lw = 1.5)
+    TAG = splitpath(@__FILE__)[end] |> x -> split(x, ".")[1] |> String    
+
+    using Revise
+    using DEBBase
+end
+TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 
 #=
 Simulate single stressors with different PMoAs

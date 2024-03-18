@@ -2,7 +2,7 @@
 
 julia_version = "1.10.1"
 manifest_format = "2.0"
-project_hash = "4388b523872efecd253826ffa109b2d927741431"
+project_hash = "05dd1ebbbd44c48ad53480c1b6f8653ce55b7e59"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "41c37aa88889c171f1300ceac1313c06e891d245"
@@ -359,7 +359,7 @@ uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "4.1.1"
 
 [[deps.DEBBase]]
-deps = ["ComponentArrays", "DEBParamStructs", "DataFrames", "DifferentialEquations", "DocStringExtensions", "DoseResponse", "Parameters", "PrecompileTools", "StaticArrays", "StatsBase"]
+deps = ["ComponentArrays", "DEBParamStructs", "DataFrames", "DifferentialEquations", "Distributions", "DocStringExtensions", "DoseResponse", "Parameters", "PrecompileTools", "StaticArrays", "StatsBase"]
 path = ".."
 uuid = "0e91d03b-6562-4ef9-a38e-775ced00eaf8"
 version = "0.1.0"

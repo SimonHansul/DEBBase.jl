@@ -23,38 +23,38 @@ end
 @inline function functional_response(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
-    let X_V = u.X_p / p.glb.V_patch # convert food abundance to concentration
-        return X_V / (X_V + p.deb.K_X) # calculate type II functional response
+    ) where A <: AbstractParamCollection
+    let X_V = u.X_p / p.x.glb.V_patch # convert food abundance to concentration
+        return X_V / (X_V + p.x.deb.K_X) # calculate type II functional response
     end
 end
 
 """
 Calculate ingestion rate. 
 Embryos (X_emb <= 0) take up resources from the vitellus X_emb. 
-Juveniles and adults (X_emb > 0) feed on the external resource X_p.
+Juveniles and adults (X_emb > 0) feed on the external resource X_p.x.
 $(TYPEDSIGNATURES)
 """
 @inline function Idot!(
     du::ComponentArray,
     u::ComponentArray, 
-    p::AbstractParamCollection, 
+    p::Ref{A}, 
     t::Real
-    )
+    ) where A <: AbstractParamCollection
 
     du.I_emb = sig(
         u.X_emb, # uptake from vitellus depends on mass of vitellus
         0., # the switch occurs when vitellus is used up 
         0., # when the vitellus is used up, there is no uptake
-        (Complex(u.S)^(2/3)).re * p.deb.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
+        (Complex(u.S)^(2/3)).re * p.x.deb.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
         beta = 1e20 # for switches around 0, we need very high beta values
         )
     du.I_p = sig(
         u.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
-        functional_response(du, u, p, t) * p.deb.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
+        functional_response(du, u, p, t) * p.x.deb.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
         0.; # while there is still vitellus left, there is no uptake from the external resource
         beta = 1e20
         )
@@ -68,10 +68,10 @@ $(TYPEDSIGNATURES)
 @inline function Adot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
-    du.A = du.I * p.deb.eta_IA * u.y_A
+    ) where A <: AbstractParamCollection
+    du.A = du.I * p.x.deb.eta_IA * u.y_A
 end
 
 """
@@ -81,9 +81,9 @@ $(TYPEDSIGNATURES)
 @inline function Mdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
-    t::Real)
-    du.M = u.S * p.deb.k_M * u.y_M
+    p::Ref{A},
+    t::Real) where A <: AbstractParamCollection
+    du.M = u.S * p.x.deb.k_M * u.y_M
 end
 
 """
@@ -93,10 +93,10 @@ $(TYPEDSIGNATURES)
 @inline function Jdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
-    du.J = u.H * p.deb.k_J * u.y_M
+    ) where A <: AbstractParamCollection
+    du.J = u.H * p.x.deb.k_J * u.y_M
 end
 
 """
@@ -106,10 +106,10 @@ $(TYPEDSIGNATURES)
 @inline function Sdot_positive(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
-    return p.deb.eta_AS * u.y_G * (p.deb.kappa * du.A - du.M)
+    ) where A <: AbstractParamCollection
+    return p.x.deb.eta_AS * u.y_G * (p.x.deb.kappa * du.A - du.M)
 end
 
 """
@@ -119,20 +119,20 @@ Negative somatic growth
 @inline function Sdot_negative(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
-    return -(du.M / p.deb.eta_SA - p.deb.kappa * du.A)
+    ) where A <: AbstractParamCollection
+    return -(du.M / p.x.deb.eta_SA - p.x.deb.kappa * du.A)
 end
 
 function Sdot(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
+    ) where A <: AbstractParamCollection
     return sig(
-        p.deb.kappa * du.A, # growth depends on maintenance coverage
+        p.x.deb.kappa * du.A, # growth depends on maintenance coverage
         du.M, # switch occurs based on maintenance costs
         Sdot_negative(du, u, p, t), # left of the threshold == maintenance costs cannot be covered == negative growth
         Sdot_positive(du, u, p, t) # right of the threshold == maintenance costs can be covered == positive growth
@@ -146,9 +146,9 @@ $(TYPEDSIGNATURES)
 @inline function Sdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
+    ) where A <: AbstractParamCollection
     du.S = Sdot(du, u, p, t)
 end
 
@@ -165,13 +165,13 @@ $(TYPEDSIGNATURES)
 @inline function Hdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
+    ) where A <: AbstractParamCollection
     du.H = sig(
         u.H, # maturation depends on maturity
-        p.deb.H_p, # switch occurs at maturity at puberty H_p
-        clipneg(((1 - p.deb.kappa) * du.A) - du.J), # maturation for embryos and juveniles
+        p.x.deb.H_p, # switch occurs at maturity at puberty H_p
+        clipneg(((1 - p.x.deb.kappa) * du.A) - du.J), # maturation for embryos and juveniles
         0., # maturation for adults
     )
 end
@@ -185,9 +185,9 @@ This way, we obtain H_b as an implied trait and can use it later (for example in
 @inline function H_bdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
+    ) where A <: AbstractParamCollection
     # 
     du.H_b = DEBBase.sig(
         u.X_emb, # estimate depends on embryonic state
@@ -204,14 +204,14 @@ $(TYPEDSIGNATURES)
 @inline function Rdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
+    ) where A <: AbstractParamCollection
     du.R = sig(
         u.H, # reproduction depends on maturity
-        p.deb.H_p, # switch occurs at maturity at puberty H_p
+        p.x.deb.H_p, # switch occurs at maturity at puberty H_p
         0., # reproduction for embryos and juveniles
-        clipneg(u.y_R * p.deb.eta_AR * ((1 - p.deb.kappa) * du.A - du.J)) # reproduction for adults
+        clipneg(u.y_R * p.x.deb.eta_AR * ((1 - p.x.deb.kappa) * du.A - du.J)) # reproduction for adults
     )
 end
 
@@ -222,17 +222,17 @@ $(TYPEDSIGNATURES)
 function Qdot!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real; 
     Idot::Float64, 
     Mdot::Float64, 
     Jdot::Float64,
-    )
+    ) where A <: AbstractParamCollection
     # dissipation fluxes for the individual processes
     let Qdot_A, Qdot_S, Qdot_C, Qdot_R
         Qdot_A = Idot * (1 - deb.eta_IA)
-        Qdot_S = du.S >= 0 ? du.S * (1 - p.deb.eta_AS)/p.deb.eta_AS : du.S * (p.deb.eta_SA - 1)
-        Qdot_R = du.R * (1 - p.deb.eta_AR)/p.deb.eta_AR
+        Qdot_S = du.S >= 0 ? du.S * (1 - p.x.deb.eta_AS)/p.x.deb.eta_AS : du.S * (p.x.deb.eta_SA - 1)
+        Qdot_R = du.R * (1 - p.x.deb.eta_AR)/p.x.deb.eta_AR
         du.Q =  Qdot_A + Qdot_S + Qdot_C + Qdot_R + Mdot + Jdot + Hdot
     end
 end
@@ -246,61 +246,61 @@ $(TYPEDSIGNATURES)
 @inline function Ddot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    ) 
+    ) where A <: AbstractParamCollection
     
     # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
-    SL_max = calc_SL_max(p.deb) # maximum structural length (g^(1/3))
+    SL_max = calc_SL_max(p.x.deb) # maximum structural length (g^(1/3))
     SL = (Complex(u.S)^(1/3)).re
     for z in eachindex(u.C_W)
         # the sigmoid function causes Ddot to be 0 for embryos (assumption)
-        du.D_G[z] = sig(u.X_emb, 0., p.deb.k_D_G[z] * (SL_max / SL) * (u.C_W[z] - u.D_G[z]) - u.D_G[z] * (du.S / u.S), 0.)
-        du.D_M[z] = sig(u.X_emb, 0., p.deb.k_D_M[z] * (SL_max / SL) * (u.C_W[z] - u.D_M[z]) - u.D_M[z] * (du.S / u.S), 0.)
-        du.D_A[z] = sig(u.X_emb, 0., p.deb.k_D_A[z] * (SL_max / SL) * (u.C_W[z] - u.D_A[z]) - u.D_A[z] * (du.S / u.S), 0.)
-        du.D_R[z] = sig(u.X_emb, 0., p.deb.k_D_R[z] * (SL_max / SL) * (u.C_W[z] - u.D_R[z]) - u.D_R[z] * (du.S / u.S), 0.)
-        du.D_h[z] = sig(u.X_emb, 0., p.deb.k_D_h[z] * (SL_max / SL) * (u.C_W[z] - u.D_h[z]) - u.D_h[z] * (du.S / u.S), 0.)
+        du.D_G[z] = sig(u.X_emb, 0., p.x.deb.k_D_G[z] * (SL_max / SL) * (u.C_W[z] - u.D_G[z]) - u.D_G[z] * (du.S / u.S), 0.)
+        du.D_M[z] = sig(u.X_emb, 0., p.x.deb.k_D_M[z] * (SL_max / SL) * (u.C_W[z] - u.D_M[z]) - u.D_M[z] * (du.S / u.S), 0.)
+        du.D_A[z] = sig(u.X_emb, 0., p.x.deb.k_D_A[z] * (SL_max / SL) * (u.C_W[z] - u.D_A[z]) - u.D_A[z] * (du.S / u.S), 0.)
+        du.D_R[z] = sig(u.X_emb, 0., p.x.deb.k_D_R[z] * (SL_max / SL) * (u.C_W[z] - u.D_R[z]) - u.D_R[z] * (du.S / u.S), 0.)
+        du.D_h[z] = sig(u.X_emb, 0., p.x.deb.k_D_h[z] * (SL_max / SL) * (u.C_W[z] - u.D_h[z]) - u.D_h[z] * (du.S / u.S), 0.)
     end
 end
 
 @inline function C_Wdot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
+    ) where A <: AbstractParamCollection
     du.C_W = zeros(length(u.C_W)) # constant exposure : derivative is 0
 end
 
 @inline function X_pdot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
-    du.X_p = p.glb.Xdot_in - du.I_p
+    ) where A <: AbstractParamCollection
+    du.X_p = p.x.glb.Xdot_in - du.I_p
 end
 
 @inline function X_embdot!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
+    ) where A <: AbstractParamCollection
     du.X_emb = -du.I_emb
 end
 
 @inline function y!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParamCollection,
+    p::Ref{A},
     t::Real
-    )
-    u.y_G = prod([p.deb.drc_functs_G[z](u.D_G[z], p.deb.drc_params_G[z]) for z in 1:length(u.C_W)])
-    u.y_M = prod([p.deb.drc_functs_M[z](u.D_M[z], p.deb.drc_params_M[z]) for z in 1:length(u.C_W)])
-    u.y_A = prod([p.deb.drc_functs_A[z](u.D_A[z], p.deb.drc_params_A[z]) for z in 1:length(u.C_W)])
-    u.y_R = prod([p.deb.drc_functs_R[z](u.D_R[z], p.deb.drc_params_R[z]) for z in 1:length(u.C_W)])
-    u.h_z = sum([p.deb.drc_functs_h[z](u.D_h[z], p.deb.drc_params_h[z]) for z in 1:length(u.C_W)])
+    ) where A <: AbstractParamCollection
+    u.y_G = prod([p.x.deb.drc_functs_G[z](u.D_G[z], p.x.deb.drc_params_G[z]) for z in 1:length(u.C_W)])
+    u.y_M = prod([p.x.deb.drc_functs_M[z](u.D_M[z], p.x.deb.drc_params_M[z]) for z in 1:length(u.C_W)])
+    u.y_A = prod([p.x.deb.drc_functs_A[z](u.D_A[z], p.x.deb.drc_params_A[z]) for z in 1:length(u.C_W)])
+    u.y_R = prod([p.x.deb.drc_functs_R[z](u.D_R[z], p.x.deb.drc_params_R[z]) for z in 1:length(u.C_W)])
+    u.h_z = sum([p.x.deb.drc_functs_h[z](u.D_h[z], p.x.deb.drc_params_h[z]) for z in 1:length(u.C_W)])
 end
 
 """
@@ -331,9 +331,6 @@ Definition of reserveless DEB derivatives.
 $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
-    #=
-    boilerplate
-    =# 
     
     #### stressor responses
     y!(du, u, p, t)
