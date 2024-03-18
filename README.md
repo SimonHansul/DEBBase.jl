@@ -55,7 +55,7 @@ A parameter collection (`BaseParamCollection`) contains two sets of parameters:
 
 ---
 
-# DEB Modelling: languages & tools (I)
+# DEB Modelling: languages & tools
 
 How does DEBBase.jl fit into the landscape of DEB-TKTD/IBM tools? Here is an attempt to briefly describe the differences between tools:
 
