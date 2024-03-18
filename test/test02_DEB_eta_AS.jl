@@ -1,3 +1,7 @@
+#=
+# Test 02: Parameter sweeps
+=#
+
 if abspath(PROGRAM_FILE) == @__FILE__ 
     @info("Loading packages")
     using Pkg; Pkg.activate("test")

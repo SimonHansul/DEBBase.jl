@@ -38,7 +38,7 @@ $(TYPEDSIGNATURES)
 """
 function simulator(
     p::Ref{BaseParamCollection}; 
-    alg,
+    alg = Tsit5(),
     saveat = 1,
     abstol = 1e-10, 
     reltol = 1e-10,
@@ -47,7 +47,7 @@ function simulator(
 
     assert!(p)
     u = initialize_statevars(p)
-    prob = ODEProblem(DEB!, u, (0, p.glb.t_max), p) # define the problem
+    prob = ODEProblem(DEB!, u, (0, p.x.glb.t_max), p) # define the problem
     sol = solve(prob, alg, reltol = reltol, saveat = saveat; kwargs...) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
   
