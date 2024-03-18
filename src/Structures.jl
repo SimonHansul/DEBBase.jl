@@ -7,7 +7,7 @@
 end
 
 """
-DEBBase Parameters. 
+DEBBase Parameters. <br>
 Default values are for Daphnia magna and Azoxystrobin.
 $(TYPEDSIGNATURES)
 """
@@ -53,3 +53,6 @@ end
     glb::AbstractParams = GlobalBaseParams()
     deb::AbstractParams = DEBBaseParams()
 end
+
+
+

@@ -18,6 +18,7 @@ We conduct parameter sweeps to test whether growth, maturation and reproduction 
     using DEBBase
 end
 
+
 # TODO: implement baseparam test as in AmphiDEB
 
 #=
@@ -51,8 +52,9 @@ begin
         "initial reserves: $(round(deb.X_emb_int, sigdigits = 4)) \n",
         "expected maximum structure: $(round(Smax_deb, sigdigits = 3))"
         )
-    
+end
 
+begin
     @info("Running simulations")
     y = DEBBase.simulator(
         BaseParamCollection(glb = glb, deb = deb)

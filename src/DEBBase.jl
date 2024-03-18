@@ -2,10 +2,10 @@ module DEBBase
 
 using DEBParamStructs
 using DoseResponse
-
 using Parameters
 using ComponentArrays
 using DifferentialEquations
+using Distributions
 using DocStringExtensions
 using DataFrames
 using PrecompileTools
