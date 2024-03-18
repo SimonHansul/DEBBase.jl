@@ -68,6 +68,7 @@ How does DEBBase.jl fit into the landscape of DEB-TKTD/IBM tools? Here is an att
 | Netlogo DEB-IBM | Netlogo  | +           | +/-              | +                | +    |    +     |+         | -           |-$^{**}$ |   
 
 $^{*}$ Added through DEBABC package
+
 $^{**}$ These tools can of course be used for parameter inference, but there are no convenient built-in functions
 
 
