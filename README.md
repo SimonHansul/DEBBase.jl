@@ -60,12 +60,16 @@ A parameter collection (`BaseParamCollection`) contains two sets of parameters:
 How does DEBBase.jl fit into the landscape of DEB-TKTD/IBM tools? Here is an attempt to briefly describe the differences between tools:
 
 
-| Tool            | Language | Open source | Individual-level | Population-level | TKTD | Mixtures |Published | Performance | Built-in functions for parameter estimation |
+| Tool            | Language | Open source | Individual-level | Population-level | TKTD | Mixtures |Published | Performance |Parameter estimation |
 |-----------------|----------|-------------|------------------|------------------|------|----------|----------|-------------|--------|
 | Debtool         | Matlab   | -           | +                | -                |  -   |    -/?   |+         | ?           |+       |
-| DEBBase         | Julia    | +           | +                | +                |  +   |     +    |-         | +           |-$^{*}$ | 
-| MEMpy           | Python   | +           | +                | +                |  +   |    +     |-         | -           |+/-     |
-| Netlogo DEB-IBM | Netlogo  | +           | +/-              | +                | +    |    +     |+         | -           | -      |   
+| DEBBase         | Julia    | +           | +                | +                |  +   |     +    |-         | +           |+$^{*}$ | 
+| MEMpy           | Python   | +           | +                | +                |  +   |    +     |-         | -           |-$^{**}$ |
+| Netlogo DEB-IBM | Netlogo  | +           | +/-              | +                | +    |    +     |+         | -           |-$^{**}$ |   
+
+$^{*}$ Added through DEBABC package
+$^{**}$ These tools can of course be used for parameter inference, but there are no convenient built-in functions
+
 
 Or, to summarize:
 
@@ -78,8 +82,6 @@ Or, to summarize:
 
 
 
-
-$^{*}$ Will be added through DEBABC package
 
 ## TODO
 
