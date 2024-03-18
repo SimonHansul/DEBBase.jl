@@ -78,7 +78,7 @@ Or, to summarize:
 |-----------------|------------------------------------------------------|
 | Debtool         | Tried and tested manifestation of standard DEB model |
 | DEBBase         | Extensible performant implementation with mixture TKTD & integrated individual-based modelling capabilities |
-| MEMpy           | Easy-to-use Python implementation for individuals and populations |
+| MEMpy           | Easy-to-use Python implementation with integrated individual-based modelling capabilities |
 | Netlogo DEB-IBM | Probably the most used DEB-IBM implementation |
 
 
