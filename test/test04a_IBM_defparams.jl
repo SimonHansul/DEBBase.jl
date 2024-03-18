@@ -13,8 +13,6 @@
     using DEBBase
 end
 
-
-
 using Parameters, DEBParamStructs, DEBBase
 
 # TODO: how to deal with hyperparameters?

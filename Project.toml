@@ -1,7 +1,7 @@
 name = "DEBBase"
 uuid = "0e91d03b-6562-4ef9-a38e-775ced00eaf8"
 authors = ["SimonHansul <simonhansul@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1-refs"
 
 [deps]
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
