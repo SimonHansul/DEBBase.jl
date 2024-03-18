@@ -37,29 +37,18 @@ Run the DEBBase model from a reference to a `BaseParamCollection`  instance.
 $(TYPEDSIGNATURES)
 """
 function simulator(
-<<<<<<< HEAD
-    p::BaseParamCollection; 
-    alg = TsitPap8(),
-    saveat = 1,
-    reltol = 1e-6,
-=======
     p::Ref{BaseParamCollection}; 
+    alg,
     saveat = 1,
     abstol = 1e-10, 
     reltol = 1e-10,
->>>>>>> feature-IBM
     kwargs...
     )
 
     assert!(p)
     u = initialize_statevars(p)
-<<<<<<< HEAD
     prob = ODEProblem(DEB!, u, (0, p.glb.t_max), p) # define the problem
     sol = solve(prob, alg, reltol = reltol, saveat = saveat; kwargs...) # get solution to the IVP
-=======
-    prob = ODEProblem(DEB!, u, (0, p.x.glb.t_max), p) # define the problem
-    sol = solve(prob, Tsit5(); saveat = saveat, abstol = abstol, reltol = reltol, kwargs...) # get solution to the IVP
->>>>>>> feature-IBM
     simout = sol_to_df(sol) # convert solution to dataframe
   
     return simout
