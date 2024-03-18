@@ -46,12 +46,20 @@ The following Code will simulate the DEB model based on the given default parame
 
 ```Julia
 using DEBBase
-out = DEBBase.simulator(BaseParams())
+out = DEBBase.simulator(BaseParamCollection())
 ```
 
 A parameter collection (`BaseParamCollection`) contains two sets of parameters: 
 - `glb::GlobalBaseParams`: These are global parameters, such as the simulated timespan, food input rate, etc.
 - `deb::DEBBaseParams`: The DEB and TKTD parameters.
+
+A parameter set is most easily identified by initializing the object, then modifying the fields:
+
+```Julia
+p = BaseParamCollection() # initialize parameter object
+p.deb.kappa = 0.3 # change a DEB parameter 
+p.glb.t_max = 30.0 # change a global parameter
+```
 
 ---
 
