@@ -63,9 +63,9 @@ How does DEBBase.jl fit into the landscape of DEB-TKTD/IBM tools? Here is an att
 | Tool            | Language | Open source | Individual-level | Population-level | TKTD | Mixtures |Published | Performance |Parameter estimation |
 |-----------------|----------|-------------|------------------|------------------|------|----------|----------|-------------|--------|
 | Debtool         | Matlab   | -           | +                | -                |  -   |    -/?   |+         | ?           |+       |
-| DEBBase         | Julia    | +           | +                | +                |  +   |     +    |-         | +           |+$^{*}$ | 
-| MEMpy           | Python   | +           | +                | +                |  +   |    +     |-         | -           |-$^{**}$ |
-| Netlogo DEB-IBM | Netlogo  | +           | +/-              | +                | +    |    +     |+         | -           |-$^{**}$ |   
+| DEBBase         | Julia    | +           | +                | +                |  +   |     +    |-         | +           |+* | 
+| MEMpy           | Python   | +           | +                | +                |  +   |    +     |-         | -           |-** |
+| Netlogo DEB-IBM | Netlogo  | +           | +/-              | +                | +    |    +     |+         | -           |-** |   
 
 $^{*}$ Added through DEBABC package
 
