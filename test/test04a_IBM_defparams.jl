@@ -13,19 +13,6 @@
     using DEBBase
 end
 
-#=
-Using references
-
-Do refs work with AbstractParamCollection?
-=#
-
-function func(p::Ref{A}) where A <: AbstractParamCollection
-    p.x.deb.Idot_max_rel
-end
-
-p = Ref(BaseParamCollection())
-func(p)
-
 
 
 using Parameters, DEBParamStructs, DEBBase

@@ -7,7 +7,6 @@ begin
         plot(:t, :H, ylabel = "H"),
         plot(:t, :R, ylabel = "R"), 
         plot(:t, [diffvec(:I), diffvec(:I_p), diffvec(:I_emb), diffvec(:A)], ylabel = "Idot"), 
-        plot(:t, :life_stage, ylabel = "life_stage"),
         plot(:t, :X_p, ylabel = "X_p"), 
         plot(:t, :X_emb, ylabel = "X_emb"),
         xlabel = "t", 
