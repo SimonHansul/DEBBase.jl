@@ -7,9 +7,8 @@
 end
 
 """
-DEBBase Parameters. <br>
+DEBBase Parameters. \\
 Default values are for Daphnia magna and Azoxystrobin.
-$(TYPEDSIGNATURES)
 """
 @with_kw mutable struct DEBBaseParams <: AbstractParams
     # physiological baseline (DEB) parameters
