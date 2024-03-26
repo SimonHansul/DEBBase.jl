@@ -12,12 +12,25 @@
     using Revise
     using DEBBase
 end
-
 using Parameters, DEBParamStructs, DEBBase
 
-# OPTION 1:
-# Make an exception for Idot_max_rel and add it as separate field to 
+#=
+How to implement hierarchical models in an IBM context?
 
+We have
+
+    - parameters which are common across individuals of a species, `pcmn::Ref{AbstractParamCollection}`, given as a reference to the param struct
+    - parameters which are specific to an individual, `pown::ComponentVector`, newly assigned for each individual
+
+The model functions take `p` as argument. 
+How do we incorporate `pown` then? 
+
+**Solution**: 
+- Always assume hierarchical model. 
+    ~~- All model functions take `pcmn` and `pown` as arguments. 
+    ~~- The default Zoom factor is Dirac(1.).
+    - simulator() takes care of initializing `pown`
+=#
 
 DEBBaseParams()
 
@@ -27,7 +40,9 @@ Each agent owns a reference to its associated parameter collection.
 """
 mutable struct BaseAgent
     p::Base.RefValue{BaseParamCollection} # reference to the paramter collection
-    
+    u::CompositeVector
+    du::CompositeVector
+
     function BaseAgent(p::A) where A <: AbstractParamCollection # generate agent from paramter collection
         ref = Ref(p)
         a = new()
@@ -35,22 +50,6 @@ mutable struct BaseAgent
         a.u = initialize_statevars(a.p)
         a.du = similar(a.u)
         return a
-    end
-end
-
-"""
-    individual_variability!(p::Ref{AbstractParams})
-Induce individual to DEB parameters via zoom factor `Z`. 
-`Z` is sampled from the corresponding distribution given in `p` and assumed to represent a ratio between maximum structurel *masses* (not lengths), 
-so that the surface area-specific ingestion rate `Idot_max_rel` scales with `Z^(1/3)` and parameters which represent masses or energy pools scales with `Z`.
-"""
-function individual_variability!(p::Ref{AbstractParams})
-    Z_a = rand(p.x.Z)
-    p.x.Idot_max_rel = p.x.Idot_max_rel_mean * Z_a^(1/3)
-    p.x.Idot_max_rel_emb = p.x.Idot_max_rel_emb_mean * Z_a^(1/3)
-
-    for param in p.x.propagate_zoom
-        setproperty!()
     end
 end
 
