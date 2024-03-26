@@ -15,17 +15,11 @@ end
 
 using Parameters, DEBParamStructs, DEBBase
 
-# TODO: how to deal with hyperparameters?
-# Idot_max_rel is fixed in BaseAgent.p
-# But the realized Idot_max_rel is a sample from N(μ_I, σ_I).
-# Within du(du, u, p, t), we have to access Idot_max_rel as p.x.deb.Idot_max_rel
-
 # OPTION 1:
 # Make an exception for Idot_max_rel and add it as separate field to 
 
-mutable struct BaseHyParams
 
-end
+DEBBaseParams()
 
 """
 DEBBase Agent. <br>
@@ -38,7 +32,25 @@ mutable struct BaseAgent
         ref = Ref(p)
         a = new()
         a.p = ref
+        a.u = initialize_statevars(a.p)
+        a.du = similar(a.u)
         return a
+    end
+end
+
+"""
+    individual_variability!(p::Ref{AbstractParams})
+Induce individual to DEB parameters via zoom factor `Z`. 
+`Z` is sampled from the corresponding distribution given in `p` and assumed to represent a ratio between maximum structurel *masses* (not lengths), 
+so that the surface area-specific ingestion rate `Idot_max_rel` scales with `Z^(1/3)` and parameters which represent masses or energy pools scales with `Z`.
+"""
+function individual_variability!(p::Ref{AbstractParams})
+    Z_a = rand(p.x.Z)
+    p.x.Idot_max_rel = p.x.Idot_max_rel_mean * Z_a^(1/3)
+    p.x.Idot_max_rel_emb = p.x.Idot_max_rel_emb_mean * Z_a^(1/3)
+
+    for param in p.x.propagate_zoom
+        setproperty!()
     end
 end
 
