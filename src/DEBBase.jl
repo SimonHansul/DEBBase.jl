@@ -33,6 +33,10 @@ sig,
 clipneg,
 relative_response,
 set_equal!,
+<<<<<<< HEAD
 PMoA
+=======
+@replicates
+>>>>>>> feature-IBM
 
 end # module DEBBase
