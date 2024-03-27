@@ -42,6 +42,7 @@ $(TYPEDSIGNATURES)
     du::ComponentArray,
     u::ComponentArray, 
     pcmn::Ref{A}, 
+    pown::ComponentVector,
     t::Real
     ) where A <: AbstractParamCollection
 
@@ -55,7 +56,7 @@ $(TYPEDSIGNATURES)
     du.I_p = sig(
         u.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
-        functional_response(du, u, p..., t) * pown.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
+        functional_response(du, u, pcmn, pown, t) * pown.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
         0.; # while there is still vitellus left, there is no uptake from the external resource
         beta = 1e20
         )
@@ -70,6 +71,7 @@ $(TYPEDSIGNATURES)
     du::ComponentArray,
     u::ComponentArray,
     pcmn::Ref{A},
+    pown::ComponentVector,
     t::Real
     ) where A <: AbstractParamCollection
     du.A = du.I * pcmn.x.deb.eta_IA * u.y_A
@@ -83,6 +85,7 @@ $(TYPEDSIGNATURES)
     du::ComponentArray,
     u::ComponentArray,
     pcmn::Ref{A},
+    pown::ComponentVector,
     t::Real) where A <: AbstractParamCollection
     du.M = u.S * pcmn.x.deb.k_M * u.y_M
 end
@@ -95,6 +98,7 @@ $(TYPEDSIGNATURES)
     du::ComponentArray,
     u::ComponentArray,
     pcmn::Ref{A},
+    pown::ComponentVector,
     t::Real
     ) where A <: AbstractParamCollection
     du.J = u.H * pcmn.x.deb.k_J * u.y_M
@@ -138,8 +142,8 @@ function Sdot(
     return sig(
         pcmn.x.deb.kappa * du.A, # growth depends on maintenance coverage
         du.M, # switch occurs based on maintenance costs
-        Sdot_negative(du, u, p..., t), # left of the threshold == maintenance costs cannot be covered == negative growth
-        Sdot_positive(du, u, p..., t) # right of the threshold == maintenance costs can be covered == positive growth
+        Sdot_negative(du, u, pcmn, pown, t), # left of the threshold == maintenance costs cannot be covered == negative growth
+        Sdot_positive(du, u, pcmn, pown, t) # right of the threshold == maintenance costs can be covered == positive growth
     )
 end
 
@@ -154,7 +158,7 @@ $(TYPEDSIGNATURES)
     pown::ComponentArray,
     t::Real
     ) where A <: AbstractParamCollection
-    du.S = Sdot(du, u, p, t)
+    du.S = Sdot(du, u, pcmn, pown, t)
 end
 
 """

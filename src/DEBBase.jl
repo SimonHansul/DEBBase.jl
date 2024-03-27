@@ -31,6 +31,7 @@ isolate_pmoas!,
 sig,
 clipneg,
 relative_response,
-set_equal!
+set_equal!,
+@replicates
 
 end # module DEBBase

@@ -4,17 +4,16 @@ Induce agent variability in DEB parameters via zoom factor `Z`.
 `Z` is sampled from the corresponding distribution given in `p` and assumed to represent a ratio between maximum structurel *masses* (not lengths), 
 so that the surface area-specific ingestion rate `Idot_max_rel` scales with `Z^(1/3)` and parameters which represent masses or energy pools scales with `Z`.
 """
-function agent_variability!(pcmn::Ref{AbstractParamCollection}, pown::ComponentVector)
+function agent_variability!(pown::ComponentVector, pcmn::Ref{A}) where A <: AbstractParamCollection
     pown.Z = rand(pcmn.x.deb.Z) # sample zoom factor Z for agent a from distribution
-    pown.Idot_max_rel = pcmn.x.deb.Idot_max_rel_mean * Z^(1/3) # Z is always applied to Idot_max_rel
-    pown.Idot_max_rel_emb = pcmn.x.deb.Idot_max_rel_emb_mean * Z^(1/3) #, including the value for embryos
+    pown.Idot_max_rel = pcmn.x.deb.Idot_max_rel * pown.Z^(1/3) # Z is always applied to Idot_max_rel
+    pown.Idot_max_rel_emb = pcmn.x.deb.Idot_max_rel_emb * pown.Z^(1/3) #, including the value for embryos
 
-    for param in fieldnames(typeof(p.x.deb.propagate_zoom)) # iterate over other parameters which may be affected by Z
-        if getproperty(pcmn.propagate_zoom, param) # check whether propagation of Z should occur for this parameter
-            mean_param = getproperty(pcmn.x.deb, Symbol(join([String(param), "_mean"]))) # get the population mean
-            setproperty!(ppcmn.x.deb, param, getproperty(p.x, mean_param) * Z) # assign the agent value
+    for param in fieldnames(typeof(pcmn.x.deb.propagate_zoom)) # iterate over other parameters which may be affected by Z
+        if getproperty(pcmn.x.deb.propagate_zoom, param) # check whether propagation of Z should occur for this parameter
+            setproperty!(pcmn.x.deb, param, getproperty(pcmn.x.deb, param) * pown.Z) # assign the agent value by adjusting the hyperparameter
         else # if Z should not be propagated to this parameter, 
-            setproperty!(pown, param, mean_param) # set the agent-specific value equal to the population mean
+            setproperty!(pown, param, getproperty(pcmn.x.deb, param)) # set the agent-specific value equal to the population mean
         end
     end
 end
@@ -65,7 +64,14 @@ The parameters which can be agent-specific are predefined:
     - `K_X`
 """
 function initialize_pown()::ComponentVector{Float64}
-    return ComponentVector{Float64}(Z = undef, Idot_max_rel = undef, Idot_max_rel_emb = undef, X_emb_int = undef, H_p = undef, K_X = undef)
+    return ComponentVector{Float64}(
+        Z = 1., 
+        Idot_max_rel = 1e-310, 
+        Idot_max_rel_emb = 1e-310, 
+        X_emb_int = 1e-310, 
+        H_p = 1e-310, 
+        K_X = 1e-310
+        )
 end
 
 """
@@ -89,9 +95,10 @@ function simulator(
     kwargs...
     )::DataFrame
 
-    assert!(p)
-    u = initialize_statevars(pcmn, pown)
+    assert!(pcmn)
     pown = initialize_pown()
+    agent_variability!(pown, pcmn)
+    u = initialize_statevars(pcmn, pown)
     prob = ODEProblem(DEB!, u, (0, pcmn.x.glb.t_max), (pcmn, pown)) # define the problem
     sol = solve(prob, Tsit5(); saveat = saveat, abstol = abstol, reltol = reltol, kwargs...) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
@@ -107,13 +114,42 @@ mutating the referenced object and running calling  `simulator` on the reference
 $(TYPEDSIGNATURES)
 """
 function simulator(
-    p::BaseParamCollection;
+    pcmn::BaseParamCollection;
     saveat = 1,
     abstol = 1e-10, 
     reltol = 1e-10,
     kwargs...
     )
-    pref = Ref(p) # create a reference to the parameter object
+    pref = Ref(pcmn) # create a reference to the parameter object
     return simulator(pref; saveat = saveat, abstol = abstol, reltol = reltol, kwargs...) # run simulation
 end
+
+
+"""
+    @replicates(simcall::Expr, nreps::Int64) 
+
+Perform replicated runs of `simcall`, where `simcall` is a call to a simulator function. 
+
+Example:
+
+    deb = DEBBaseParams(Z = Truncated(Normal(1, 0.1), 0, Inf)) # initialize default parameters with variable zoom factor
+    yhat = @replicates DEBBase.simulator(BaseParamCollection(deb = deb))) 10 # execute replicated runs to simulator
+
+In this case, `yhat` will contain the output of 10 replicated simulations. For each replicate, the zoom factor is sampled from a truncated Normal distribution. 
+`yhat` contains an additional column `replicate`.
+"""
+macro replicates(simcall::Expr, nreps::Int64)
+    quote
+        yhat = DataFrame()
+
+        for replicate in 1:$nreps
+            yhat_i = $(esc(simcall))
+            yhat_i[!,:replicate] .= replicate
+            append!(yhat, yhat_i)
+        end
+        yhat
+    end
+end
+
+
 
