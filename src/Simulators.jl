@@ -77,9 +77,9 @@ end
 """
     simulator(
         pcmn::Ref{BaseParamCollection}; 
-        saveat = 1,
-        abstol = 1e-10, 
-        reltol = 1e-10,
+        alg = Tsit5(),
+        saveat = 1, 
+        reltol = 1e-6,
         kwargs...
         )::DataFrame
 
@@ -89,9 +89,9 @@ Additional kwargs are passed on to `DifferentialEquations.solve()`.
 """
 function simulator(
     pcmn::Ref{BaseParamCollection}; 
-    saveat = 1,
-    abstol = 1e-10, 
-    reltol = 1e-10,
+    alg = Tsit5(),
+    saveat = 1, 
+    reltol = 1e-6,
     kwargs...
     )::DataFrame
 
@@ -100,7 +100,7 @@ function simulator(
     agent_variability!(pown, pcmn)
     u = initialize_statevars(pcmn, pown)
     prob = ODEProblem(DEB!, u, (0, pcmn.x.glb.t_max), (pcmn, pown)) # define the problem
-    sol = solve(prob, Tsit5(); saveat = saveat, abstol = abstol, reltol = reltol, kwargs...) # get solution to the IVP
+    sol = solve(prob, alg; saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
   
     return simout
@@ -151,5 +151,20 @@ macro replicates(simcall::Expr, nreps::Int64)
     end
 end
 
+"""
+    @compose(derivs)
+    
+Compose a model system from a list of derivative functions. <br>
+Each `deriv` is called as `deriv!(du, u, p..., t).`
+"""
+macro compose(derivs)
+    quote
+        function du!(du, u, p, t)
+            for deriv! in $(esc(derivs))
+                deriv!(du, u, p..., t)
+            end
+        end
+    end
+end
 
 

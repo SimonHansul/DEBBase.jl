@@ -15,73 +15,89 @@
 end
 
 begin
-    plt = plot(layout = (1,2))
+    plt = plot(
+        layout = (1,2), 
+        leftmargin = 2.5mm, bottommargin = 2.5mm, 
+        xlabelfontsize = 10, 
+        size = (600,350),
+        xlabel = "Time since fertilization (d)",
+        ylabel = ["Structure" "Reproduction buffer"]
+        )
 
     y = DEBBase.simulator(BaseParamCollection())
     @df y plot!(plt, :t, :S, subplot = 1, color = :black, lw = 2)
     @df y plot!(plt, :t, :R, subplot = 2, color = :black, lw = 2)
     
     hyperZ = Truncated(Normal(1., 0.1), 0, Inf)
-    y = replicates(DEBBase.simulator, BaseParamCollection(deb = DEBBaseParams(Z = hyperZ)), 100)
+    y = @replicates DEBBase.simulator(BaseParamCollection(deb = DEBBaseParams(Z = hyperZ))) 10
     @df y plot!(plt, :t, :S, group = :replicate, alpha = .25, subplot = 1, c = :viridis)
     @df y plot!(plt, :t, :R, group = :replicate, alpha = .25, subplot = 2, c = :viridis) 
-    
+
     display(plt)
 end
 
-using BenchmarkTools
-@benchmark [DEBBase.simulator(BaseParamCollection()) for _ in 1:100]
 
-@benchmark replicates(DEBBase.simulator, BaseParamCollection(deb = DEBBaseParams(Z = hyperZ)), 1000)
+#=
+## Implementing an Agent object. 
 
-macro replicates(expr::Expr, nreps::Int64)
-    yhat = DataFrame()
+What does an agent need?
 
-    for replicate in 1:nreps
-        yhat_i = eval(expr)
-        yhat_i[!,:replicate] .= replicate
-        append!(yhat, yhat_i)
-    end
+- A reference to common paramters `pcmn`
+- Agen-specific parameters `pown`
+- State variables `u`
+- Derivatives `du`
 
-    return yhat
-end
+- A function to initialize the agent
+=#
 
+using ComponentArrays
 
-
-
-
-
-
-
-using DEBFigures
-yhat = @replicates DEBBase.simulator(BaseParamCollection(deb = DEBBaseParams(Z = Truncated(Normal(1, 0.1), 0, Inf)))) 10
-
-@df yhat plot(:t, :S, group = :replicate)
-
-@df y plot(:t, :R, group = :replicate)
 
 """
 DEBBase Agent. <br>
 Each agent owns a reference to its associated parameter collection.
 """
 mutable struct BaseAgent
-    p::Base.RefValue{BaseParamCollection} # reference to the paramter collection
+    pcmn::Base.RefValue{BaseParamCollection} # reference to the common parameter collection
+    pown::ComponentVector
     u::ComponentVector
     du::ComponentVector
 
-    function BaseAgent(p::A) where A <: AbstractParamCollection # generate agent from paramter collection
-        ref = Ref(p)
+    function BaseAgent(pcmn::Ref{A}) where A <: AbstractParamCollection # generate agent from reference to paramter collection
         a = new()
-        a.p = ref
-        a.u = initialize_statevars(a.p)
+        a.pcmn = pcmn
+        a.pown = DEBBase.initialize_pown()
+        DEBBase.agent_variability!(a.pown, a.pcmn)
+        a.u = DEBBase.initialize_statevars(a.pcmn, a.pown)
         a.du = similar(a.u)
         return a
     end
 end
 
 
-a = BaseAgent(BaseParamCollection())
+theta = BaseParamCollection()
+thtref = Ref(theta)
 
-# Idot_max_rel => Distribution(Idot_max_rel_mean, Idot_max_rel_sd)
-# 
+a = BaseAgent(thtref)
+
+DEBBase.DEB!()
+
+
+macro expand(innerfunc, outerfunc)
+    quote
+        $outerfunc(du, u, p, t) = begin
+            $(esc(innerfunc))(du, u, p, t)
+        end
+    end
+end
+
+function X_pindot!(du, u, p, t)
+    du.X_p = p[1].x.glb.Xdot_in
+end
+
+expmodel = @expand DEBBase.DEB! X_pindot!
+
+@macroexpand expmodel
+
+dump(DEBBase.DEB!)
 

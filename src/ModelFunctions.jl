@@ -369,3 +369,16 @@ function DEB!(du, u, p, t)
     Ddot!(du, u, p..., t) # damage
     C_Wdot!(du, u, p..., t) # external stressor concentration  
 end
+
+"""
+Timestep for the ODE implementation.
+"""
+function ODEModelStep!(du, u, p, t)
+    du.X_p = 0.
+
+end
+
+
+function AgentStep!(du, u, p, t)
+
+end

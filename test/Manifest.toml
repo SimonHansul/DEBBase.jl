@@ -2,7 +2,7 @@
 
 julia_version = "1.10.1"
 manifest_format = "2.0"
-project_hash = "05dd1ebbbd44c48ad53480c1b6f8653ce55b7e59"
+project_hash = "47501b87c1b7e23f81339863aeef435b85998efc"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "41c37aa88889c171f1300ceac1313c06e891d245"
@@ -362,7 +362,7 @@ version = "4.1.1"
 deps = ["ComponentArrays", "DEBParamStructs", "DataFrames", "DifferentialEquations", "Distributions", "DocStringExtensions", "DoseResponse", "Parameters", "PrecompileTools", "StaticArrays", "StatsBase"]
 path = ".."
 uuid = "0e91d03b-6562-4ef9-a38e-775ced00eaf8"
-version = "0.1.0"
+version = "0.1.1-refs"
 
 [[deps.DEBParamStructs]]
 git-tree-sha1 = "e7a7386e93981bea76b89d0f11dc430cdb5dc85f"
@@ -484,9 +484,9 @@ version = "1.15.1"
 
 [[deps.DifferentialEquations]]
 deps = ["BoundaryValueDiffEq", "DelayDiffEq", "DiffEqBase", "DiffEqCallbacks", "DiffEqNoiseProcess", "JumpProcesses", "LinearAlgebra", "LinearSolve", "NonlinearSolve", "OrdinaryDiffEq", "Random", "RecursiveArrayTools", "Reexport", "SciMLBase", "SteadyStateDiffEq", "StochasticDiffEq", "Sundials"]
-git-tree-sha1 = "8864b6a953eeba7890d23258aca468d90ca73fd6"
+git-tree-sha1 = "81042254a307980b8ab5b67033aca26c2e157ebb"
 uuid = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
-version = "7.12.0"
+version = "7.13.0"
 
 [[deps.Distances]]
 deps = ["LinearAlgebra", "Statistics", "StatsAPI"]
