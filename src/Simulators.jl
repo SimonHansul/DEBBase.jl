@@ -88,31 +88,19 @@ These are the common parameters `pcmn`. The agent-specific parameters `pown` are
 Additional kwargs are passed on to `DifferentialEquations.solve()`.
 """
 function simulator(
-<<<<<<< HEAD
-    p::Ref{BaseParamCollection}; 
-    alg = Tsit5(),
-=======
     pcmn::Ref{BaseParamCollection}; 
->>>>>>> feature-IBM
     saveat = 1,
     abstol = 1e-10, 
     reltol = 1e-10,
     kwargs...
     )::DataFrame
 
-<<<<<<< HEAD
-    assert!(p)
-    u = initialize_statevars(p)
-    prob = ODEProblem(DEB!, u, (0, p.x.glb.t_max), p) # define the problem
-    sol = solve(prob, alg, reltol = reltol, saveat = saveat; kwargs...) # get solution to the IVP
-=======
     assert!(pcmn)
     pown = initialize_pown()
     agent_variability!(pown, pcmn)
     u = initialize_statevars(pcmn, pown)
     prob = ODEProblem(DEB!, u, (0, pcmn.x.glb.t_max), (pcmn, pown)) # define the problem
     sol = solve(prob, Tsit5(); saveat = saveat, abstol = abstol, reltol = reltol, kwargs...) # get solution to the IVP
->>>>>>> feature-IBM
     simout = sol_to_df(sol) # convert solution to dataframe
   
     return simout
@@ -162,6 +150,4 @@ macro replicates(simcall::Expr, nreps::Int64)
         yhat
     end
 end
-
-
 
