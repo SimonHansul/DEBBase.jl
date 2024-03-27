@@ -2,6 +2,7 @@
 `GlobalBaseParams` contain the global parameters (simulated timespan `t_max`, nutrient influx rate `Xdot_in`, etc.)
 """
 @with_kw mutable struct GlobalBaseParams <: AbstractParams
+    N0::Int64 = 1 #  initial number of individuals
     t_max::Float64 = 21. # maximum simulation time (d)
     Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default DEBBaseParams
     V_patch::Float64 = 0.05 # volume of a patch (L) (or the entire similated environment)

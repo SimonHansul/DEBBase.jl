@@ -14,7 +14,7 @@
     using Parameters, DEBParamStructs
 end
 
-begin
+@test begin
     plt = plot(
         layout = (1,2), 
         leftmargin = 2.5mm, bottommargin = 2.5mm, 
@@ -24,18 +24,17 @@ begin
         ylabel = ["Structure" "Reproduction buffer"]
         )
 
-    y = DEBBase.simulator(BaseParamCollection())
-    @df y plot!(plt, :t, :S, subplot = 1, color = :black, lw = 2)
-    @df y plot!(plt, :t, :R, subplot = 2, color = :black, lw = 2)
+    yhat_fix = DEBBase.simulator(BaseParamCollection())
+    @df yhat_fix plot!(plt, :t, :S, subplot = 1, color = :black, lw = 2)
+    @df yhat_fix plot!(plt, :t, :R, subplot = 2, color = :black, lw = 2)
     
     hyperZ = Truncated(Normal(1., 0.1), 0, Inf)
-    y = @replicates DEBBase.simulator(BaseParamCollection(deb = DEBBaseParams(Z = hyperZ))) 10
-    @df y plot!(plt, :t, :S, group = :replicate, alpha = .25, subplot = 1, c = :viridis)
-    @df y plot!(plt, :t, :R, group = :replicate, alpha = .25, subplot = 2, c = :viridis) 
+    yhat_var = @replicates DEBBase.simulator(BaseParamCollection(deb = DEBBaseParams(Z = hyperZ))) 10
+    @df yhat_var plot!(plt, :t, :S, group = :replicate, alpha = .25, subplot = 1, c = :viridis)
+    @df yhat_var plot!(plt, :t, :R, group = :replicate, alpha = .25, subplot = 2, c = :viridis) 
 
-    display(plt)
+    true
 end
-
 
 #=
 ## Implementing an Agent object. 
@@ -51,17 +50,18 @@ What does an agent need?
 =#
 
 using ComponentArrays
-
+abstract type AbstractAgent end
 
 """
 DEBBase Agent. <br>
 Each agent owns a reference to its associated parameter collection.
 """
-mutable struct BaseAgent
+mutable struct BaseAgent <: AbstractAgent
     pcmn::Base.RefValue{BaseParamCollection} # reference to the common parameter collection
     pown::ComponentVector
     u::ComponentVector
     du::ComponentVector
+    active::Bool
 
     function BaseAgent(pcmn::Ref{A}) where A <: AbstractParamCollection # generate agent from reference to paramter collection
         a = new()
@@ -70,34 +70,75 @@ mutable struct BaseAgent
         DEBBase.agent_variability!(a.pown, a.pcmn)
         a.u = DEBBase.initialize_statevars(a.pcmn, a.pown)
         a.du = similar(a.u)
+        a.active = false
         return a
     end
 end
 
+function activate!(a::BaseAgent)
+    a.active = true
+end
 
-theta = BaseParamCollection()
-thtref = Ref(theta)
+function deactivate!(a::BaseAgent)
+    a.active = false
+end
 
-a = BaseAgent(thtref)
+@test begin
+    Θ = BaseParamCollection()
+    Θ_ref = Ref(Θ)
+    a = BaseAgent(Θ_ref)    
 
-DEBBase.DEB!()
+    true
+end
 
 
-macro expand(innerfunc, outerfunc)
-    quote
-        $outerfunc(du, u, p, t) = begin
-            $(esc(innerfunc))(du, u, p, t)
+
+
+#=
+## Implementing a model object 
+
+
+=#
+
+abstract type AbstractABM end
+
+
+θ = BaseParamCollection()
+θ_ref = Ref(θ)
+
+agents = Vector{AbstractAgent}(undef, 10)
+agents[1] = BaseAgent(θ_ref)
+
+"""
+Definition of basic ABM object. <br>
+Currently assumes that only a single species of type `AgentType` is simulated at a time.
+"""
+@with_kw mutable struct ABM <: AbstractABM
+    theta::AbstractParamCollection # Parameter collection
+    agents # Agents
+    t::Float64
+
+    """
+    Instantiate ABM from param collection `theta`. 
+    """
+    function ABM(theta::A; AgentType = BaseAgent, N_max = Int(1e4)) where A <: AbstractParamCollection
+        abm = new() # initialize ABM object
+        abm.theta = theta # 
+        abm.t = 0.
+
+        abm.agents = Vector{AbstractAgent}(undef, N_max)
+        
+        for i in eachindex(abm.agents)
+            abm.agents[i] = AgentType(Ref(theta))
+            if i <= theta.glb.N0
+                activate!(abm.agents[i])
+            end
         end
+
+        return abm
     end
 end
 
-function X_pindot!(du, u, p, t)
-    du.X_p = p[1].x.glb.Xdot_in
-end
 
-expmodel = @expand DEBBase.DEB! X_pindot!
-
-@macroexpand expmodel
-
-dump(DEBBase.DEB!)
-
+abm = ABM(θ)
+println(abm)

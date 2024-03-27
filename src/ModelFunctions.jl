@@ -264,16 +264,13 @@ $(TYPEDSIGNATURES)
     t::Real
     ) where A <: AbstractParamCollection
     
-    # TODO: move calculation of L_S_max out so it is only calculated once, not at every step
-    SL_max = calc_SL_max(pcmn.x.deb) # maximum structural length (g^(1/3))
-    SL = (Complex(u.S)^(1/3)).re
     for z in eachindex(u.C_W)
         # the sigmoid function causes Ddot to be 0 for embryos (assumption)
-        du.D_G[z] = sig(u.X_emb, 0., pcmn.x.deb.k_D_G[z] * (SL_max / SL) * (u.C_W[z] - u.D_G[z]) - u.D_G[z] * (du.S / u.S), 0.)
-        du.D_M[z] = sig(u.X_emb, 0., pcmn.x.deb.k_D_M[z] * (SL_max / SL) * (u.C_W[z] - u.D_M[z]) - u.D_M[z] * (du.S / u.S), 0.)
-        du.D_A[z] = sig(u.X_emb, 0., pcmn.x.deb.k_D_A[z] * (SL_max / SL) * (u.C_W[z] - u.D_A[z]) - u.D_A[z] * (du.S / u.S), 0.)
-        du.D_R[z] = sig(u.X_emb, 0., pcmn.x.deb.k_D_R[z] * (SL_max / SL) * (u.C_W[z] - u.D_R[z]) - u.D_R[z] * (du.S / u.S), 0.)
-        du.D_h[z] = sig(u.X_emb, 0., pcmn.x.deb.k_D_h[z] * (SL_max / SL) * (u.C_W[z] - u.D_h[z]) - u.D_h[z] * (du.S / u.S), 0.)
+        du.D_G[z] = sig(u.X_emb, 0., pcmn.x.deb.k_D_G[z] * (calc_SL_max(pcmn.x.deb) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_G[z]) - u.D_G[z] * (du.S / u.S), 0.)
+        du.D_M[z] = sig(u.X_emb, 0., pcmn.x.deb.k_D_M[z] * (calc_SL_max(pcmn.x.deb) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_M[z]) - u.D_M[z] * (du.S / u.S), 0.)
+        du.D_A[z] = sig(u.X_emb, 0., pcmn.x.deb.k_D_A[z] * (calc_SL_max(pcmn.x.deb) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_A[z]) - u.D_A[z] * (du.S / u.S), 0.)
+        du.D_R[z] = sig(u.X_emb, 0., pcmn.x.deb.k_D_R[z] * (calc_SL_max(pcmn.x.deb) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_R[z]) - u.D_R[z] * (du.S / u.S), 0.)
+        du.D_h[z] = sig(u.X_emb, 0., pcmn.x.deb.k_D_h[z] * (calc_SL_max(pcmn.x.deb) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_h[z]) - u.D_h[z] * (du.S / u.S), 0.)
     end
 end
 
@@ -294,7 +291,7 @@ end
     pown::ComponentArray,
     t::Real
     ) where A <: AbstractParamCollection
-    du.X_p = pcmn.x.glb.Xdot_in - du.I_p
+    du.X_p -= du.I_p
 end
 
 @inline function X_embdot!(
@@ -374,11 +371,9 @@ end
 Timestep for the ODE implementation.
 """
 function ODEModelStep!(du, u, p, t)
-    du.X_p = 0.
-
+    du.X_p = pcmn.x.glb.Xdot_in
+    DEB!(du, u, p, t)
 end
 
 
-function AgentStep!(du, u, p, t)
 
-end
