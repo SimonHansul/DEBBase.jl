@@ -29,7 +29,7 @@ This is a species with maximum Size around 1 mg.
 =#
 begin 
     @info("Setting up parameters")
-    ref = DEBBaseParams() # reference params
+    ref = SpeciesParams() # reference params
     Smax_ref = DEBBase.calc_S_max(ref) # S_max of the reference species
 
     deb = copy(ref) # adjusted params
@@ -42,7 +42,7 @@ begin
 
     Smax_deb = DEBBase.calc_S_max(deb) # maximum size of the reference species
 
-    glb = GlobalBaseParams()
+    glb = GlobalParams()
     glb.Xdot_in *= Z
     glb.t_max = 30.
 
@@ -56,7 +56,7 @@ end
 begin
     @info("Running simulations")
     y = DEBBase.simulator(
-        BaseParamCollection(glb = glb, deb = deb)
+        DEBParamCollection(glb = glb, deb = deb)
         )
 
     @df y plot(

@@ -1,5 +1,5 @@
 begin 
-    p = BaseParamCollection()
+    p = DEBParamCollection()
     out = DEBBase.simulator(p)
 
     plt = @df out plot(
@@ -35,19 +35,19 @@ begin # effect of food input
             Xdot_in /= 2
             # generate the predidction
             out = DEBBase.simulator(
-                BaseParamCollection(
-                    glb = GlobalBaseParams(Xdot_in = Xdot_in, t_max = 56.), 
-                    deb = DEBBaseParams(K_X = 12e3))
+                DEBParamCollection(
+                    glb = GlobalParams(Xdot_in = Xdot_in, t_max = 56.), 
+                    deb = SpeciesParams(K_X = 12e3))
                 )
 
             # plot the trajectories
             @df out plot!(plt, :t, :S, ylabel = "S", subplot = 1, leg = :outertopleft, label = "Xdot_in = $(Xdot_in)") 
             @df out plot!(plt, :t, :R, ylabel = "R", subplot = 2)
-            @df out plot!(plt, :t, :X_p ./ GlobalBaseParams().V_patch, ylabel = "[X_p]", subplot = 3, 
+            @df out plot!(plt, :t, :X_p ./ GlobalParams().V_patch, ylabel = "[X_p]", subplot = 3, 
                 yscale = :log10
                 )
         end
-        hline!(plt, [DEBBase.calc_S_max(DEBBaseParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
+        hline!(plt, [DEBBase.calc_S_max(SpeciesParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
         display(plt)
         savefig(plt, "plots/$(TAG)_Xdot_in_sweep.png")
     end

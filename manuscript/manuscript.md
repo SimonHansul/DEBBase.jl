@@ -30,15 +30,15 @@ DEBBase.jl can be used as a dependency to implement more specific DEB models, as
 With DEBBase.jl installed in the Julia environment, we can conduct a first simulation with just two lines of code:
 ```Julia
 using DEBBase # load package
-simout = DEBBase.simulator(BaseParamCollection()) # execute simulation with default parameters
+simout = DEBBase.simulator(DEBParamCollection()) # execute simulation with default parameters
 ```
 
-Here, the first line loads the DEBBase package. The second line calls the `DEBBase.simulator` function, which takes an object of type `BaseParamCollection` as argument. 
+Here, the first line loads the DEBBase package. The second line calls the `DEBBase.simulator` function, which takes an object of type `DEBParamCollection` as argument. 
 This will assume a set of default parameters if no parameters are specified, as done above. <br>
-The definition of `BaseParamCollections` in turn contains two fields:
+The definition of `ParamCollections` in turn contains two fields:
 
-- `glb`: An instance of type `GlobalBaseParams` which defines global parameters. These include quantities such as the timespan to simulate, nutrient input rates, and external chemical concentrations. The global parameters in combination define the environmental or experimental scenario to be simulated. The default values simulate life-history of the default DEB organism at *ad libitum* feeding conditions and without exposure to chemical stressors over a timespan of 21 days.
-- `deb`: An instance of type `DEBBaseParams`, which defines the DEB and TKTD parameters. The default organism roughly approximates the growth and reproduction of *Daphnia magna*.
+- `glb`: An instance of type `GlobalParams` which defines global parameters. These include quantities such as the timespan to simulate, nutrient input rates, and external chemical concentrations. The global parameters in combination define the environmental or experimental scenario to be simulated. The default values simulate life-history of the default DEB organism at *ad libitum* feeding conditions and without exposure to chemical stressors over a timespan of 21 days.
+- `deb`: An instance of type `SpeciesParams`, which defines the DEB and TKTD parameters. The default organism roughly approximates the growth and reproduction of *Daphnia magna*.
 
 Figure 1 shows the growth and reproduction returned by the default parameter collection.
 
@@ -48,7 +48,7 @@ Figure 1 shows the growth and reproduction returned by the default parameter col
 The default parameters can be modified by specifying exactly the parameters which should be modified, e.g:
 
 ```Julia
-p = BaseParamCollection() # initialize default parameters
+p = DEBParamCollection() # initialize default parameters
 p.deb.kappa = 0.8 # modify a DEB parameter, kappa
 simout = DEBBase.simulator(p) # execute simulation with modified kappa
 ```
@@ -56,12 +56,12 @@ simout = DEBBase.simulator(p) # execute simulation with modified kappa
 This simulates the default parameters, except that the DEB parameter $\kappa$ (indicating the fraction of assimilated nutrients allocated to growth and somatic maintenance) is changed to 0.8 Alternatively, the following code achieves the same:
 
 ```Julia
-simout = DEBBase.simulator(BaseParamCollection(deb = DEBBaseParams(kappa = 0.8)))
+simout = DEBBase.simulator(DEBParamCollection(deb = SpeciesParams(kappa = 0.8)))
 ```
 
 The same applies to global parameters, e.g. to set the food input rate:
 ```Julia
-simout = DEBBase.simulator(BaseParamCollection(glb = GlobalBaesParams(Xdot_in = 800.)))
+simout = DEBBase.simulator(DEBParamCollection(glb = GlobalBaesParams(Xdot_in = 800.)))
 ```
 
 ## Simulating effects of chemical stressors
@@ -74,7 +74,7 @@ In the case of the TK parameters, each element of the Vector ` is a scalar value
 because we assume a simple TK model with a single parameter, the dominant rate constant $k_{D,z,j}$, specific for chemical stressor $z$ and PMoA $j$. The following would set the $k_{D,z,j}$-value for two stresors which both act via PMoA G:
 
 ```Julia
-p = BaseParamCollection() # instantiate default parameter 
+p = DEBParamCollection() # instantiate default parameter 
 p.deb.k_D_G = [0.1, 1.0] # modify TK parameters for PMoA G
 ```
 
@@ -90,7 +90,7 @@ For the TD parameters, each element of the parameter Vector is a tuple, because 
 The following code sets the TD parameters for two stressors acting via PMoA G:
 
 ```Julia
-p = BaseParamCollection() # instantiate default parameter 
+p = DEBParamCollection() # instantiate default parameter 
 isolate_pmoas!(p, ["G"]) # disengage all PMoAs but G
 p.deb.drc_params_G = [
     (1.0, 2.0), # log-logistic parameters for stressor 1 with respect to PMoA G
@@ -122,11 +122,11 @@ with\ \theta = (e_{z,M}, \beta_{z,M})
 $$
 
 We deviate here from previous DEB-TKTD implementations in two ways: We skip the "stress"-variable, because it serves no apparent purpose. Secondly, we replace the linear relationship between damage and stress with a log-logistic relationship (or one that is derived from it) due to practical and theoretical considerations (Hansul et al., 2023). <br>
-However, the dose-response function for each stressor and PMoA is not hard-coded. Instead, the dose response-function is a parameter given in `DEBBaseParams`. 
+However, the dose-response function for each stressor and PMoA is not hard-coded. Instead, the dose response-function is a parameter given in `SpeciesParams`. 
 Users can easily change the dose-response function by specification of the corresponding parameter:
 ```Julia
 using DoseResponse # this package exports a colllection of dose response-functions (others can be defined by the user)
-p = BaseParamCollection() # instantiate default parameter 
+p = DEBParamCollection() # instantiate default parameter 
 isolate_pmoas!(p, ["G"]) # disengage all PMoAs but G
 p.deb.drc_functs_G = [
     LL2, # use log-logistic relationship for stressor 1
@@ -165,7 +165,7 @@ Simulation of population dynamics can be achieved with the same basic mechanisms
 ```Julia
 simout = DEBBase.simulator(IBMParamCollection())
 ```
-The type `IBMBaseParams` has the same structure as `BaseParamCollection`, but defines some additional parameters (both within `glb` and `deb`) which are necessary to simulate population dynamics. The implementation makes use of multiple dispatch, so that the IBM implementation is called when `DEBBase.simulator` is called with `IBMParamCollection` as argument. <br>
+The type `IBMBaseParams` has the same structure as `DEBParamCollection`, but defines some additional parameters (both within `glb` and `deb`) which are necessary to simulate population dynamics. The implementation makes use of multiple dispatch, so that the IBM implementation is called when `DEBBase.simulator` is called with `IBMParamCollection` as argument. <br>
 
 
 ## Extending the base model

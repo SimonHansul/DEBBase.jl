@@ -28,19 +28,19 @@ begin # effect of food input
         for eta_AS in eta_AS_vec
             # generate the predidction
             out = DEBBase.simulator(
-                BaseParamCollection(
-                    glb = GlobalBaseParams(t_max = 56.), 
-                    deb = DEBBaseParams(eta_AS = eta_AS))
+                DEBParamCollection(
+                    glb = GlobalParams(t_max = 56.), 
+                    deb = SpeciesParams(eta_AS = eta_AS))
                 )
 
             # plot the trajectories
             @df out plot!(plt, :t, :S, ylabel = "S", subplot = 1, leg = :outertopleft, label = "eta_AS = $(eta_AS)") 
             @df out plot!(plt, :t, :R, ylabel = "R", subplot = 2)
-            @df out plot!(plt, :t, :X_p ./ GlobalBaseParams().V_patch, ylabel = "[X_p]", subplot = 3, 
+            @df out plot!(plt, :t, :X_p ./ GlobalParams().V_patch, ylabel = "[X_p]", subplot = 3, 
                 yscale = :log10
                 )
         end
-        hline!(plt, [DEBBase.calc_S_max(DEBBaseParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
+        hline!(plt, [DEBBase.calc_S_max(SpeciesParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
         display(plt)
         savefig(plt, "plots/$(TAG).png")
     end

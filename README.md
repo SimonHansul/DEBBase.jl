@@ -33,7 +33,7 @@ using Pkg
 Pkg.activate(".") 
 
 # add unregistered dependencies
-Pkg.add(url = "https://github.com/SimonHansul/DEBParamStructs.jl")
+Pkg.add(url = "https://github.com/SimonHansul/SpeciesParamstructs.jl")
 Pkg.add(url = "https://github.com/SimonHansul/DoseResponse.jl")
 
 # add DEBBase
@@ -49,9 +49,9 @@ using DEBBase
 out = DEBBase.simulator(BaseParams())
 ```
 
-A parameter collection (`BaseParamCollection`) contains two sets of parameters: 
-- `glb::GlobalBaseParams`: These are global parameters, such as the simulated timespan, food input rate, etc.
-- `deb::DEBBaseParams`: The DEB and TKTD parameters.
+A parameter collection (`DEBParamCollection`) contains two sets of parameters: 
+- `glb::GlobalParams`: These are global parameters, such as the simulated timespan, food input rate, etc.
+- `deb::SpeciesParams`: The DEB and TKTD parameters.
 
 ## Extending the model
 
@@ -70,16 +70,16 @@ In case you are adding new parameters to the model,
 you can define your own parameter struct like so: 
 ```Julia
 # initialize default DEB parameters, but change kappa
-deb = DEBBaseParams(kappa = 0.5)
-theta = BaseParamCollection(deb = deb) # initialize parameter collection with altered DEB parameters
+deb = SpeciesParams(kappa = 0.5)
+theta = DEBParamCollection(deb = deb) # initialize parameter collection with altered DEB parameters
 ```
 
 Or, by accessing the parameter entry of a previously initialized parameter structure:
 ```Julia
-deb = DEBBaseParams() # initialize default DEB parameters
+deb = SpeciesParams() # initialize default DEB parameters
 deb.kappa = 0.5 # change kappa
 setproperty!(deb, :kappa, 0.5) # this does the same as the line above
-theta = BaseParamCollection(deb = deb) # initialize parameter collection
+theta = DEBParamCollection(deb = deb) # initialize parameter collection
 ```
 
 Some conventions for defining these functions in DEBBase:
@@ -134,7 +134,7 @@ Finally, if new state variables have been introduced, the DEBBase.simulator also
 ```Julia
 function DEBBase.simulator(
     glb::AbstractParams,
-    deb::NewDEBParams
+    deb::NewSpeciesParams
     )
     
     u0 = [glb.Xdot_in, deb.X_emb_int, deb.X_emb_int * 0.01, 0., 0., 0.]
@@ -151,7 +151,7 @@ Here we have made the following changes:
 
 - Added the initial value of the new state variable to `u0` and the corresponding symbol to the output data frame `simout`. 
 - `ODEProblem` depends on `NewDEB!` instead of `DEB!`. <br>
-- Exchanged `deb::AbstractParams` with `deb::NewDEBParams` in the function signature
+- Exchanged `deb::AbstractParams` with `deb::NewSpeciesParams` in the function signature
 
 The last step is optional - `AbstractParams` would also work, but specifiying the type is useful to add more methods to `DEBBase.simulator`.  
 You might have many versions of `DEBBase.simulator` which all evaluate different parameter objects. 

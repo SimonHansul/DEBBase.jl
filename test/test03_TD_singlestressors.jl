@@ -20,8 +20,8 @@ begin
     out = DataFrame()
     for pmoa in ["G", "M", "A", "R"]
         for C_W in round.(10 .^ range(log10(0.1), log10(1.), length = 5), sigdigits = 2)
-            glb = GlobalBaseParams(t_max = 42., C_W = [C_W])
-            deb = DEBBaseParams(
+            glb = GlobalParams(t_max = 42., C_W = [C_W])
+            deb = SpeciesParams(
                 k_D_G = [10.], 
                 k_D_M = [10.], 
                 k_D_A = [10.], 
@@ -33,7 +33,7 @@ begin
                 drc_params_R = [(1., 2.)],
                 drc_params_h = [(1., 2.)]
                 )
-            p = BaseParamCollection(glb = glb, deb = deb)
+            p = DEBParamCollection(glb = glb, deb = deb)
             isolate_pmoas!(p.deb, [pmoa])
             out_zj = DEBBase.simulator(p)
             out_zj[!,:C_W] .= C_W

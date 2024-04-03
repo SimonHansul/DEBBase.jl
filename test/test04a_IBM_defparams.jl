@@ -11,7 +11,7 @@
 
     using Revise
     using DEBBase
-    using Parameters, DEBParamStructs
+    using Parameters, SpeciesParamstructs
 end
 
 @test begin
@@ -24,12 +24,12 @@ end
         ylabel = ["Structure" "Reproduction buffer"]
         )
 
-    yhat_fix = DEBBase.simulator(BaseParamCollection())
+    yhat_fix = DEBBase.simulator(DEBParamCollection())
     @df yhat_fix plot!(plt, :t, :S, subplot = 1, color = :black, lw = 2)
     @df yhat_fix plot!(plt, :t, :R, subplot = 2, color = :black, lw = 2)
     
     hyperZ = Truncated(Normal(1., 0.1), 0, Inf)
-    yhat_var = @replicates DEBBase.simulator(BaseParamCollection(deb = DEBBaseParams(Z = hyperZ))) 10
+    yhat_var = @replicates DEBBase.simulator(DEBParamCollection(deb = SpeciesParams(Z = hyperZ))) 10
     @df yhat_var plot!(plt, :t, :S, group = :replicate, alpha = .25, subplot = 1, c = :viridis)
     @df yhat_var plot!(plt, :t, :R, group = :replicate, alpha = .25, subplot = 2, c = :viridis) 
 
@@ -57,7 +57,7 @@ DEBBase Agent. <br>
 Each agent owns a reference to its associated parameter collection.
 """
 mutable struct BaseAgent <: AbstractAgent
-    pcmn::Base.RefValue{BaseParamCollection} # reference to the common parameter collection
+    pcmn::Base.RefValue{DEBParamCollection} # reference to the common parameter collection
     pown::ComponentVector
     u::ComponentVector
     du::ComponentVector
@@ -84,7 +84,7 @@ function deactivate!(a::BaseAgent)
 end
 
 @test begin
-    Θ = BaseParamCollection()
+    Θ = DEBParamCollection()
     Θ_ref = Ref(Θ)
     a = BaseAgent(Θ_ref)    
 
@@ -103,7 +103,7 @@ end
 abstract type AbstractABM end
 
 
-θ = BaseParamCollection()
+θ = DEBParamCollection()
 θ_ref = Ref(θ)
 
 agents = Vector{AbstractAgent}(undef, 10)
