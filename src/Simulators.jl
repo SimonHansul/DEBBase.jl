@@ -135,7 +135,11 @@ Example:
         range(10, 25, length = 10) # evaluate 10 values between 10 and 25
         )
 """
-function sweep(simcall::Expr, component::AbstractParams, param::Symbol, range::Union{U,AbstractVector}) where {U <: UnitRange}
+function sweep(
+    simcall::Expr, 
+    component::AbstractParams,
+    param::Symbol, 
+    range::Union{U,AbstractVector}) where {U <: UnitRange}
     yhat = DataFrame()
 
     for val in range
