@@ -129,7 +129,7 @@ Example:
     theta = DEBParamCollection() # use default parameters 
     theta.spc.Z = Truncated(Normal(1, 0.05), 0, Inf) # include agent variability
 
-    @time yhat = sweep(
+    yhat = sweep(
         :(@replicates simulator(theta) 10), # evaluate 10 replicates per iteration
         theta.spc, :Idot_max_rel, # screen parameter Idot_max_rel contained in theta.spc
         range(10, 25, length = 10) # evaluate 10 values between 10 and 25
