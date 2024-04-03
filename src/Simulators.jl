@@ -111,6 +111,43 @@ macro replicates(simcall::Expr, nreps::Int64)
     end
 end
 
+
+"""
+    sweep(simcall::Expr, component::AbstractParams, param::Symbol, range::Union{U,AbstractVector}) where {U <: UnitRange}
+
+Perform a parameter sweep over a single parameter. 
+
+- `simcall::Expr`: expression to evaluate a single iteration.
+- `component::AbstractParams`: instance of a parameter struct which contains the parameter to be screened.
+- `param::Symbol`: parameter to be screened.
+- `range`: parameter range
+
+----
+
+Example:
+
+    theta = DEBParamCollection() # use default parameters 
+    theta.spc.Z = Truncated(Normal(1, 0.05), 0, Inf) # include agent variability
+
+    @time yhat = sweep(
+        :(@replicates simulator(theta) 10), # evaluate 10 replicates per iteration
+        theta.spc, :Idot_max_rel, # screen parameter Idot_max_rel contained in theta.spc
+        range(10, 25, length = 10) # evaluate 10 values between 10 and 25
+        )
+"""
+function sweep(simcall::Expr, component::AbstractParams, param::Symbol, range::Union{U,AbstractVector}) where {U <: UnitRange}
+    yhat = DataFrame()
+
+    for val in range
+        setproperty!(component, param, val)
+        yhat_i = eval(simcall)
+        yhat_i[!,param] .= val
+        append!(yhat, yhat_i)
+    end
+    return yhat
+end
+
+
 """
     @compose(derivs)
     

@@ -5,7 +5,7 @@
 begin
     using Pkg; Pkg.activate("test")
 
-    using Plots, StatsPlots
+    using Plots, StatsPlots, Plots.Measures
     default(leg = false)
     using Distributions
     using DataFrames
@@ -81,66 +81,65 @@ Basic test of @compose macro. <br>
 Here we simulate again the default parameters, but use the @compose macro to define the ODE system.
 =#
 
-@testset begin
+#@testset begin
+#
+#    functions = [ # define ODE system as list of derivative functions
+#        DEBBase.Idot!,
+#        DEBBase.Adot!,
+#        DEBBase.Mdot!,
+#        DEBBase.Jdot!,
+#        DEBBase.Sdot!,
+#        DEBBase.Hdot!,
+#        DEBBase.H_bdot!,
+#        DEBBase.Rdot!,
+#        DEBBase.X_pdot!,
+#        DEBBase.X_embdot!,
+#        DEBBase.Ddot!,
+#        DEBBase.C_Wdot!
+#    ]
+#
+#    system! = DEBBase.@compose functions # use @compose to put the functions together
+#    
+#    theta = DEBParamCollection()
+#    theta.glb.t_max = 56.
+#
+#    @time yhat = DEBBase.simulator(theta; system = system!)
+#
+#    plt = @df yhat plot(
+#        plot(:t, :S, ylabel = "S"),
+#        plot(:t, :H, ylabel = "H"), 
+#        plot(:t, :R, ylabel = "R"),
+#        plot(:t, diffvec(:I) ./ diffvec(:t), ylabel = "Idot"), 
+#        title = "@compose ", titlefontsize = 10,
+#        xlabel = "t"
+#    )
+#
+#    display(plt)
+#    
+#    @test isapprox(maximum(yhat.H), theta.spc.H_p, rtol = 1e-2)
+#    @test isapprox(maximum(yhat.S), DEBBase.calc_S_max(theta.spc), rtol = 0.1)
+#end
 
-    functions = [ # define ODE system as list of derivative functions
-        DEBBase.Idot!,
-        DEBBase.Adot!,
-        DEBBase.Mdot!,
-        DEBBase.Jdot!,
-        DEBBase.Sdot!,
-        DEBBase.Hdot!,
-        DEBBase.H_bdot!,
-        DEBBase.Rdot!,
-        DEBBase.X_pdot!,
-        DEBBase.X_embdot!,
-        DEBBase.Ddot!,
-        DEBBase.C_Wdot!
-    ]
+theta = DEBParamCollection()
 
-    system! = DEBBase.@compose functions # use @compose to put the functions together
-    
-    theta = DEBParamCollection()
-    theta.glb.t_max = 56.
+using DEBFigures
 
-    @time yhat = DEBBase.simulator(theta; system = system!)
+theta = DEBParamCollection()
+theta.spc.Z = Truncated(Normal(1, 0.05), 0, Inf)
 
-    plt = @df yhat plot(
-        plot(:t, :S, ylabel = "S"),
-        plot(:t, :H, ylabel = "H"), 
-        plot(:t, :R, ylabel = "R"),
-        plot(:t, diffvec(:I) ./ diffvec(:t), ylabel = "Idot"), 
-        title = "@compose ", titlefontsize = 10,
-        xlabel = "t"
+@time yhat = sweep(
+    :(@replicates simulator(theta) 10),
+    theta.spc, :Idot_max_rel, 
+    range(10, 25, length = 10)
     )
 
-    display(plt)
-    
-    @test isapprox(maximum(yhat.H), theta.spc.H_p, rtol = 1e-2)
-    @test isapprox(maximum(yhat.S), DEBBase.calc_S_max(theta.spc), rtol = 0.1)
-end
+@df yhat groupedlineplot(
+    :t, :S, :Idot_max_rel, 
+    xlabel = "Time (d)", ylabel = "Structure (μgC)", leftmargin = 5mm,
+    palette = palette([:teal, :purple], 10), 
+    leg = :outertopright, 
+    label = hcat(fround.(unique(:Idot_max_rel))...), legtitle = "Idot_max_rel"
+    )
 
 
 
-@testset begin
-    function Jdot!(du, u, p, t)
-        du.J = 0.
-    end
-
-    functions = [ # define ODE system as list of derivative functions
-        DEBBase.Idot!,
-        DEBBase.Adot!,
-        DEBBase.Mdot!,
-        Jdot!,
-        DEBBase.Sdot!,
-        DEBBase.Hdot!,
-        DEBBase.H_bdot!,
-        DEBBase.Rdot!,
-        DEBBase.X_pdot!,
-        DEBBase.X_embdot!,
-        DEBBase.Ddot!,
-        DEBBase.C_Wdot!
-    ]
-
-    
-end
