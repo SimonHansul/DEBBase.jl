@@ -384,35 +384,35 @@ DEBBase.jl can be used as a dependency to implement more specific DEB models, as
 <h2 id="simulating-life-history">Simulating life-history</h2>
 <p>With DEBBase.jl installed in the Julia environment, we can conduct a first simulation with just two lines of code:</p>
 <pre class="hljs"><code><div><span class="hljs-keyword">using</span> DEBBase
-simout = DEBBase.simulator(BaseParamCollection())
+simout = DEBBase.simulator(DEBParamCollection())
 </div></code></pre>
-<p>Here, the first line loads the DEBBase package. The second line calls the <code>DEBBase.simulator</code> function, which takes an object of type <code>BaseParamCollection</code> as argument.
+<p>Here, the first line loads the DEBBase package. The second line calls the <code>DEBBase.simulator</code> function, which takes an object of type <code>DEBParamCollection</code> as argument.
 This will assume a set of default parameters if no parameters are specified, as done above. <br>
-The definition of <code>BaseParamCollections</code> in turn contains two fields:</p>
+The definition of <code>ParamCollections</code> in turn contains two fields:</p>
 <ul>
-<li><code>glb</code>: An instance of type <code>GlobalBaseParams</code> which defines global parameters. These include quantities such as the timespan to simulate, nutrient input rates, and external chemical concentrations. The global parameters in combination define the environmental or experimental scenario to be simulated. The default values simulate life-history of the default DEB organism at <em>ad libitum</em> feeding conditions and without exposure to chemical stressors over a timespan of 21 days.</li>
-<li><code>deb</code>: An instance of type <code>DEBBaseParams</code>, which defines the DEB and TKTD parameters. The default organism roughly approximates the growth and reproduction of <em>Daphnia magna</em>.</li>
+<li><code>glb</code>: An instance of type <code>GlobalParams</code> which defines global parameters. These include quantities such as the timespan to simulate, nutrient input rates, and external chemical concentrations. The global parameters in combination define the environmental or experimental scenario to be simulated. The default values simulate life-history of the default DEB organism at <em>ad libitum</em> feeding conditions and without exposure to chemical stressors over a timespan of 21 days.</li>
+<li><code>deb</code>: An instance of type <code>SpeciesParams</code>, which defines the DEB and TKTD parameters. The default organism roughly approximates the growth and reproduction of <em>Daphnia magna</em>.</li>
 </ul>
 <p>Figure 1 shows the growth and reproduction returned by the default parameter collection.</p>
 <p><img src="../plots/basetest_growthrepo.png" alt="img"> <br>
 <em>Figure 1: Structure $S$ and reproduction $R$ of the default organism in the default scenario.</em></p>
 <p>The default parameters can be modified by specifying exactly the parameters which should be modified, e.g:</p>
-<pre class="hljs"><code><div>p = BaseParamCollection()
+<pre class="hljs"><code><div>p = DEBParamCollection()
 p.deb.kappa = <span class="hljs-number">0.8</span>
 simout = DEBBase.simulator(p)
 </div></code></pre>
 <p>This simulates the default parameters, except that the DEB parameter $\kappa$ (indicating the fraction of assimilated nutrients allocated to growth and somatic maintenance) is changed to 0.8 Alternatively, the following code achieves the same:</p>
-<pre class="hljs"><code><div>simout = DEBBase.simulator(BaseParamCollection(deb = DEBBaseParams(kappa = <span class="hljs-number">0.8</span>)))
+<pre class="hljs"><code><div>simout = DEBBase.simulator(DEBParamCollection(deb = SpeciesParams(kappa = <span class="hljs-number">0.8</span>)))
 </div></code></pre>
 <p>The same applies to global parameters, e.g. to set the food input rate:</p>
-<pre class="hljs"><code><div>simout = DEBBase.simulator(BaseParamCollection(glb = GlobalBaesParams(Xdot_in = <span class="hljs-number">800.</span>)))
+<pre class="hljs"><code><div>simout = DEBBase.simulator(DEBParamCollection(glb = GlobalBaesParams(Xdot_in = <span class="hljs-number">800.</span>)))
 </div></code></pre>
 <h2 id="simulating-effects-of-chemical-stressors">Simulating effects of chemical stressors</h2>
 <p>The TKTD component is implemented so that mixtures with an arbitrary number of mixture components can be simulated. For this reason, TKTD parameters are stored as Vectors, where each element of the Vector represents a mixture component. Furthermore, we assume that each mixture component can act via arbitrary combinations of Physiological Modes of Action (PMoA), represented by a separate parameter Vector for each PMoA. The PMoAs are indicated by the suffixes G = decrease in growth efficiency, M = increase in maintenance costs, A = decrease in assimilation efficiency, R = decrease in reproduction efficiency, h = lethal effects according to GUTS-RED-SD. <br></p>
 <h3 id="tk-parameters">TK Parameters</h3>
 <p>In the case of the TK parameters, each element of the Vector ` is a scalar value,
 because we assume a simple TK model with a single parameter, the dominant rate constant $k_{D,z,j}$, specific for chemical stressor $z$ and PMoA $j$. The following would set the $k_{D,z,j}$-value for two stresors which both act via PMoA G:</p>
-<pre class="hljs"><code><div>p = BaseParamCollection() <span class="hljs-comment"># instantiate default parameter </span>
+<pre class="hljs"><code><div>p = DEBParamCollection() <span class="hljs-comment"># instantiate default parameter </span>
 p.deb.k_D_G = [<span class="hljs-number">0.1</span>, <span class="hljs-number">1.0</span>] <span class="hljs-comment"># modify TK parameters for PMoA G</span>
 </div></code></pre>
 <p>We can use <code>isolate_pmoas!</code> to ensure that all PMoAs which are not of interest are disenganged. This is achieved by setting the $k_{D,z,j}$-values for the disengaged PMoAs to 0.</p>
@@ -421,7 +421,7 @@ p.deb.k_D_G = [<span class="hljs-number">0.1</span>, <span class="hljs-number">1
 <h3 id="td-parameters">TD Parameters</h3>
 <p>For the TD parameters, each element of the parameter Vector is a tuple, because we always need at least two dose-response parameters to model the effect of a stressor. By default, log-logistic relationships between the scaled damage $D_{z,j}$ and relative response $y_{z,j}$ are assumed. By conventions introduced in the DoseResponse.jl-package, the first parameter then indicates the sensitivity $e_{z,j}$ (equivalent to median effective damage for PMoAs G, A and R), whereas the second parameter corresponds to the slope $\beta_{z,j}$.
 The following code sets the TD parameters for two stressors acting via PMoA G:</p>
-<pre class="hljs"><code><div>p = BaseParamCollection() <span class="hljs-comment"># instantiate default parameter </span>
+<pre class="hljs"><code><div>p = DEBParamCollection() <span class="hljs-comment"># instantiate default parameter </span>
 isolate_pmoas!(p, [<span class="hljs-string">"G"</span>]) <span class="hljs-comment"># disengage all PMoAs but G</span>
 p.deb.drc_params_G = [
     (<span class="hljs-number">1.0</span>, <span class="hljs-number">2.0</span>), <span class="hljs-comment"># log-logistic parameters for stressor 1 with respect to PMoA G</span>
@@ -448,9 +448,9 @@ LL2M(D,\theta) = y_{z,M} 1 -ln \left( LL2D(D,\theta) \right) \
 with\ \theta = (e_{z,M}, \beta_{z,M})
 $$</p>
 <p>We deviate here from previous DEB-TKTD implementations in two ways: We skip the &quot;stress&quot;-variable, because we consider this approach to be more transparent and easy to follow. Secondly, we replace the linear relationship between damage and stress with a log-logistic relationship (or one that is derived from it) due to practical and theoretical considerations (Hansul et al., 2023). <br>
-However, the dose-response function for each stressor and PMoA is not hard-coded, but a parameter given in <code>DEBBaseParams</code>.
+However, the dose-response function for each stressor and PMoA is not hard-coded, but a parameter given in <code>SpeciesParams</code>.
 Users can easily change the dose-response function by specification of the corresponding parameter:</p>
-<pre class="hljs"><code><div>p = BaseParamCollection() <span class="hljs-comment"># instantiate default parameter </span>
+<pre class="hljs"><code><div>p = DEBParamCollection() <span class="hljs-comment"># instantiate default parameter </span>
 isolate_pmoas!(p, [<span class="hljs-string">"G"</span>]) <span class="hljs-comment"># disengage all PMoAs but G</span>
 p.deb.drc_functs_G = [
     LL2, <span class="hljs-comment"># use log-logistic relationship for stressor 1</span>

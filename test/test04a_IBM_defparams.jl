@@ -11,77 +11,134 @@
 
     using Revise
     using DEBBase
-    using Parameters, DEBParamStructs
+    using Parameters, SpeciesParamstructs
 end
 
-begin
-    plt = plot(layout = (1,2))
+@test begin
+    plt = plot(
+        layout = (1,2), 
+        leftmargin = 2.5mm, bottommargin = 2.5mm, 
+        xlabelfontsize = 10, 
+        size = (600,350),
+        xlabel = "Time since fertilization (d)",
+        ylabel = ["Structure" "Reproduction buffer"]
+        )
 
-    y = DEBBase.simulator(BaseParamCollection())
-    @df y plot!(plt, :t, :S, subplot = 1, color = :black, lw = 2)
-    @df y plot!(plt, :t, :R, subplot = 2, color = :black, lw = 2)
+    yhat_fix = DEBBase.simulator(DEBParamCollection())
+    @df yhat_fix plot!(plt, :t, :S, subplot = 1, color = :black, lw = 2)
+    @df yhat_fix plot!(plt, :t, :R, subplot = 2, color = :black, lw = 2)
     
     hyperZ = Truncated(Normal(1., 0.1), 0, Inf)
-    y = replicates(DEBBase.simulator, BaseParamCollection(deb = DEBBaseParams(Z = hyperZ)), 100)
-    @df y plot!(plt, :t, :S, group = :replicate, alpha = .25, subplot = 1, c = :viridis)
-    @df y plot!(plt, :t, :R, group = :replicate, alpha = .25, subplot = 2, c = :viridis) 
-    
-    display(plt)
+    yhat_var = @replicates DEBBase.simulator(DEBParamCollection(deb = SpeciesParams(Z = hyperZ))) 10
+    @df yhat_var plot!(plt, :t, :S, group = :replicate, alpha = .25, subplot = 1, c = :viridis)
+    @df yhat_var plot!(plt, :t, :R, group = :replicate, alpha = .25, subplot = 2, c = :viridis) 
+
+    true
 end
 
-using BenchmarkTools
-@benchmark [DEBBase.simulator(BaseParamCollection()) for _ in 1:100]
+#=
+## Implementing an Agent object. 
 
-@benchmark replicates(DEBBase.simulator, BaseParamCollection(deb = DEBBaseParams(Z = hyperZ)), 1000)
+What does an agent need?
 
-macro replicates(expr::Expr, nreps::Int64)
-    yhat = DataFrame()
+- A reference to common paramters `pcmn`
+- Agen-specific parameters `pown`
+- State variables `u`
+- Derivatives `du`
 
-    for replicate in 1:nreps
-        yhat_i = eval(expr)
-        yhat_i[!,:replicate] .= replicate
-        append!(yhat, yhat_i)
-    end
+- A function to initialize the agent
+=#
 
-    return yhat
-end
-
-
-
-
-
-
-
-
-using DEBFigures
-yhat = @replicates DEBBase.simulator(BaseParamCollection(deb = DEBBaseParams(Z = Truncated(Normal(1, 0.1), 0, Inf)))) 10
-
-@df yhat plot(:t, :S, group = :replicate)
-
-@df y plot(:t, :R, group = :replicate)
+using ComponentArrays
+abstract type AbstractAgent end
 
 """
 DEBBase Agent. <br>
 Each agent owns a reference to its associated parameter collection.
 """
-mutable struct BaseAgent
-    p::Base.RefValue{BaseParamCollection} # reference to the paramter collection
+mutable struct BaseAgent <: AbstractAgent
+    pcmn::Base.RefValue{DEBParamCollection} # reference to the common parameter collection
+    pown::ComponentVector
     u::ComponentVector
     du::ComponentVector
+    active::Bool
 
-    function BaseAgent(p::A) where A <: AbstractParamCollection # generate agent from paramter collection
-        ref = Ref(p)
+    function BaseAgent(pcmn::Ref{A}) where A <: AbstractParamCollection # generate agent from reference to paramter collection
         a = new()
-        a.p = ref
-        a.u = initialize_statevars(a.p)
+        a.pcmn = pcmn
+        a.pown = DEBBase.initialize_pown()
+        DEBBase.agent_variability!(a.pown, a.pcmn)
+        a.u = DEBBase.initialize_statevars(a.pcmn, a.pown)
         a.du = similar(a.u)
+        a.active = false
         return a
     end
 end
 
+function activate!(a::BaseAgent)
+    a.active = true
+end
 
-a = BaseAgent(BaseParamCollection())
+function deactivate!(a::BaseAgent)
+    a.active = false
+end
 
-# Idot_max_rel => Distribution(Idot_max_rel_mean, Idot_max_rel_sd)
-# 
+@test begin
+    Θ = DEBParamCollection()
+    Θ_ref = Ref(Θ)
+    a = BaseAgent(Θ_ref)    
 
+    true
+end
+
+
+
+
+#=
+## Implementing a model object 
+
+
+=#
+
+abstract type AbstractABM end
+
+
+θ = DEBParamCollection()
+θ_ref = Ref(θ)
+
+agents = Vector{AbstractAgent}(undef, 10)
+agents[1] = BaseAgent(θ_ref)
+
+"""
+Definition of basic ABM object. <br>
+Currently assumes that only a single species of type `AgentType` is simulated at a time.
+"""
+@with_kw mutable struct ABM <: AbstractABM
+    theta::AbstractParamCollection # Parameter collection
+    agents # Agents
+    t::Float64
+
+    """
+    Instantiate ABM from param collection `theta`. 
+    """
+    function ABM(theta::A; AgentType = BaseAgent, N_max = Int(1e4)) where A <: AbstractParamCollection
+        abm = new() # initialize ABM object
+        abm.theta = theta # 
+        abm.t = 0.
+
+        abm.agents = Vector{AbstractAgent}(undef, N_max)
+        
+        for i in eachindex(abm.agents)
+            abm.agents[i] = AgentType(Ref(theta))
+            if i <= theta.glb.N0
+                activate!(abm.agents[i])
+            end
+        end
+
+        return abm
+    end
+end
+
+
+abm = ABM(θ)
+println(abm)

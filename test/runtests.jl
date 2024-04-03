@@ -21,7 +21,7 @@ x -> filter(f -> f != "runtests.jl", x)
 
 include(tests[2])
 
-y = DEBBase.simulator(BaseParamCollection())
+y = DEBBase.simulator(DEBParamCollection())
 
 
 for test in tests

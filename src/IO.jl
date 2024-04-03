@@ -45,32 +45,32 @@ Trim TKTD parameters to the smallest number of stressors indicated for any PMoA.
 For example `k_D_G = [1., 0.], k_D_M = [1.]` will be trimmed to `k_D_G = [1.], k_D_M = [1.]`.
 $(TYPEDSIGNATURES)
 """
-function trim!(deb::AbstractParams)
+function trim!(spc::AbstractParams)
     num_stressors = min(
-        length(deb.k_D_G),
-        length(deb.k_D_M),
-        length(deb.k_D_A),
-        length(deb.k_D_R),
-        length(deb.k_D_h)
+        length(spc.k_D_G),
+        length(spc.k_D_M),
+        length(spc.k_D_A),
+        length(spc.k_D_R),
+        length(spc.k_D_h)
     )
 
-    deb.k_D_G = deb.k_D_G[1:num_stressors]
-    deb.k_D_M = deb.k_D_M[1:num_stressors]
-    deb.k_D_A = deb.k_D_A[1:num_stressors]
-    deb.k_D_R = deb.k_D_R[1:num_stressors]
-    deb.k_D_h = deb.k_D_h[1:num_stressors]
+    spc.k_D_G = spc.k_D_G[1:num_stressors]
+    spc.k_D_M = spc.k_D_M[1:num_stressors]
+    spc.k_D_A = spc.k_D_A[1:num_stressors]
+    spc.k_D_R = spc.k_D_R[1:num_stressors]
+    spc.k_D_h = spc.k_D_h[1:num_stressors]
 
-    deb.drc_functs_G = deb.drc_functs_G[1:num_stressors]
-    deb.drc_functs_M = deb.drc_functs_M[1:num_stressors]
-    deb.drc_functs_A = deb.drc_functs_A[1:num_stressors]
-    deb.drc_functs_R = deb.drc_functs_R[1:num_stressors]
-    deb.drc_functs_h = deb.drc_functs_h[1:num_stressors]
+    spc.drc_functs_G = spc.drc_functs_G[1:num_stressors]
+    spc.drc_functs_M = spc.drc_functs_M[1:num_stressors]
+    spc.drc_functs_A = spc.drc_functs_A[1:num_stressors]
+    spc.drc_functs_R = spc.drc_functs_R[1:num_stressors]
+    spc.drc_functs_h = spc.drc_functs_h[1:num_stressors]
 
-    deb.drc_params_G = deb.drc_params_G[1:num_stressors]
-    deb.drc_params_M = deb.drc_params_M[1:num_stressors]
-    deb.drc_params_A = deb.drc_params_A[1:num_stressors]
-    deb.drc_params_R = deb.drc_params_R[1:num_stressors]
-    deb.drc_params_h = deb.drc_params_h[1:num_stressors]
+    spc.drc_params_G = spc.drc_params_G[1:num_stressors]
+    spc.drc_params_M = spc.drc_params_M[1:num_stressors]
+    spc.drc_params_A = spc.drc_params_A[1:num_stressors]
+    spc.drc_params_R = spc.drc_params_R[1:num_stressors]
+    spc.drc_params_h = spc.drc_params_h[1:num_stressors]
 end
 
 
@@ -80,63 +80,38 @@ That means, turn off all PMoAs (including lethal effects `h`) except for those i
 This is done through the toxicokinetic rate constant.
 $(TYPEDSIGNATURES)
 """
-function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String}, z::Int64)::AbstractParams
+function isolate_pmoas(spc::AbstractParams, pmoas::Vector{String}, z::Int64)::AbstractParams
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
         let fieldname = Symbol("k_D_$(j)")
-            k_D = getfield(deb, fieldname)
+            k_D = getfield(spc, fieldname)
             k_D[z] = 0.
-            setfield!(deb, fieldname, k_D)
+            setfield!(spc, fieldname, k_D)
         end
     end
-    return deb
+    return spc
 end
 
-function isolate_pmoas(deb::AbstractParams, pmoas::Vector{String})::AbstractParams
+function isolate_pmoas(spc::AbstractParams, pmoas::Vector{String})::AbstractParams
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
         let fieldname = Symbol("k_D_$(j)")
-            k_D = getfield(deb, fieldname)
+            k_D = getfield(spc, fieldname)
             k_D .= 0.
-            setfield!(deb, fieldname, k_D)
+            setfield!(spc, fieldname, k_D)
         end
     end
-    return deb
+    return spc
 end
 
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String}, z::Int64)::Nothing
-    deb = isolate_pmoas(deb, pmoasm, z)
+function isolate_pmoas!(spc::AbstractParams, pmoas::Vector{String}, z::Int64)::Nothing
+    spc = isolate_pmoas(spc, pmoasm, z)
     return nothing
 end
 
-function isolate_pmoas!(deb::AbstractParams, pmoas::Vector{String})::Nothing
-    deb = isolate_pmoas(deb, pmoas)
+function isolate_pmoas!(spc::AbstractParams, pmoas::Vector{String})::Nothing
+    spc = isolate_pmoas(spc, pmoas)
     return nothing
-end
-
-"""
-Raise assertion errors
-# TODO: this can be moved directly inside the param struct definition!
-$(TYPEDSIGNATURES)
-"""
-function assert!(p::Ref{A}) where A <: AbstractParamCollection
-    @assert length(p.x.deb.k_D_G) >= length(p.x.glb.C_W) "Length of k_D_G is not at least length of C_W"
-    @assert length(p.x.deb.k_D_M) >= length(p.x.glb.C_W) "Length of k_D_M is not at least length of C_W"
-    @assert length(p.x.deb.k_D_A) >= length(p.x.glb.C_W) "Length of k_D_A is not at least length of C_W"
-    @assert length(p.x.deb.k_D_R) >= length(p.x.glb.C_W) "Length of k_D_R is not at least length of C_W"
-    @assert length(p.x.deb.k_D_h) >= length(p.x.glb.C_W) "Length of k_D_h is not at least length of C_W"
-
-    @assert length(p.x.deb.drc_functs_G) >= length(p.x.glb.C_W) "Length of drc_functs_G is not at least length of C_W"
-    @assert length(p.x.deb.drc_functs_M) >= length(p.x.glb.C_W) "Length of drc_functs_M is not at least length of C_W"
-    @assert length(p.x.deb.drc_functs_A) >= length(p.x.glb.C_W) "Length of drc_functs_A is not at least length of C_W"
-    @assert length(p.x.deb.drc_functs_R) >= length(p.x.glb.C_W) "Length of drc_functs_R is not at least length of C_W"
-    @assert length(p.x.deb.drc_functs_h) >= length(p.x.glb.C_W) "Length of drc_functs_h is not at least length of C_W"
-
-    @assert length(p.x.deb.drc_params_G) >= length(p.x.glb.C_W) "Length of drc_params_G is not at least length of C_W"
-    @assert length(p.x.deb.drc_params_M) >= length(p.x.glb.C_W) "Length of drc_params_M is not at least length of C_W"
-    @assert length(p.x.deb.drc_params_A) >= length(p.x.glb.C_W) "Length of drc_params_A is not at least length of C_W"
-    @assert length(p.x.deb.drc_params_R) >= length(p.x.glb.C_W) "Length of drc_params_R is not at least length of C_W"
-    @assert length(p.x.deb.drc_params_h) >= length(p.x.glb.C_W) "Length of drc_params_h is not at least length of C_W"
 end
 
 """

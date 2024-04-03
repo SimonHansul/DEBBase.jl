@@ -5,7 +5,7 @@ using Reexport
 using DoseResponse
 using Parameters
 using ComponentArrays
-using DifferentialEquations
+using OrdinaryDiffEq
 using Distributions
 using DocStringExtensions
 using DataFrames
@@ -21,18 +21,44 @@ include("ImpliedTraits.jl")
 include("ParamHandling.jl")
 
 @compile_workload begin
-    sol = simulator(BaseParamCollection())
+    # precompile the default simulator
+    yhat = simulator(DEBParamCollection())
+
+    # precompilation of the @compose workflow
+    functions = [ # define ODE system as list of derivative functions
+        DEBBase.Idot!,
+        DEBBase.Adot!,
+        DEBBase.Mdot!,
+        DEBBase.Jdot!,
+        DEBBase.Sdot!,
+        DEBBase.Hdot!,
+        DEBBase.H_bdot!,
+        DEBBase.Rdot!,
+        DEBBase.X_pdot!,
+        DEBBase.X_embdot!,
+        DEBBase.Ddot!,
+        DEBBase.C_Wdot!
+    ]
+
+    system! = DEBBase.@compose functions # use @compose to put the functions together
+    
+    theta = DEBParamCollection()
+    theta.glb.t_max = 56.
+
+    yhat = simulator(theta; system = system!)
 end
 
-export GlobalBaseParams, 
+export GlobalParams, 
 GlobalBaseStatevars, 
-DEBBaseParams, 
-BaseParamCollection,
+SpeciesParams, 
+DEBParamCollection,
 isolate_pmoas!,
 sig,
 clipneg,
 relative_response,
 set_equal!,
-@replicates
+simulator,
+@replicates,
+@compose
 
 end # module DEBBase
