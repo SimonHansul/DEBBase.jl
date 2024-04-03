@@ -116,6 +116,7 @@ end
 
 """
 Raise assertion errors
+# TODO: this can be moved directly inside the param struct definition!
 $(TYPEDSIGNATURES)
 """
 function assert!(p::Ref{A}) where A <: AbstractParamCollection

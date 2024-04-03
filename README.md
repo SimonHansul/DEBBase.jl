@@ -46,30 +46,40 @@ The following Code will simulate the DEB model based on the given default parame
 
 ```Julia
 using DEBBase
-out = DEBBase.simulator(BaseParams())
+out = DEBBase.simulator(BaseParamCollection())
 ```
 
 A parameter collection (`BaseParamCollection`) contains two sets of parameters: 
 - `glb::GlobalBaseParams`: These are global parameters, such as the simulated timespan, food input rate, etc.
 - `deb::DEBBaseParams`: The DEB and TKTD parameters.
 
+A parameter set is most easily identified by initializing the object, then modifying the fields:
+
+```Julia
+p = BaseParamCollection() # initialize parameter object
+p.deb.kappa = 0.3 # change a DEB parameter 
+p.glb.t_max = 30.0 # change a global parameter
+```
+
 ---
 
 # DEB Modelling: languages & tools
 
-How does DEBBase.jl fit into the landscape of DEB-TKTD/IBM tools? Here is an attempt to briefly describe the differences between tools:
+How does DEBBase.jl fit into the landscape of DEB-TKTD/IBM tools? Here is an attempt to briefly describe the strenghts of different tools:
 
 
 | Tool            | Language | Open source | Individual-level | Population-level | TKTD | Mixtures |Published | Performance |Parameter estimation |
 |-----------------|----------|-------------|------------------|------------------|------|----------|----------|-------------|--------|
-| Debtool         | Matlab   | -           | +                | -                |  -   |    -/?   |+         | ?           |+       |
+| Debtool         | Matlab   | -^***       | +                | -                |  -   |    -/?   |+         | ?           |+       |
 | DEBBase         | Julia    | +           | +                | +                |  +   |     +    |-         | +           |+* | 
 | MEMpy           | Python   | +           | +                | +                |  +   |    +     |-         | -           |-** |
 | Netlogo DEB-IBM | Netlogo  | +           | +/-              | +                | +    |    +     |+         | -           |-** |   
 
-$^{*}$ Added through DEBABC package
+* Added through DEBABC package
 
-$^{**}$ These tools can of course be used for parameter inference, but there are no convenient built-in functions
+** These tools can of course be used for parameter inference, but there are no convenient built-in functions
+
+*** DEBtool itself is open source, but Matlab is not
 
 
 Or, to summarize:

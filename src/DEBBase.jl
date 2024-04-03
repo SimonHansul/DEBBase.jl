@@ -1,6 +1,7 @@
 module DEBBase
 
-using DEBParamStructs
+using Reexport
+@reexport using DEBParamStructs
 using DoseResponse
 using Parameters
 using ComponentArrays
@@ -32,6 +33,6 @@ sig,
 clipneg,
 relative_response,
 set_equal!,
-PMoA
+@replicates
 
 end # module DEBBase

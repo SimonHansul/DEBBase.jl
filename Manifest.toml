@@ -2,7 +2,7 @@
 
 julia_version = "1.10.1"
 manifest_format = "2.0"
-project_hash = "605ba498a77f1d3544d708039f666cc56e3eda84"
+project_hash = "ba7626cf5ffd68f1853ccd0a21d7146de698f5d7"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "41c37aa88889c171f1300ceac1313c06e891d245"
@@ -293,11 +293,12 @@ uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "4.1.1"
 
 [[deps.DEBParamStructs]]
-git-tree-sha1 = "6f7a877f0a52fcc8beb6af9f486973d2b2d38714"
+deps = ["Parameters"]
+git-tree-sha1 = "cc418f0d5afb986b48068a439b54fb8556219a37"
 repo-rev = "main"
 repo-url = "https://github.com/simonhansul/debparamstructs.jl"
 uuid = "1778c221-a2bd-49d5-8dc0-8fa7d3af4962"
-version = "0.1.0"
+version = "0.2.0"
 
 [[deps.DataAPI]]
 git-tree-sha1 = "abe83f3a2f1b857aac70ef8b269080af17764bbe"
