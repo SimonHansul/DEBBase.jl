@@ -29,7 +29,7 @@ end
     @df yhat_fix plot!(plt, :t, :R, subplot = 2, color = :black, lw = 2)
     
     hyperZ = Truncated(Normal(1., 0.1), 0, Inf)
-    yhat_var = @replicates DEBBase.simulator(DEBParamCollection(deb = SpeciesParams(Z = hyperZ))) 10
+    yhat_var = @replicates DEBBase.simulator(DEBParamCollection(spc = SpeciesParams(Z = hyperZ))) 10
     @df yhat_var plot!(plt, :t, :S, group = :replicate, alpha = .25, subplot = 1, c = :viridis)
     @df yhat_var plot!(plt, :t, :R, group = :replicate, alpha = .25, subplot = 2, c = :viridis) 
 

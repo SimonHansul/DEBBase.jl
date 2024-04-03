@@ -1,4 +1,4 @@
-if abspath(PROGRAM_FILE) == @__FILE__ 
+if occursin("terminal", abspath(PROGRAM_FILE))
     @info("Loading packages")
     using Pkg; Pkg.activate("test")
     using Plots, StatsPlots, Plots.Measures
@@ -7,11 +7,13 @@ if abspath(PROGRAM_FILE) == @__FILE__
     using ProgressMeter
     default(leg = false, lw = 1.5)
     TAG = splitpath(@__FILE__)[end] |> x -> split(x, ".")[1] |> String    
+    using DEBFigures
 
     using Revise
     using DEBBase
 end
 TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
+
 
 #=
 Simulate single stressors with different PMoAs
@@ -21,7 +23,7 @@ begin
     for pmoa in ["G", "M", "A", "R"]
         for C_W in round.(10 .^ range(log10(0.1), log10(1.), length = 5), sigdigits = 2)
             glb = GlobalParams(t_max = 42., C_W = [C_W])
-            deb = SpeciesParams(
+            spc = SpeciesParams(
                 k_D_G = [10.], 
                 k_D_M = [10.], 
                 k_D_A = [10.], 
@@ -33,8 +35,8 @@ begin
                 drc_params_R = [(1., 2.)],
                 drc_params_h = [(1., 2.)]
                 )
-            p = DEBParamCollection(glb = glb, deb = deb)
-            isolate_pmoas!(p.deb, [pmoa])
+            p = DEBParamCollection(glb = glb, spc = spc)
+            isolate_pmoas!(p.spc, [pmoa])
             out_zj = DEBBase.simulator(p)
             out_zj[!,:C_W] .= C_W
             out_zj[!,:pmoa] .= pmoa
@@ -42,5 +44,9 @@ begin
         end
     end
     out = DEBBase.relative_response(out, [:S, :R], :C_W; groupby_vars = [:t, :pmoa])
+
+    @df out plot(
+        groupedlineplot(:t, :y_S, :C_W)
+    )
 end
 

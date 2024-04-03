@@ -1,10 +1,9 @@
 
+using Pkg; Pkg.activate("test")
 using BenchmarkTools
 using DEBBase
+using OrdinaryDiffEq
+using Test
 
-out = DEBBase.simulator(DEBParamCollection())
-@benchmark out = DEBBase.simulator(
-        DEBParamCollection(
-            glb = GlobalParams(Xdot_in = 4800., t_max = 21.), 
-            deb = SpeciesParams(K_X = 12e3))
-        )
+@benchmark out = DEBBase.simulator(DEBParamCollection(), alg = Tsit5()) 
+@test true # this just has to run without an error

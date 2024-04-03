@@ -2,17 +2,21 @@
     using Pkg; Pkg.activate("test")
     using Plots, StatsPlots, Plots.Measures
     default(titlefontsize = 10, lw = 1.5, leg = false)
+    using SHUtils
+    using DataFrames
+    using StatsBase
+    
     using Revise 
     using DEBBase
-    using SHUtils
+
     TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 end
 
 begin 
     p = DEBParamCollection()
-    out = DEBBase.simulator(p)
+    yhat = DEBBase.simulator(p)
 
-    plt = @df out plot(
+    plt = @df yhat plot(
         plot(:t, :S, ylabel = "S"), 
         plot(:t, :H, ylabel = "H"),
         plot(:t, :R, ylabel = "R"), 
@@ -28,7 +32,7 @@ begin
     display(plt)
 end
 
-begin # effect of food input
+@testset begin # effect of food input
     norm(x) = x ./ sum(x)
     # prepare the plot
     plt = plot(
@@ -40,28 +44,35 @@ begin # effect of food input
         xlabel = "Time (d)"
         )
 
+    YHAT = DataFrame()
     # iterate over nutrient input concentrations
     let Xdot_in = 4800.
         for _ in 1:5
             Xdot_in /= 2
             # generate the predidction
-            out = DEBBase.simulator(
+            yhat = DEBBase.simulator(
                 DEBParamCollection(
                     glb = GlobalParams(Xdot_in = Xdot_in, t_max = 56.), 
-                    deb = SpeciesParams(K_X = 12e3))
+                    spc = SpeciesParams(K_X = 12e3))
                 )
 
             # plot the trajectories
-            @df out plot!(plt, :t, :S, ylabel = "S", subplot = 1, leg = :outertopleft, label = "Xdot_in = $(Xdot_in)") 
-            @df out plot!(plt, :t, :R, ylabel = "R", subplot = 2)
-            @df out plot!(plt, :t, :X_p ./ GlobalParams().V_patch, ylabel = "[X_p]", subplot = 3, 
+            @df yhat plot!(plt, :t, :S, ylabel = "S", subplot = 1, leg = :outertopleft, label = "Xdot_in = $(Xdot_in)") 
+            @df yhat plot!(plt, :t, :R, ylabel = "R", subplot = 2)
+            @df yhat plot!(plt, :t, :X_p ./ GlobalParams().V_patch, ylabel = "[X_p]", subplot = 3, 
                 yscale = :log10
                 )
+
+            yhat[!,:Xdot_in] .= Xdot_in 
+            append!(YHAT, yhat)
         end
         hline!(plt, [DEBBase.calc_S_max(SpeciesParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
         display(plt)
-        savefig(plt, "plots/$(TAG)_Xdot_in_sweep.png")
     end
+
+    rankcor = combine(groupby(YHAT,:Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
+
+    @test rankcor == 1 # maximm size should be strictly monotonically increasing with Xdot_in
 end
 
 

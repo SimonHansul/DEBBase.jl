@@ -2,7 +2,7 @@
 
 julia_version = "1.10.1"
 manifest_format = "2.0"
-project_hash = "cc8d93c5d9d453973a7e845cd120bbbcb29833a0"
+project_hash = "3a4413694c9464ebd6749b9423934dd69d8eaadd"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "016833eb52ba2d6bea9fcb50ca295980e728ee24"
@@ -362,10 +362,18 @@ uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "4.1.1"
 
 [[deps.DEBBase]]
-deps = ["ComponentArrays", "DEBParamStructs", "DataFrames", "Distributions", "DocStringExtensions", "DoseResponse", "OrdinaryDiffEq", "Parameters", "PrecompileTools", "StaticArrays", "StatsBase"]
+deps = ["ComponentArrays", "DEBParamStructs", "DataFrames", "Distributions", "DocStringExtensions", "DoseResponse", "OrdinaryDiffEq", "Parameters", "PrecompileTools", "Reexport", "StaticArrays", "StatsBase"]
 path = ".."
 uuid = "0e91d03b-6562-4ef9-a38e-775ced00eaf8"
 version = "0.1.1-refs"
+
+[[deps.DEBFigures]]
+deps = ["DocStringExtensions", "RecipesBase", "Reexport", "StatsBase"]
+git-tree-sha1 = "710c654ee4b27116bf18b8ca5b2670b3fe918816"
+repo-rev = "main"
+repo-url = "https://github.com/simonhansul/debfigures"
+uuid = "ce327020-23f0-4bce-b91f-2afde9c2f7d0"
+version = "0.1.0"
 
 [[deps.DEBParamStructs]]
 deps = ["Parameters"]
