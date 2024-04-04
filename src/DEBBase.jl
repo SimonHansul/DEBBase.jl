@@ -36,6 +36,6 @@ relative_response,
 set_equal!,
 simulator,
 @replicates,
-sweep
+@sweep
 
 end # module DEBBase

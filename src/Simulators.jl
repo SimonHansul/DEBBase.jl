@@ -135,21 +135,24 @@ Example:
         range(10, 25, length = 10) # evaluate 10 values between 10 and 25
         )
 """
-function sweep(
-    simcall::Expr, 
-    component::AbstractParams,
-    param::Symbol, 
-    range::Union{U,AbstractVector}) where {U <: UnitRange}
-    yhat = DataFrame()
-
-    for val in range
-        setproperty!(component, param, val)
-        yhat_i = eval(simcall)
-        yhat_i[!,param] .= val
-        append!(yhat, yhat_i)
-    end
-    return yhat
-end
+#macro sweep(
+#    simcall::Expr, 
+#    component::A,
+#    param::Symbol, 
+#    range::Union{U,AbstractVector}) where {U <: UnitRange, A <: AbstractParams}
+#    
+#    quote
+#        yhat = DataFrame()
+#
+#        for val in $range
+#            setproperty!($component, $param, $val)
+#            yhat_i = $(esc(simcall))
+#            yhat_i[!,$param] .= val
+#            append!(yhat, yhat_i)
+#        end
+#        yhat
+#    end
+#end
 
 
 #"""

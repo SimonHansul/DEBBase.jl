@@ -120,26 +120,27 @@ Here we simulate again the default parameters, but use the @compose macro to def
 #    @test isapprox(maximum(yhat.S), DEBBase.calc_S_max(theta.spc), rtol = 0.1)
 #end
 
-theta = DEBParamCollection()
+
 
 using DEBFigures
+using DEBBase
+ 
 
-theta = DEBParamCollection()
-theta.spc.Z = Truncated(Normal(1, 0.05), 0, Inf)
+@testset begin
+    theta = DEBParamCollection()
+    theta.spc.Z = Truncated(Normal(1, 0.05), 0, Inf)
 
-@time yhat = sweep(
-    :(@replicates simulator(theta) 10),
-    theta.spc, :Idot_max_rel, 
-    range(10, 25, length = 10)
-    )
+    @time yhat = DEBBase.@sweep :(simulator(theta)) theta.spc :Idot_max_rel range(10, 25, length = 10)
+    
 
-@df yhat groupedlineplot(
-    :t, :S, :Idot_max_rel, 
-    xlabel = "Time (d)", ylabel = "Structure (μgC)", leftmargin = 5mm,
-    palette = palette([:teal, :purple], 10), 
-    leg = :outertopright, 
-    label = hcat(fround.(unique(:Idot_max_rel))...), legtitle = "Idot_max_rel"
-    )
-
+    @df yhat groupedlineplot(
+        :t, :S, :Idot_max_rel, 
+        xlabel = "Time (d)", ylabel = "Structure (μgC)", leftmargin = 5mm,
+        palette = palette([:teal, :purple], 10), 
+        leg = :outertopright, 
+        label = hcat(fround.(unique(:Idot_max_rel))...), legtitle = "Idot_max_rel"
+        ) |> display
+    @test true # TODO: define test condition
+end
 
 
