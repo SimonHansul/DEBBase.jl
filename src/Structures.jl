@@ -46,11 +46,30 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     drc_functs_R::Vector{Function} = [LL2] # Dose-response functions | PMoA reproduction efficiency
     drc_functs_h::Vector{Function} = [LL2h] # Dose-response functions | PMoA hazard rate
 
-    drc_params_G::Vector{NTuple} = [(1e10, 1e10)] # Dose-response parameters | PMoA growth efficiency
-    drc_params_M::Vector{NTuple} = [(1e10, 1e10)] # Dose-response parameters | PMoA maintenance costs
-    drc_params_A::Vector{NTuple} = [(1e10, 1e10)] # Dose-response parameters | assimilation efficiency
-    drc_params_R::Vector{NTuple} = [(167., 0.93)] # Dose-response parameters | PMoA reproduction efficiency
-    drc_params_h::Vector{NTuple} = [(1e10, 1e10)] # Dose-response parameters | PMoA hazard rate
+    e_G::Union{Nothing,Vector{Function}} = [1e10] # sensitivity parameters | PMoA growth efficiency
+    e_M::Union{Nothing,Vector{Function}} = [1e10] # sensitivity parameters | PMoA maintenance costs
+    e_A::Union{Nothing,Vector{Function}} = [1e10] # sensitivity parameters | PMoA assimilation efficiency
+    e_R::Union{Nothing,Vector{Function}} = [167.] # sensitivity parameters | PMoA reproduction efficiency
+    e_h::Union{Nothing,Vector{Function}} = [1e10] # sensitivity parameters | PMoA hazard rate
+
+    b_G::Union{Nothing,Vector{Function}} = [1e10] # slope parameters | PMoA growth efficiency
+    b_M::Union{Nothing,Vector{Function}} = [1e10] # slope parameters | PMoA maintenance costs
+    b_A::Union{Nothing,Vector{Function}} = [1e10] # slope parameters | PMoA assimilation efficiency
+    b_R::Union{Nothing,Vector{Function}} = [0.93] # slope parameters | PMoA reproduction efficiency
+    b_h::Union{Nothing,Vector{Function}} = [1e10] # slope parameters | PMoA reproduction efficiency
+
+    c_G::Union{Nothing,Vector{Function}} = nothing # placeholders for additional TD parameters. only relevant if custom drc_functs with more than two parameters are defined
+    c_M::Union{Nothing,Vector{Function}} = nothing
+    c_A::Union{Nothing,Vector{Function}} = nothing
+    c_R::Union{Nothing,Vector{Function}} = nothing
+    c_h::Union{Nothing,Vector{Function}} = nothing
+
+    d_G::Union{Nothing,Vector{Function}} = nothing
+    d_M::Union{Nothing,Vector{Function}} = nothing
+    d_A::Union{Nothing,Vector{Function}} = nothing
+    d_R::Union{Nothing,Vector{Function}} = nothing
+    d_h::Union{Nothing,Vector{Function}} = nothing
+
 end
 
 """
