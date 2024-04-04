@@ -152,20 +152,24 @@ function sweep(
 end
 
 
-"""
-    @compose(derivs)
-    
-Compose a model system from a list of derivative functions. <br>
-Each `deriv` is called as `deriv!(du, u, p..., t).`
-"""
-macro compose(derivs)
-    quote
-        function du!(du, u, p, t)
-            for deriv! in $(esc(derivs))
-                deriv!(du, u, p, t)
-            end
-        end
-    end
-end
+#"""
+# This macro is currently outcommented because it turned out that models defined with @compose
+# execute very slowly.
+# Also, the usefulness of @compose has to be critically evaluated.
+#
+#    @compose(derivs)
+#    
+#Compose a model system from a list of derivative functions. <br>
+#Each `deriv` is called as `deriv!(du, u, p..., t).`
+#"""
+#macro compose(derivs)
+#    quote
+#        function du!(du, u, p, t)
+#            for deriv! in $(esc(derivs))
+#                deriv!(du, u, p, t)
+#            end
+#        end
+#    end
+#end
 
 
