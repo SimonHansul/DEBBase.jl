@@ -43,9 +43,7 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection,
     t::Real
     ) 
-
-    #println(pagnt)
-
+    
     du.I_emb = sig(
         u.X_emb, # uptake from vitellus depends on mass of vitellus
         0., # the switch occurs when vitellus is used up 
@@ -247,13 +245,14 @@ $(TYPEDSIGNATURES)
     p::AbstractParamCollection,
     t::Real
     ) 
-    
+
     for z in eachindex(u.C_W)
-        # the sigmoid function causes Ddot to be 0 for embryos (assumption)
+        # the sigmoid function causes Ddot to be 0 for embryos (assumption of internal eggs which are not exposed to external stressor )
         @inbounds du.D_G[z] = sig(u.X_emb, 0., p.spc.k_D_G[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_G[z]) - u.D_G[z] * (du.S / u.S), 0.)
         @inbounds du.D_M[z] = sig(u.X_emb, 0., p.spc.k_D_M[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_M[z]) - u.D_M[z] * (du.S / u.S), 0.)
         @inbounds du.D_A[z] = sig(u.X_emb, 0., p.spc.k_D_A[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_A[z]) - u.D_A[z] * (du.S / u.S), 0.)
         @inbounds du.D_R[z] = sig(u.X_emb, 0., p.spc.k_D_R[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_R[z]) - u.D_R[z] * (du.S / u.S), 0.)
+
         @inbounds du.D_h[z] = sig(u.X_emb, 0., p.spc.k_D_h[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_h[z]) - u.D_h[z] * (du.S / u.S), 0.)
     end
 end
@@ -291,6 +290,7 @@ end
     p::AbstractParamCollection,
     t::Real
     ) 
+
     @inbounds u.y_G = prod([p.spc.drc_functs_G[z](u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.C_W)]) # combined relative responses for sublethal effects
     @inbounds u.y_M = prod([p.spc.drc_functs_M[z](u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.C_W)])
     @inbounds u.y_A = prod([p.spc.drc_functs_A[z](u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.C_W)])
@@ -327,6 +327,7 @@ Definition of base model system.
 $(TYPEDSIGNATURES)
 """
 function DEB!(du, u, p, t)
+
     #### stressor responses
     y!(du, u, p, t)
 
