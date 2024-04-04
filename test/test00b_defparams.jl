@@ -38,7 +38,6 @@ end;
  
 #=
 Basic test of @replicates macro
-
 =#
 
 @testset begin
@@ -73,5 +72,4 @@ Basic test of @replicates macro
     @test cvs.H > 0.05
     @test cvs.R > 0.05
 end;
-
 

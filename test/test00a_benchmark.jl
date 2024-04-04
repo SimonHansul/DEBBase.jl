@@ -1,9 +1,10 @@
 
 using Pkg; Pkg.activate("test")
 using BenchmarkTools
-using DEBBase
 using OrdinaryDiffEq
 using Test
+using Revise
+using DEBBase
 
-@benchmark out = DEBBase.simulator(DEBParamCollection(), alg = Tsit5()) 
+@benchmark out = simulator(DEBParamCollection()) 
 @test true # this just has to run without an error

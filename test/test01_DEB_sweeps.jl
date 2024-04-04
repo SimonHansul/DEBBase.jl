@@ -1,3 +1,4 @@
+TAG = splitpath(@__FILE__)[end] |> x -> split(x, ".")[1]
 begin 
     p = DEBParamCollection()
     out = DEBBase.simulator(p)
@@ -19,6 +20,7 @@ begin
 end
 
 begin # effect of food input
+    norm(x) = x ./ sum(x)
     # prepare the plot
     plt = plot(
         layout = grid(1,3, widths = norm([2, 1, 1])),
@@ -37,7 +39,7 @@ begin # effect of food input
             out = DEBBase.simulator(
                 DEBParamCollection(
                     glb = GlobalParams(Xdot_in = Xdot_in, t_max = 56.), 
-                    deb = SpeciesParams(K_X = 12e3))
+                    spc = SpeciesParams(K_X = 12e3))
                 )
 
             # plot the trajectories

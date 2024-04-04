@@ -76,8 +76,6 @@ $(TYPEDSIGNATURES)
 function simulator(
     p::Ref{DEBParamCollection};
     saveat = 1,
-    abstol = 1e-10, 
-    reltol = 1e-10,
     kwargs...
     )
 

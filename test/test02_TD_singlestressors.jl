@@ -29,15 +29,20 @@ begin
                 k_D_A = [10.], 
                 k_D_R = [10.], 
                 k_D_h = [10.], 
-                drc_params_G = [(1., 2.)],
-                drc_params_M = [(1., 2.)],
-                drc_params_A = [(1., 2.)],
-                drc_params_R = [(1., 2.)],
-                drc_params_h = [(1., 2.)]
+                e_G = [1.],
+                e_M = [1.],
+                e_A = [1.],
+                e_R = [1.],
+                e_h = [1.],
+                b_G = [1.],
+                b_M = [1.],
+                b_A = [1.],
+                b_R = [1.],
+                b_h = [1.],
                 )
             p = DEBParamCollection(glb = glb, spc = spc)
             isolate_pmoas!(p.spc, [pmoa])
-            out_zj = DEBBase.simulator(p)
+            out_zj = simulator(p)
             out_zj[!,:C_W] .= C_W
             out_zj[!,:pmoa] .= pmoa
             append!(out, out_zj)
