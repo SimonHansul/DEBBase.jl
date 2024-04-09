@@ -14,9 +14,16 @@ using StaticArrays
 using StatsBase
 
 include("Structures.jl")
+export GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection
+
 include("IO.jl")
+export relative_response
+
 include("ModelFunctions.jl")
+
 include("Simulators.jl")
+export simulator, @replicates
+
 include("ImpliedTraits.jl")
 include("ParamHandling.jl")
 
@@ -25,17 +32,7 @@ include("ParamHandling.jl")
     yhat = simulator(DEBParamCollection())
 end
 
-export GlobalParams, 
-GlobalBaseStatevars, 
-SpeciesParams, 
-DEBParamCollection,
-isolate_pmoas!,
-sig,
-clipneg,
-relative_response,
-set_equal!,
-simulator,
-@replicates,
-@sweep
+
+export isolate_pmoas!, sig, clipneg, set_equal!
 
 end # module DEBBase
