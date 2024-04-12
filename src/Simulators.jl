@@ -31,6 +31,24 @@ function initialize_statevars(p::AbstractParamCollection)::ComponentArray
     )
 end
 
+
+function abstractsimulator(
+    p::AbstractParamCollection,
+    model = DEB!;
+    alg = Tsit5(),
+    kwargs...
+    )::DataFrame
+
+    p.agn = AgentParams(p.spc) # initialize agent parameters incl. individual variability
+    
+    u = initialize_statevars(p)
+    prob = ODEProblem(model, u, (0, p.glb.t_max), p) # define the problem
+    sol = solve(prob, alg; kwargs...) # get solution to the IVP
+    simout = sol_to_df(sol) # convert solution to dataframe
+  
+    return simout
+end
+
 """
     simulator(
         p::Ref{DEBParamCollection}; 
@@ -41,29 +59,21 @@ end
         )::DataFrame
 
 Run the DEBBase model from a `DEBParamCollection` instance. <br>
-These are the common parameters `p`. The agent-specific parameters `pagnt` are initialized by the simulator. <br>
-Additional kwargs are passed on to `DifferentialEquations.solve()`.
 """
-function abstractsimulator(
-    p::AbstractParamCollection; 
+function simulator(
+    p::DEBParamCollection; 
     model = DEB!,
-    alg = Tsit5(),
-    saveat = 1, 
-    reltol = 1e-6,
     kwargs...
-    )::DataFrame
-
-    p.agn = AgentParams(p.spc) # initialize agent parameters incl. individual variability
     
-    u = initialize_statevars(p)
-    prob = ODEProblem(model, u, (0, p.glb.t_max), p) # define the problem
-    sol = solve(prob, alg; saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
-    simout = sol_to_df(sol) # convert solution to dataframe
-  
-    return simout
+    )
+    abstractsimulator(
+        p, model;     
+        alg = Tsit5(),
+        saveat = 1, 
+        reltol = 1e-6,
+        kwargs...
+        )
 end
-
-simulator(p::DEBParamCollection; kwargs...) = abstractsimulator(p; kwargs...)
 
 """
 Run the DEBBase model from a reference to `DEBParamCollection`.

@@ -31,7 +31,7 @@ Testing the default parameters
         plot(:t, :H)
      ) |> display
 
-    @test isapprox(maximum(yhat.H), theta.spc.H_p, rtol = 1e-2)
+    @test isapprox(maximum(yhat.H), theta.spc.H_p, rtol = 1e-2) # test for maximum maturity
     @test isapprox(maximum(yhat.S), DEBBase.calc_S_max(theta.spc), rtol = 0.1)
 end;
 
@@ -68,7 +68,7 @@ Basic test of @replicates macro
         )
     end
 
-    @test cvs.S > 0.05
+    @test cvs.S > 0.05 # test for plausible coefficients of variation in the final values
     @test cvs.H > 0.05
     @test cvs.R > 0.05
 end;
