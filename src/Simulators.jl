@@ -44,7 +44,7 @@ Run the DEBBase model from a `DEBParamCollection` instance. <br>
 These are the common parameters `p`. The agent-specific parameters `pagnt` are initialized by the simulator. <br>
 Additional kwargs are passed on to `DifferentialEquations.solve()`.
 """
-function simulator(
+function abstractsimulator(
     p::AbstractParamCollection; 
     model = DEB!,
     alg = Tsit5(),
@@ -52,7 +52,6 @@ function simulator(
     reltol = 1e-6,
     kwargs...
     )::DataFrame
-
 
     p.agn = AgentParams(p.spc) # initialize agent parameters incl. individual variability
     
@@ -63,6 +62,8 @@ function simulator(
   
     return simout
 end
+
+simulator(p::DEBParamCollection; kwargs...) = abstractsimulator(p; kwargs...)
 
 """
 Run the DEBBase model from a reference to `DEBParamCollection`.
