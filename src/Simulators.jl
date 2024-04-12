@@ -34,7 +34,7 @@ end
 
 function abstractsimulator(
     p::AbstractParamCollection,
-    model = DEB!, 
+    model, 
     AgentParamType::DataType;
     alg = Tsit5(),
     kwargs...
@@ -64,10 +64,10 @@ Run the DEBBase model from a `DEBParamCollection` instance. <br>
 function simulator(
     p::DEBParamCollection; 
     model = DEB!,
-    AgentParamType::DataType = SpeciesParams,
+    AgentParamType::DataType = AgentParams,
     kwargs...
-    
     )
+
     abstractsimulator(
         p, 
         model,
