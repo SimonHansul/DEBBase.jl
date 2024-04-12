@@ -1,3 +1,5 @@
+abstract type AbstractSpeciesParams <: AbstractParams end
+
 """
 `GlobalParams` contain the global parameters (simulated timespan `t_max`, nutrient influx rate `Xdot_in`, etc.)
 """
@@ -18,7 +20,7 @@ Variability is given by the zoom factor `Z::Distribution`, which is always appli
 and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`. <br>
 `Z` is `Dirac(1)` by default, i.e. there is no agent variability in the default parameters. <br>
 """
-@with_kw mutable struct SpeciesParams <: AbstractParams
+@with_kw mutable struct SpeciesParams <: AbstractSpeciesParams
     Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. This can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
     propagate_zoom::@NamedTuple{X_emb_int::Bool, H_p::Bool, K_X::Bool} = (X_emb_int = true, H_p = true, K_X = true) # Parameters to which Z will be propagated. Z is *always* applied to `Idot_max_rel` (with appropriate scaling).
     X_emb_int::Float64 = 19.42 # initial vitellus

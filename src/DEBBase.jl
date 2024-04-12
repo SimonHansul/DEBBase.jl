@@ -14,11 +14,13 @@ using StaticArrays
 using StatsBase
 
 include("Structures.jl")
+
 include("IO.jl")
+export setproperty!
+
 include("ModelFunctions.jl")
 include("Simulators.jl")
 include("ImpliedTraits.jl")
-include("ParamHandling.jl")
 
 @compile_workload begin
     # precompile the default simulator
