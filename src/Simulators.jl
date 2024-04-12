@@ -34,12 +34,13 @@ end
 
 function abstractsimulator(
     p::AbstractParamCollection,
-    model = DEB!;
+    model = DEB!, 
+    AgentParamType::DataType;
     alg = Tsit5(),
     kwargs...
     )::DataFrame
 
-    p.agn = AgentParams(p.spc) # initialize agent parameters incl. individual variability
+    p.agn = AgentParamType(p.spc) # initialize agent parameters incl. individual variability
     
     u = initialize_statevars(p)
     prob = ODEProblem(model, u, (0, p.glb.t_max), p) # define the problem
@@ -63,11 +64,14 @@ Run the DEBBase model from a `DEBParamCollection` instance. <br>
 function simulator(
     p::DEBParamCollection; 
     model = DEB!,
+    AgentParamType::DataType = SpeciesParams,
     kwargs...
     
     )
     abstractsimulator(
-        p, model;     
+        p, 
+        model,
+        AgentParamType;     
         alg = Tsit5(),
         saveat = 1, 
         reltol = 1e-6,
