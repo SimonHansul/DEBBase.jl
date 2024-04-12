@@ -1,6 +1,3 @@
-
-
-
 """
     initialize_statevars(p::AbstractParamCollection, pagnt::ComponentVector{Float64})::ComponentArray 
 Initialize the component vector of state variables, `u`, based on common parameters `p` and agent parameters `pagnt`.
@@ -34,8 +31,6 @@ function initialize_statevars(p::AbstractParamCollection)::ComponentArray
     )
 end
 
-
-
 """
     simulator(
         p::Ref{DEBParamCollection}; 
@@ -45,13 +40,13 @@ end
         kwargs...
         )::DataFrame
 
-Run the DEBBase model from a `DEBParamCollection`  instance. <br>
+Run the DEBBase model from a `DEBParamCollection` instance. <br>
 These are the common parameters `p`. The agent-specific parameters `pagnt` are initialized by the simulator. <br>
 Additional kwargs are passed on to `DifferentialEquations.solve()`.
 """
 function simulator(
-    p::DEBParamCollection; 
-    system = DEB!,
+    p::AbstractParamCollection; 
+    model = DEB!,
     alg = Tsit5(),
     saveat = 1, 
     reltol = 1e-6,
@@ -62,7 +57,7 @@ function simulator(
     p.agn = AgentParams(p.spc) # initialize agent parameters incl. individual variability
     
     u = initialize_statevars(p)
-    prob = ODEProblem(system, u, (0, p.glb.t_max), p) # define the problem
+    prob = ODEProblem(model, u, (0, p.glb.t_max), p) # define the problem
     sol = solve(prob, alg; saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
   

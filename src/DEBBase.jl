@@ -14,7 +14,7 @@ using StaticArrays
 using StatsBase
 
 include("Structures.jl")
-export GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection
+export GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
 include("IO.jl")
 export setproperty!, isolate_pmoas!, set_equal!
