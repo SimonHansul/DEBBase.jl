@@ -48,11 +48,30 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     drc_functs_R::Vector{Function} = [LL2] # Dose-response functions | PMoA reproduction efficiency
     drc_functs_h::Vector{Function} = [LL2h] # Dose-response functions | PMoA hazard rate
 
-    drc_params_G::Vector{NTuple} = [(1e10, 1e10)] # Dose-response parameters | PMoA growth efficiency
-    drc_params_M::Vector{NTuple} = [(1e10, 1e10)] # Dose-response parameters | PMoA maintenance costs
-    drc_params_A::Vector{NTuple} = [(1e10, 1e10)] # Dose-response parameters | assimilation efficiency
-    drc_params_R::Vector{NTuple} = [(167., 0.93)] # Dose-response parameters | PMoA reproduction efficiency
-    drc_params_h::Vector{NTuple} = [(1e10, 1e10)] # Dose-response parameters | PMoA hazard rate
+    e_G::Union{Nothing,Vector{Float64}} = [1e10] # sensitivity parameters | PMoA growth efficiency
+    e_M::Union{Nothing,Vector{Float64}} = [1e10] # sensitivity parameters | PMoA maintenance costs
+    e_A::Union{Nothing,Vector{Float64}} = [1e10] # sensitivity parameters | PMoA assimilation efficiency
+    e_R::Union{Nothing,Vector{Float64}} = [167.] # sensitivity parameters | PMoA reproduction efficiency
+    e_h::Union{Nothing,Vector{Float64}} = [1e10] # sensitivity parameters | PMoA hazard rate
+
+    b_G::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA growth efficiency
+    b_M::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA maintenance costs
+    b_A::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA assimilation efficiency
+    b_R::Union{Nothing,Vector{Float64}} = [0.93] # slope parameters | PMoA reproduction efficiency
+    b_h::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA reproduction efficiency
+
+    c_G::Union{Nothing,Vector{Float64}} = nothing # placeholders for additional TD parameters. only relevant if custom drc_functs with more than two parameters are defined
+    c_M::Union{Nothing,Vector{Float64}} = nothing
+    c_A::Union{Nothing,Vector{Float64}} = nothing
+    c_R::Union{Nothing,Vector{Float64}} = nothing
+    c_h::Union{Nothing,Vector{Float64}} = nothing
+
+    d_G::Union{Nothing,Vector{Function}} = nothing
+    d_M::Union{Nothing,Vector{Function}} = nothing
+    d_A::Union{Nothing,Vector{Function}} = nothing
+    d_R::Union{Nothing,Vector{Function}} = nothing
+    d_h::Union{Nothing,Vector{Function}} = nothing
+
 end
 
 """
@@ -117,11 +136,16 @@ Initialize the default parameter collection with `DEBParamCollection()`.
     @assert length(spc.drc_functs_A) >= length(glb.C_W) "Length of drc_functs_A is not at least length of C_W in species"
     @assert length(spc.drc_functs_R) >= length(glb.C_W) "Length of drc_functs_R is not at least length of C_W in species"
     @assert length(spc.drc_functs_h) >= length(glb.C_W) "Length of drc_functs_h is not at least length of C_W in species"
-    @assert length(spc.drc_params_G) >= length(glb.C_W) "Length of drc_params_G is not at least length of C_W in species"
-    @assert length(spc.drc_params_M) >= length(glb.C_W) "Length of drc_params_M is not at least length of C_W in species"
-    @assert length(spc.drc_params_A) >= length(glb.C_W) "Length of drc_params_A is not at least length of C_W in species"
-    @assert length(spc.drc_params_R) >= length(glb.C_W) "Length of drc_params_R is not at least length of C_W in species"
-    @assert length(spc.drc_params_h) >= length(glb.C_W) "Length of drc_params_h is not at least length of C_W in species"
+    @assert length(spc.e_G) >= length(glb.C_W) "Length of e_G is not at least length of C_W in species"
+    @assert length(spc.e_M) >= length(glb.C_W) "Length of e_M is not at least length of C_W in species"
+    @assert length(spc.e_A) >= length(glb.C_W) "Length of e_A is not at least length of C_W in species"
+    @assert length(spc.e_R) >= length(glb.C_W) "Length of e_R is not at least length of C_W in species"
+    @assert length(spc.e_h) >= length(glb.C_W) "Length of e_h is not at least length of C_W in species"
+    @assert length(spc.b_G) >= length(glb.C_W) "Length of b_G is not at least length of C_W in species"
+    @assert length(spc.b_M) >= length(glb.C_W) "Length of b_M is not at least length of C_W in species"
+    @assert length(spc.b_A) >= length(glb.C_W) "Length of b_A is not at least length of C_W in species"
+    @assert length(spc.b_R) >= length(glb.C_W) "Length of b_R is not at least length of C_W in species"
+    @assert length(spc.b_h) >= length(glb.C_W) "Length of b_h is not at least length of C_W in species"
 end
 
 
