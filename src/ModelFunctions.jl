@@ -310,7 +310,7 @@ Metabolic acceleration from birth to maturity.
 We assume that some baseline parameter `p` has value `p_b` at birth and `p_j` at metamorphosis.
 Between birth and metamorphosis, the current value of `p` is the maturity-weighted mean of `p_b` and `p_j`.
 """
-function abj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
+function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
     w_b = (H_j - H) / (H_j - H_b) # weight for p_b
     w_j = 1 - w_b # weight for p_j
     p_bj = mean([p_b, p_j], Weights([w_b, w_j])) # p_bj, i.e. value between birth and maturity

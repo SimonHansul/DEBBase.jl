@@ -46,6 +46,7 @@ For example `k_D_G = [1., 0.], k_D_M = [1.]` will be trimmed to `k_D_G = [1.], k
 $(TYPEDSIGNATURES)
 """
 function trim!(spc::AbstractParams)
+
     num_stressors = min(
         length(spc.k_D_G),
         length(spc.k_D_M),
@@ -65,7 +66,7 @@ function trim!(spc::AbstractParams)
     spc.drc_functs_A = spc.drc_functs_A[1:num_stressors]
     spc.drc_functs_R = spc.drc_functs_R[1:num_stressors]
     spc.drc_functs_h = spc.drc_functs_h[1:num_stressors]
-
+    
     spc.drc_params_G = spc.drc_params_G[1:num_stressors]
     spc.drc_params_M = spc.drc_params_M[1:num_stressors]
     spc.drc_params_A = spc.drc_params_A[1:num_stressors]
