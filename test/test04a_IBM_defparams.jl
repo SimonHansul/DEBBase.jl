@@ -11,7 +11,7 @@
 
     using Revise
     using DEBBase
-    using Parameters, SpeciesParamstructs
+    using Parameters, DEBParamStructs
 end
 
 @test begin
@@ -32,7 +32,7 @@ end
     yhat_var = @replicates DEBBase.simulator(DEBParamCollection(spc = SpeciesParams(Z = hyperZ))) 10
     @df yhat_var plot!(plt, :t, :S, group = :replicate, alpha = .25, subplot = 1, c = :viridis)
     @df yhat_var plot!(plt, :t, :R, group = :replicate, alpha = .25, subplot = 2, c = :viridis) 
-
+    display(plt)
     true
 end
 
@@ -57,39 +57,61 @@ DEBBase Agent. <br>
 Each agent owns a reference to its associated parameter collection.
 """
 mutable struct BaseAgent <: AbstractAgent
-    pcmn::Base.RefValue{DEBParamCollection} # reference to the common parameter collection
-    pown::ComponentVector
+    p::AbstractParamCollection
     u::ComponentVector
     du::ComponentVector
-    active::Bool
+    unique_id::Int64
 
-    function BaseAgent(pcmn::Ref{A}) where A <: AbstractParamCollection # generate agent from reference to paramter collection
+    """
+        BaseAgent(p::AbstractParamCollection, unique_id::Int64)
+    
+    Initialize a base agent from parameters. 
+    """
+    function BaseAgent(p::AbstractParamCollection, unique_id::Int64)
         a = new()
-        a.pcmn = pcmn
-        a.pown = DEBBase.initialize_pown()
-        DEBBase.agent_variability!(a.pown, a.pcmn)
-        a.u = DEBBase.initialize_statevars(a.pcmn, a.pown)
-        a.du = similar(a.u)
-        a.active = false
+
+        a.unique_id = unique_id # identifier
+        a.p = p # parameters
+        a.p.agn = AgentParams(a.p.spc) # agent-level parameters (induces individual variability)
+        a.u = DEBBase.initialize_statevars(a.p) # state variables
+        a.du = similar(a.u) # derivatives
         return a
     end
 end
 
-function activate!(a::BaseAgent)
-    a.active = true
+p = DEBParamCollection()
+p.spc.Z = Truncated(Normal(1, 0.1), 0, Inf)
+a = BaseAgent(p, 1)    
+
+"""
+    init_pop(p::DEBParamCollection, N0::Int64; AgentType = BaseAgent)
+Initialize a 
+"""
+function init_pop(p::DEBParamCollection, N0::Int64; AgentType = BaseAgent)
+    agents = Vector{AgentType}(undef, N0)
+
+    for i in 1:N0
+        agents[i] = BaseAgent(p, i)
+    end
+
+    return agents
 end
 
-function deactivate!(a::BaseAgent)
-    a.active = false
+agents = init_pop(p, 10)
+
+
+abstract type AbstractABM end
+mutable struct BaseABM <: AbstractABM
+    X_p::Float64 # food concentration
+    unique_id_count::Int64 # cumulative unique ids
+    agents::Vector{AbstractAgent}
+
+    function BaseABM(p::AbstractParamCollection)
+    end
 end
 
-@test begin
-    Θ = DEBParamCollection()
-    Θ_ref = Ref(Θ)
-    a = BaseAgent(Θ_ref)    
 
-    true
-end
+
 
 
 
@@ -100,7 +122,6 @@ end
 
 =#
 
-abstract type AbstractABM end
 
 
 θ = DEBParamCollection()
