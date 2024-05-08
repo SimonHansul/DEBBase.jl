@@ -8,7 +8,7 @@ end
 """
 Sigmoid switch function. 
 `y_left` and `y_right` are the function values left and right of the threshold `x_thr`.
-$(TYPEDSIGNATURES)
+
 """
 @inline function sig(
     x::Float64, 
@@ -35,7 +35,7 @@ end
 Calculate ingestion rate. 
 Embryos (X_emb <= 0) take up resources from the vitellus X_emb. 
 Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
-$(TYPEDSIGNATURES)
+
 """
 @inline function Idot!(
     du::ComponentArray,
@@ -64,7 +64,7 @@ end
 
 """
 Assimilation rate
-$(TYPEDSIGNATURES)
+
 """
 @inline function Adot!(
     du::ComponentArray,
@@ -76,7 +76,7 @@ end
 
 """
 Somatic maintenance rate
-$(TYPEDSIGNATURES)
+
 """
 @inline function Mdot!(
     du::ComponentArray,
@@ -88,7 +88,7 @@ end
 
 """
 Maturity maintenance rate
-$(TYPEDSIGNATURES)
+
 """
 @inline function Jdot!(
     du::ComponentArray,
@@ -101,7 +101,7 @@ end
 
 """
 Positive somatic growth
-$(TYPEDSIGNATURES)
+
 """
 @inline function Sdot_positive(
     du::ComponentArray,
@@ -114,7 +114,7 @@ end
 
 """
 Negative somatic growth
-($(TYPEDSIGNATURES))
+()
 """
 @inline function Sdot_negative(
     du::ComponentArray,
@@ -141,7 +141,7 @@ end
 
 """
 Somatic growth rate, including application of shrinking equation.
-$(TYPEDSIGNATURES)
+
 """
 @inline function Sdot!(
     du::ComponentArray,
@@ -160,7 +160,7 @@ If this turns out to be an issue, we might consider to add a damage pool D_H,
 where the amount of maturity maintenance that could not be covered is accumulated. 
 This might then lead to a fitness penalty depending on D_H, for example in the form of additional 
 mortality or embryonic hazard (TBD). 
-$(TYPEDSIGNATURES)
+
 """
 @inline function Hdot!(
     du::ComponentArray,
@@ -198,7 +198,7 @@ end
 
 """
 Reproduction rate.
-$(TYPEDSIGNATURES)
+
 """
 @inline function Rdot!(
     du::ComponentArray,
@@ -216,7 +216,7 @@ end
 
 """
 Calculation of the total dissipation flux, equal to the sum of maintenance costs and overheads paid for assimilation, mobilization, growth and reproduction.
-$(TYPEDSIGNATURES)
+
 """
 function Qdot!(
     du::ComponentArray,
@@ -237,7 +237,7 @@ end
 """
 TK for spc-TKTD model, including effect of surface area to volume ratio and dilution by growth. 
 If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-specific. 
-$(TYPEDSIGNATURES)
+
 """
 @inline function Ddot!(
     du::ComponentVector,
@@ -279,6 +279,20 @@ end
     t::Real
     ) 
     du.X_p = p.glb.Xdot_in - du.I_p
+end
+
+"""
+Update of external resource for agent step. 
+Only the ingestion rate of the agent is considered.
+
+"""
+@inline function X_pdot_out!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::AbstractParamCollection,
+    t::Real
+    )
+    du.X_p = -du.I_p
 end
 
 @inline function X_embdot!(
@@ -330,7 +344,7 @@ end
 
 """
 Definition of base model system. 
-$(TYPEDSIGNATURES)
+
 """
 function DEB!(du, u, p, t)
 

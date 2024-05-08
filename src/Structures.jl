@@ -72,6 +72,7 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     d_R::Union{Nothing,Vector{Function}} = nothing
     d_h::Union{Nothing,Vector{Function}} = nothing
 
+    aux::Any = nothing # container for auxiliaray pramaters -- good for development purposes
 end
 
 """
@@ -80,7 +81,7 @@ Induce agent variability in spc parameters via zoom factor `Z`.
 `Z` is sampled from the corresponding distribution given in `p` and assumed to represent a ratio between maximum structurel *masses* (not lengths), 
 so that the surface area-specific ingestion rate `Idot_max_rel` scales with `Z^(1/3)` and parameters which represent masses or energy pools scales with `Z`.
 """
-function agent_variability!(agn::Asub, spc::A) where {Asub <: AbstractParams, A <: AbstractParams}
+function agent_variability!(agn::AGN, spc::SPC) where {AGN <: AbstractParams, SPC <: AbstractParams}
     agn.Z = rand(spc.Z) # sample zoom factor Z for agent from distribution
     agn.Idot_max_rel = spc.Idot_max_rel * agn.Z^(1/3) # Z is always applied to Idot_max_rel
     agn.Idot_max_rel_emb = spc.Idot_max_rel_emb * agn.Z^(1/3) #, including the value for embryos

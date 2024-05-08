@@ -12,7 +12,14 @@
     using Revise
     using DEBBase
     using Parameters, DEBParamStructs
+    using ComponentArrays
+    include("../src/ModelFunctions.jl")
 end
+
+#=
+We first (again) test the @replicates macro, 
+which also tests the initalization of agent params and induction of individual variability.
+=#
 
 @test begin
     plt = plot(
@@ -52,6 +59,8 @@ What does an agent need?
 using ComponentArrays
 abstract type AbstractAgent end
 
+using DEBBase
+
 """
 DEBBase Agent. <br>
 Each agent owns a reference to its associated parameter collection.
@@ -71,95 +80,134 @@ mutable struct BaseAgent <: AbstractAgent
         a = new()
 
         a.unique_id = unique_id # identifier
-        a.p = p # parameters
-        a.p.agn = AgentParams(a.p.spc) # agent-level parameters (induces individual variability)
+        a.p = copy(p) # parameters
+        a.p.agn = AgentParams(a.p.spc) # assign agent-level parameters (induces individual variability)
         a.u = DEBBase.initialize_statevars(a.p) # state variables
         a.du = similar(a.u) # derivatives
         return a
     end
 end
 
-p = DEBParamCollection()
-p.spc.Z = Truncated(Normal(1, 0.1), 0, Inf)
-a = BaseAgent(p, 1)    
-
 """
     init_pop(p::DEBParamCollection, N0::Int64; AgentType = BaseAgent)
 Initialize a 
 """
-function init_pop(p::DEBParamCollection, N0::Int64; AgentType = BaseAgent)
-    agents = Vector{AgentType}(undef, N0)
+function init_pop(p::DEBParamCollection; AgentType = BaseAgent)
+    agents = Vector{AgentType}(undef, p.glb.N0)
 
-    for i in 1:N0
-        agents[i] = BaseAgent(p, i)
+    for i in 1:p.glb.N0
+        a = BaseAgent(p, i)
+        agents[i] = a
     end
 
     return agents
 end
 
-agents = init_pop(p, 10)
-
-
 abstract type AbstractABM end
-mutable struct BaseABM <: AbstractABM
-    X_p::Float64 # food concentration
-    unique_id_count::Int64 # cumulative unique ids
-    agents::Vector{AbstractAgent}
-
-    function BaseABM(p::AbstractParamCollection)
-    end
-end
-
-
-
-
-
-
-
-#=
-## Implementing a model object 
-
-
-=#
-
-
-
-θ = DEBParamCollection()
-θ_ref = Ref(θ)
-
-agents = Vector{AbstractAgent}(undef, 10)
-agents[1] = BaseAgent(θ_ref)
 
 """
 Definition of basic ABM object. <br>
 Currently assumes that only a single species of type `AgentType` is simulated at a time.
 """
 @with_kw mutable struct ABM <: AbstractABM
-    theta::AbstractParamCollection # Parameter collection
+    p::AbstractParamCollection # Parameter collection
     agents # Agents
-    t::Float64
+    t::Float64 # current simulation time
+    dt::Float64 # timestep
 
     """
-    Instantiate ABM from param collection `theta`. 
+    Instantiate ABM from param collection `p`. 
     """
-    function ABM(theta::A; AgentType = BaseAgent, N_max = Int(1e4)) where A <: AbstractParamCollection
+    function ABM(theta::A; AgentType = BaseAgent, dt = 1/24) where A <: AbstractParamCollection
         abm = new() # initialize ABM object
-        abm.theta = theta # 
+        abm.p= p # 
         abm.t = 0.
+        abm.dt = dt
 
-        abm.agents = Vector{AbstractAgent}(undef, N_max)
-        
-        for i in eachindex(abm.agents)
-            abm.agents[i] = AgentType(Ref(theta))
-            if i <= theta.glb.N0
-                activate!(abm.agents[i])
-            end
-        end
+        abm.agents = init_pop(p)
 
         return abm
     end
 end
 
+p = DEBParamCollection()
+p.glb.N0 = 10
+p.spc.Z = Truncated(Normal(1, 0.1), 0, Inf)
+@time abm = ABM(p)
 
-abm = ABM(θ)
-println(abm)
+#=
+Agent step
+=#
+
+"""
+    step!(agent::AbstractAgent, abm::AbstractABM)
+Definition of agent step. 
+"""
+function step!(agent::AbstractAgent, abm::AbstractABM)
+    du, u, p = agent.du, agent.u, agent.p 
+    t = abm.t
+
+    #### stressor responses
+    y!(du, u, p, t)
+
+    #### auxiliary state variables (record cumulative values)
+    Idot!(du, u, p, t)
+    Adot!(du, u, p, t) 
+    Mdot!(du, u, p, t) 
+    Jdot!(du, u, p, t)
+
+    #### major state variables
+    Sdot!(du, u, p, t) # structure
+    Hdot!(du, u, p, t) # maturity 
+    H_bdot!(du, u, p, t) # estimate of maturity at birth
+    Rdot!(du, u, p, t) # reproduction buffer
+    
+    X_pdot_out!(du, u, p, t) # resource abundance
+    X_embdot!(du, u, p, t) # vitellus
+    Ddot!(du, u, p, t) # damage
+    C_Wdot!(du, u, p, t) # external stressor concentration
+
+    update!(agent, abm)
+end
+
+function euler!(u::Float64, du::Float64, dt::Float64)
+    return u + du * dt
+end
+
+function euler!(u::Vector{Float64}, du::Vector{Float64}, dt::Float64)
+    return euler!.(u, du, dt)
+end
+
+begin
+    function update!(agent::AbstractAgent, abm::AbstractABM)
+        for (du_i, u_i) in zip(agent.du, agent.u)
+            u_i = euler!(u_i, du_i, abm.dt)
+        end
+    end
+    
+    abm = ABM(p)
+
+    aout = []
+
+    while abm.t <= abm.p.glb.t_max
+        for agent in abm.agents
+            step!(agent, abm)
+            push!(aout, (t = abm.t, unique_id = agent.unique_id, u = agent.u))
+        end
+
+        abm.t += abm.dt
+    end
+
+    # FIXME: u is not updated...
+
+    t = [x.t for x in aout]
+    unique_id = [x.unique_id for x in aout]
+    S = [x.u.S for x in aout]
+    
+    plot(t, S, group = unique_id)
+end
+
+
+
+
+p.glb
