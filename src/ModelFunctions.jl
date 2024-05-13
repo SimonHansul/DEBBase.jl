@@ -26,7 +26,7 @@ end
     p::AbstractParamCollection,
     t::Real
     ) 
-    let X_V = u.X_p / p.glb.V_patch # convert food abundance to concentration
+    let X_V = u.glb.x.X_p / p.glb.V_patch # convert food abundance to concentration
         return X_V / (X_V + p.agn.K_X) # calculate type II functional response
     end
 end
@@ -45,17 +45,17 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
     ) 
     
     du.I_emb = sig(
-        u.X_emb, # uptake from vitellus depends on mass of vitellus
+        u.agn.X_emb, # uptake from vitellus depends on mass of vitellus
         0., # the switch occurs when vitellus is used up 
         0., # when the vitellus is used up, there is no uptake
-        (Complex(u.S)^(2/3)).re * p.agn.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
+        (Complex(u.agn.S)^(2/3)).re * p.agn.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
         beta = 1e20 # for switches around 0, we need very high beta values
         )
 
     du.I_p = sig(
-        u.X_emb, # ingestion from external resource depends on mass of vitellus
+        u.agn.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
-        functional_response(du, u, p, t) * p.agn.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
+        functional_response(du, u, p, t) * p.agn.Idot_max_rel * (Complex(u.agn.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
         0.; # while there is still vitellus left, there is no uptake from the external resource
         beta = 1e20 # again we have a switch around 0, requiring very high beta
         )
@@ -71,7 +71,7 @@ Assimilation rate
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real) 
-    du.A = du.I * p.spc.eta_IA * u.y_A
+    du.A = du.I * p.spc.eta_IA * u.agn.y_A
 end
 
 """
@@ -83,7 +83,7 @@ Somatic maintenance rate
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real) 
-    du.M = u.S * p.spc.k_M * u.y_M
+    du.M = u.agn.S * p.spc.k_M * u.agn.y_M
 end
 
 """
@@ -96,7 +96,7 @@ Maturity maintenance rate
     p::AbstractParamCollection,
     t::Real
     ) 
-    du.J = u.H * p.spc.k_J * u.y_M
+    du.J = u.agn.H * p.spc.k_J * u.agn.y_M
 end
 
 """
@@ -109,7 +109,7 @@ Positive somatic growth
     p::AbstractParamCollection,
     t::Real
     ) 
-    return p.spc.eta_AS * u.y_G * (p.spc.kappa * du.A - du.M)
+    return p.spc.eta_AS * u.agn.y_G * (p.spc.kappa * du.A - du.M)
 end
 
 """
@@ -169,7 +169,7 @@ mortality or embryonic hazard (TBD).
     t::Real
     ) 
     du.H = sig(
-        u.H, # maturation depends on maturity
+        u.agn.H, # maturation depends on maturity
         p.agn.H_p, # switch occurs at maturity at puberty H_p
         clipneg(((1 - p.spc.kappa) * du.A) - du.J), # maturation for embryos and juveniles
         0., # maturation for adults
@@ -189,7 +189,7 @@ This way, we obtain H_b as an implied trait and can use it later (for example in
     t::Real
     ) 
     du.H_b = DEBBase.sig(
-        u.X_emb, # estimate depends on embryonic state
+        u.agn.X_emb, # estimate depends on embryonic state
         0., # switch occurs when vitellus is gone
         0., # post-embryonic: H_b stays fixed
         du.H # embryonic: H_b tracks H
@@ -207,10 +207,10 @@ Reproduction rate.
     t::Real
     ) 
     du.R = sig(
-        u.H, # reproduction depends on maturity
+        u.agn.H, # reproduction depends on maturity
         p.agn.H_p, # switch occurs at maturity at puberty H_p
         0., # reproduction for embryos and juveniles
-        clipneg(u.y_R * p.spc.eta_AR * ((1 - p.spc.kappa) * du.A - du.J)) # reproduction for adults
+        clipneg(u.agn.y_R * p.spc.eta_AR * ((1 - p.spc.kappa) * du.A - du.J)) # reproduction for adults
     )
 end
 
@@ -227,8 +227,8 @@ function Qdot!(
     # dissipation fluxes for the individual processes
     let Qdot_A, Qdot_S, Qdot_C, Qdot_R
         Qdot_A = Idot * (1 - p.spc.eta_IA)
-        Qdot_S = du.S >= 0 ? du.S * (1 - p.spc.eta_AS)/p.spc.eta_AS : du.S * (p.spc.eta_SA - 1)
-        Qdot_R = du.R * (1 - p.spc.eta_AR)/p.spc.eta_AR
+        Qdot_S = du.S >= 0 ? du.S * (1 - p.spc.eta_AS) / p.spc.eta_AS : du.S * (p.spc.eta_SA - 1)
+        Qdot_R = du.R * (1 - p.spc.eta_AR) / p.spc.eta_AR
         du.Q =  Qdot_A + Qdot_S + Qdot_C + Qdot_R + Mdot + Jdot + Hdot
     end
 end
@@ -246,13 +246,12 @@ If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-speci
     t::Real
     ) 
 
-    for z in eachindex(u.C_W)
-        # the sigmoid function causes Ddot to be 0 for embryos (assumption of internal eggs which are not exposed to external stressor )
-        @inbounds du.D_G[z] = sig(u.X_emb, 0., p.spc.k_D_G[z] * (u.C_W[z] - u.D_G[z]), 0.)
-        @inbounds du.D_M[z] = sig(u.X_emb, 0., p.spc.k_D_M[z] * (u.C_W[z] - u.D_M[z]), 0.)
-        @inbounds du.D_A[z] = sig(u.X_emb, 0., p.spc.k_D_A[z] * (u.C_W[z] - u.D_A[z]), 0.)
-        @inbounds du.D_R[z] = sig(u.X_emb, 0., p.spc.k_D_R[z] * (u.C_W[z] - u.D_R[z]), 0.)
-        @inbounds du.D_h[z] = sig(u.X_emb, 0., p.spc.k_D_h[z] * (u.C_W[z] - u.D_h[z]), 0.)
+    for z in eachindex(u.glb.x.C_W)
+        @inbounds du.D_G[z] = sig(u.agn.X_emb, 0., p.spc.k_D_G[z] * (u.glb.x.C_W[z] - u.D_G[z]), 0.)
+        @inbounds du.D_M[z] = sig(u.agn.X_emb, 0., p.spc.k_D_M[z] * (u.glb.x.C_W[z] - u.D_M[z]), 0.)
+        @inbounds du.D_A[z] = sig(u.agn.X_emb, 0., p.spc.k_D_A[z] * (u.glb.x.C_W[z] - u.D_A[z]), 0.)
+        @inbounds du.D_R[z] = sig(u.agn.X_emb, 0., p.spc.k_D_R[z] * (u.glb.x.C_W[z] - u.D_R[z]), 0.)
+        @inbounds du.D_h[z] = sig(u.agn.X_emb, 0., p.spc.k_D_h[z] * (u.glb.x.C_W[z] - u.D_h[z]), 0.)
         
         #@inbounds du.D_G[z] = sig(u.X_emb, 0., p.spc.k_D_G[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_G[z]) - u.D_G[z] * (du.S / u.S), 0.)
         #@inbounds du.D_M[z] = sig(u.X_emb, 0., p.spc.k_D_M[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_M[z]) - u.D_M[z] * (du.S / u.S), 0.)
@@ -269,7 +268,7 @@ end
     p::AbstractParamCollection,
     t::Real
     ) 
-    du.C_W = zeros(length(u.C_W)) # constant exposure : derivative is 0
+    du.glb.x.C_W = zeros(length(u.glb.x.C_W)) # constant exposure : derivative is 0
 end
 
 @inline function X_pdot!(
@@ -278,7 +277,7 @@ end
     p::AbstractParamCollection,
     t::Real
     ) 
-    du.X_p = p.glb.Xdot_in - du.I_p
+    du.glb.x.X_p = p.glb.Xdot_in - du.agn.I_p
 end
 
 """
@@ -292,7 +291,7 @@ Only the ingestion rate of the agent is considered.
     p::AbstractParamCollection,
     t::Real
     )
-    du.X_p = -du.I_p
+    du.glb.x.X_p = -du.agn.I_p
 end
 
 @inline function X_embdot!(
@@ -301,7 +300,7 @@ end
     p::AbstractParamCollection,
     t::Real
     ) 
-    du.X_emb = -du.I_emb
+    du.X_emb = -du.agn.I_emb
 end
 
 @inline function y!(
@@ -311,12 +310,12 @@ end
     t::Real
     ) 
 
-    @inbounds u.y_G = prod([p.spc.drc_functs_G[z](u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.C_W)]) # combined relative responses for sublethal effects
-    @inbounds u.y_M = prod([p.spc.drc_functs_M[z](u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.C_W)])
-    @inbounds u.y_A = prod([p.spc.drc_functs_A[z](u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.C_W)])
-    @inbounds u.y_R = prod([p.spc.drc_functs_R[z](u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.C_W)])
+    @inbounds u.agn.y_G = prod([p.spc.drc_functs_G[z](u.agn.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.glb.x.C_W)]) # combined relative responses for sublethal effects
+    @inbounds u.agn.y_M = prod([p.spc.drc_functs_M[z](u.agn.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.glb.x.C_W)])
+    @inbounds u.agn.y_A = prod([p.spc.drc_functs_A[z](u.agn.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.glb.x.C_W)])
+    @inbounds u.agn.y_R = prod([p.spc.drc_functs_R[z](u.agn.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.glb.x.C_W)])
 
-    @inbounds u.h_z = sum([p.spc.drc_functs_h[z](u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.C_W)]) # hazard rate
+    @inbounds u.agn.h_z = sum([p.spc.drc_functs_h[z](u.agn.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.glb.x.C_W)]) # hazard rate
 end
 
 """

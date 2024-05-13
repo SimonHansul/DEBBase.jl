@@ -3,31 +3,39 @@
 Initialize the component vector of state variables, `u`, based on common parameters `p` and agent parameters `pagnt`.
 """
 function initialize_statevars(p::AbstractParamCollection)::ComponentArray 
-    return ComponentArray( # initial states
+
+    glb = ComponentArray(
         X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
-        X_emb = Float64(p.agn.X_emb_int), # initial mass of vitellus
-        S = Float64(p.agn.X_emb_int * 0.001), # initial structure is a small fraction of initial reserve // mass of vitellus
-        H = Float64(0.), # maturity
-        H_b = 0., # maturity at birth (will be derived from model output)
-        R = Float64(0.), # reproduction buffer
-        I_emb = Float64(0.), # ingestion from vitellus
-        I_p = Float64(0.), # ingestion from external food resource
-        I = Float64(0.), # total ingestion
-        A = Float64(0.), # assimilation
-        M = Float64(0.), # somatic maintenance
-        J = Float64(0.), # maturity maintenance 
         C_W = (p.glb.C_W), # external stressor concentrations
-        D_G = MVector{length(p.spc.k_D_G), Float64}(zeros(length(p.spc.k_D_G))), # scaled damage | growth efficiency
-        D_M = MVector{length(p.spc.k_D_M), Float64}(zeros(length(p.spc.k_D_M))), # scaled damage | maintenance costs 
-        D_A = MVector{length(p.spc.k_D_A), Float64}(zeros(length(p.spc.k_D_A))), # scaled damage | assimilation efficiency
-        D_R = MVector{length(p.spc.k_D_R), Float64}(zeros(length(p.spc.k_D_R))), # scaled damage | reproduction efficiency
-        D_h = MVector{length(p.spc.k_D_h), Float64}(zeros(length(p.spc.k_D_h))), # scaled damage | hazard rate
-        y_G = Float64(1.), # relative response | growth efficiency
-        y_M = Float64(1.), # relative response | maintenance costs 
-        y_A = Float64(1.), # relative response | assimilation efficiency
-        y_R = Float64(1.), # relative response | reproduction efficiency
-        h_z = Float64(0.), # hazard rate | chemical stressors
-        h_S = Float64(0.)  # hazard rate | starvation
+    )
+
+    return ComponentArray(
+        glb = glb,
+        agn = ComponentArray( # initial states
+            X_emb = Float64(p.agn.X_emb_int), # initial mass of vitellus
+            S = Float64(p.agn.X_emb_int * 0.001), # initial structure is a small fraction of initial reserve // mass of vitellus
+            H = Float64(0.), # maturity
+            H_b = 0., # maturity at birth (will be derived from model output)
+            R = Float64(0.), # reproduction buffer
+            I_emb = Float64(0.), # ingestion from vitellus
+            I_p = Float64(0.), # ingestion from external food resource
+            I = Float64(0.), # total ingestion
+            A = Float64(0.), # assimilation
+            M = Float64(0.), # somatic maintenance
+            J = Float64(0.), # maturity maintenance 
+        
+            D_G = MVector{length(p.spc.k_D_G), Float64}(zeros(length(p.spc.k_D_G))), # scaled damage | growth efficiency
+            D_M = MVector{length(p.spc.k_D_M), Float64}(zeros(length(p.spc.k_D_M))), # scaled damage | maintenance costs 
+            D_A = MVector{length(p.spc.k_D_A), Float64}(zeros(length(p.spc.k_D_A))), # scaled damage | assimilation efficiency
+            D_R = MVector{length(p.spc.k_D_R), Float64}(zeros(length(p.spc.k_D_R))), # scaled damage | reproduction efficiency
+            D_h = MVector{length(p.spc.k_D_h), Float64}(zeros(length(p.spc.k_D_h))), # scaled damage | hazard rate
+            y_G = Float64(1.), # relative response | growth efficiency
+            y_M = Float64(1.), # relative response | maintenance costs 
+            y_A = Float64(1.), # relative response | assimilation efficiency
+            y_R = Float64(1.), # relative response | reproduction efficiency
+            h_z = Float64(0.), # hazard rate | chemical stressors
+            h_S = Float64(0.)  # hazard rate | starvation
+            )
     )
 end
 

@@ -22,28 +22,35 @@ end
 Testing the default parameters
 =#
 @testset begin 
-    theta = DEBParamCollection()
-    theta.glb.t_max = 56.
-    theta.spc.Z = Dirac(1.)
-    yhat = DEBBase.simulator(theta)
+    p = DEBParamCollection()
+    p.glb.t_max = 56.
+    p.spc.Z = Dirac(1.)
+    yhat = DEBBase.simulator(p)
     @df yhat plot(
         plot(:t, :S),
         plot(:t, :H)
      ) |> display
 
-    @test isapprox(maximum(yhat.H), theta.spc.H_p, rtol = 1e-2) # test for maximum maturity
-    @test isapprox(maximum(yhat.S), DEBBase.calc_S_max(theta.spc), rtol = 0.1)
+    @test isapprox(maximum(yhat.H), p.spc.H_p, rtol = 1e-2) # test for maximum maturity
+    @test isapprox(maximum(yhat.S), DEBBase.calc_S_max(p.spc), rtol = 0.1)
 end;
 
- 
+AgentParamType = AgentParams
+p.agn = AgentParamType(p.spc) # initialize agent parameters incl. individual variability
+    
+u = DEBBase.initialize_statevars(p)
+model = DEBBase.DEB!
+prob = ODEProblem(model, u, (0, p.glb.t_max), p) # define the problem
+sol = solve(prob, Euler(), dt = 1/24) # get solution to the IVP
+
 #=
 Basic test of @replicates macro
 =#
 
 @testset begin
-    theta = DEBParamCollection()
-    theta.spc.Z = Truncated(Normal(1., 0.1), 0, Inf)
-    yhat = @replicates DEBBase.simulator(theta) 10
+    p = DEBParamCollection()
+    p.spc.Z = Truncated(Normal(1., 0.1), 0, Inf)
+    yhat = @replicates DEBBase.simulator(p) 10
 
     plt = @df yhat plot(
         plot(:t, :S, group = :replicate, color = 1),

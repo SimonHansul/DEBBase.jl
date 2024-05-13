@@ -1,4 +1,5 @@
 @time "Loading packages" begin
+    TAG = splitpath(@__FILE__)[end] |> x -> split(x, ".")[1] |> String    
     using Pkg; Pkg.activate("test")
     using Test
     using Plots, StatsPlots, Plots.Measures
@@ -7,7 +8,6 @@
     using ProgressMeter
     using Distributions
     default(leg = false, lw = 1.5)
-    TAG = splitpath(@__FILE__)[end] |> x -> split(x, ".")[1] |> String    
 
     using Revise
     using DEBBase
@@ -45,15 +45,6 @@ end
 
 #=
 ## Implementing an Agent object. 
-
-What does an agent need?
-
-- A reference to common paramters `pcmn`
-- Agen-specific parameters `pown`
-- State variables `u`
-- Derivatives `du`
-
-- A function to initialize the agent
 =#
 
 using ComponentArrays
@@ -76,16 +67,61 @@ mutable struct BaseAgent <: AbstractAgent
     
     Initialize a base agent from parameters. 
     """
-    function BaseAgent(p::AbstractParamCollection, unique_id::Int64)
+    function BaseAgent(abm::AbstractABM)
         a = new()
 
-        a.unique_id = unique_id # identifier
+        a.unique_id = abm.unique_id_count # identifier
         a.p = copy(p) # parameters
         a.p.agn = AgentParams(a.p.spc) # assign agent-level parameters (induces individual variability)
-        a.u = DEBBase.initialize_statevars(a.p) # state variables
+        initialize_statevars!(a) # initialize agent-level state variables
         a.du = similar(a.u) # derivatives
         return a
     end
+end
+
+
+"""
+    initialize_statevars!(agent::AbstractAgent)
+Initialize agent-level state variables.
+"""
+function initialize_statevars!(agent::AbstractAgent)
+    agent.u = ComponentArray( # initial states
+        #X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
+        X_emb = Float64(p.agn.X_emb_int), # initial mass of vitellus
+        S = Float64(p.agn.X_emb_int * 0.001), # initial structure is a small fraction of initial reserve // mass of vitellus
+        H = Float64(0.), # maturity
+        H_b = 0., # maturity at birth (will be derived from model output)
+        R = Float64(0.), # reproduction buffer
+        I_emb = Float64(0.), # ingestion from vitellus
+        I_p = Float64(0.), # ingestion from external food resource
+        I = Float64(0.), # total ingestion
+        A = Float64(0.), # assimilation
+        M = Float64(0.), # somatic maintenance
+        J = Float64(0.), # maturity maintenance 
+        #C_W = (p.glb.C_W), # external stressor concentrations
+        D_G = MVector{length(p.spc.k_D_G), Float64}(zeros(length(p.spc.k_D_G))), # scaled damage | growth efficiency
+        D_M = MVector{length(p.spc.k_D_M), Float64}(zeros(length(p.spc.k_D_M))), # scaled damage | maintenance costs 
+        D_A = MVector{length(p.spc.k_D_A), Float64}(zeros(length(p.spc.k_D_A))), # scaled damage | assimilation efficiency
+        D_R = MVector{length(p.spc.k_D_R), Float64}(zeros(length(p.spc.k_D_R))), # scaled damage | reproduction efficiency
+        D_h = MVector{length(p.spc.k_D_h), Float64}(zeros(length(p.spc.k_D_h))), # scaled damage | hazard rate
+        y_G = Float64(1.), # relative response | growth efficiency
+        y_M = Float64(1.), # relative response | maintenance costs 
+        y_A = Float64(1.), # relative response | assimilation efficiency
+        y_R = Float64(1.), # relative response | reproduction efficiency
+        h_z = Float64(0.), # hazard rate | chemical stressors
+        h_S = Float64(0.)  # hazard rate | starvation
+    )
+end
+
+"""
+    initialize_statevars!(abm::AbstractABM)
+Initialize ABM-level state variables.
+"""
+function initialize_statevars!(abm::AbstractABM)
+    abm.u = ComponentArray(
+        X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
+        C_W = (p.glb.C_W), # external stressor concentrations
+    )
 end
 
 """
@@ -110,10 +146,11 @@ Definition of basic ABM object. <br>
 Currently assumes that only a single species of type `AgentType` is simulated at a time.
 """
 @with_kw mutable struct ABM <: AbstractABM
-    p::AbstractParamCollection # Parameter collection
-    agents # Agents
+    p::AbstractParamCollection # parameter collection
+    agents # agents
     t::Float64 # current simulation time
     dt::Float64 # timestep
+    unique_id_count::Int64 # cumulative number of agents in the simulation
 
     """
     Instantiate ABM from param collection `p`. 
@@ -130,10 +167,8 @@ Currently assumes that only a single species of type `AgentType` is simulated at
     end
 end
 
-p = DEBParamCollection()
-p.glb.N0 = 10
-p.spc.Z = Truncated(Normal(1, 0.1), 0, Inf)
-@time abm = ABM(p)
+
+
 
 #=
 Agent step
@@ -167,47 +202,96 @@ function step!(agent::AbstractAgent, abm::AbstractABM)
     Ddot!(du, u, p, t) # damage
     C_Wdot!(du, u, p, t) # external stressor concentration
 
-    update!(agent, abm)
+    for (du_i, u_i, var) in zip(agent.du, agent.u, keys(agent.du))
+        u_i = euler(du_i, u_i, abm.dt)
+        setproperty!(agent, var, u_i)
+    end
 end
 
-function euler!(u::Float64, du::Float64, dt::Float64)
+"""
+    euler!(u::Float64, du::Float64, dt::Float64)
+Apply Euler scheme.
+"""
+function euler(du::Float64, u::Float64,dt::Float64)
     return u + du * dt
 end
 
-function euler!(u::Vector{Float64}, du::Vector{Float64}, dt::Float64)
-    return euler!.(u, du, dt)
+"""
+    euler!(u::Vector{Float64}, du::Vector{Float64}, dt::Float64)
+Apply Euler scheme do a Vector of states and derivatives.
+"""
+function euler!(du::Vector{Float64}, u::Vector{Float64}, dt::Float64)
+    return u .+ (du .* dt)
 end
 
+
+using ProfileView 
+
 begin
-    function update!(agent::AbstractAgent, abm::AbstractABM)
-        for (du_i, u_i) in zip(agent.du, agent.u)
-            u_i = euler!(u_i, du_i, abm.dt)
-        end
-    end
     
-    abm = ABM(p)
+    p = DEBParamCollection()
+    p.glb.N0 = 1_00
+    p.spc.Z = Truncated(Normal(1, 0.1), 0, Inf)
+    abm = ABM(p, dt = 1)
 
     aout = []
 
-    while abm.t <= abm.p.glb.t_max
+    @time while abm.t <= abm.p.glb.t_max
         for agent in abm.agents
             step!(agent, abm)
+
+            #if (abm.t%1) == 0
             push!(aout, (t = abm.t, unique_id = agent.unique_id, u = agent.u))
+            #end
         end
 
-        abm.t += abm.dt
+        abm.t += abm.dt # advance simulation time 
     end
 
-    # FIXME: u is not updated...
-
-    t = [x.t for x in aout]
-    unique_id = [x.unique_id for x in aout]
-    S = [x.u.S for x in aout]
-    
-    plot(t, S, group = unique_id)
+    t = [a.t for a in aout]
+    AgentID = [a.unique_id for a in aout]
+    S = [a.u.S for a in aout]
+    plot(t, S, group = AgentID)
+    #plot(t, S, group = AgentID)
+    #println(S)
 end
 
 
 
 
-p.glb
+#=
+## Organization of state variables
+
+within ABM constructor:
+
+```
+    abm.u_glb = ComponentVector(X_p = 0., C_W =  [0.])
+    abm.du_glb = similar(u_glb)
+
+    abm.u = ComponentVector(glb = Ref(abm.u_glb))
+    abm.du = ComponentVector()
+```
+
+
+within agent constructor: 
+
+```
+    agent.u = ComponentVector(
+        glb = Ref(abm.u_glb), 
+        agn = ComponentVector(
+            H = 0,
+            ...
+        )
+        ...
+    )
+
+    agent.du = ComponentVector(
+        glb = Ref(du_glb),
+        agn = similar(agent.u.agn)
+
+    )
+
+```
+
+
+=#
