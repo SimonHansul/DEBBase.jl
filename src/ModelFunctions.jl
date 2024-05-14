@@ -342,10 +342,11 @@ function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float6
 end
 
 """
-Definition of base model system. 
-
+    DEBODE!(du, u, p, t)
+Definition of base model as a system of ordinary differential equations. 
+This model definition is suitable for simulating the life-history of a single organism in conjecture with DifferentialEquations.jl.
 """
-function DEB!(du, u, p, t)
+function DEBODE!(du, u, p, t)
 
     #### stressor responses
     y!(du, u, p, t)

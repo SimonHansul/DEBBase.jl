@@ -1,4 +1,7 @@
 abstract type AbstractSpeciesParams <: AbstractParams end
+abstract type AbstractAgent end
+abstract type AbstractABM end
+
 
 """
 `GlobalParams` contain the global parameters (simulated timespan `t_max`, nutrient influx rate `Xdot_in`, etc.)
@@ -9,7 +12,7 @@ abstract type AbstractSpeciesParams <: AbstractParams end
     Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default SpeciesParams
     V_patch::Float64 = 0.05 # volume of a patch (L) (or the entire similated environment)
     C_W::Vector{Float64} = [0.] # external chemical concentrations
-    units::NamedTuple = (time = "d", mass = "mug C", volume = "L")
+    AgentType::DataType = AbstractAgent # the type of agent simulated
 end
 
 """

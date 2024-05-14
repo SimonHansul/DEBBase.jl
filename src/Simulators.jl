@@ -1,7 +1,14 @@
-function init_substates_agent()
+const X_EMB_INT_REL::Float64 = 0.001 # the (assumed) initial amount of structure, relative to the mass of an egg
+
+"""
+    init_substates_agent(p::AbstractParamCollection)
+    
+Initialize the agent substates, i.e. the state variables of a specific agent.
+"""
+function init_substates_agent(p::AbstractParamCollection)
     return ComponentArray( # initial states
         X_emb = Float64(p.agn.X_emb_int), # initial mass of vitellus
-        S = Float64(p.agn.X_emb_int * 0.001), # initial structure is a small fraction of initial reserve // mass of vitellus
+        S = Float64(p.agn.X_emb_int * X_EMB_INT_REL), # initial structure is a small fraction of initial reserve // mass of vitellus
         H = Float64(0), # maturity
         H_b = Float64(0), # maturity at birth (will be derived from model output)
         R = Float64(0), # reproduction buffer
@@ -27,24 +34,28 @@ function init_substates_agent()
     )
 end
 
+"""
+    init_substates_global(p::AbstractParamCollection)
+Initialize the global substates, i.e. the global state variables such as simulation time.
+"""
+function init_substates_global(p::AbstractParamCollection)
+    return ComponentArray(
+        x = ComponentArray( # we add the 'x' to mimic the ABM syntax where agn.u.glb is a reference to the actual glbinstance
+            X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
+            C_W = (p.glb.C_W) # external stressor concentrations
+        )
+    )
+end
+
 
 """
     initialize_statevars(p::AbstractParamCollection, pagnt::ComponentVector{Float64})::ComponentArray 
 For initialization of ODE simulator, initialize the component vector of state variables, `u`, based on common parameters `p`.
 """
 function initialize_statevars(p::AbstractParamCollection)::ComponentArray 
-    glb = ComponentArray(
-        x = ComponentArray( # we add the 'x' to mimic the ABM syntax where agn.u.glb is a reference to the actual glbinstance
-            X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
-            C_W = (p.glb.C_W) # external stressor concentrations
-        )
-    )
-
-    agn = init_substates_agent()
-
     return ComponentArray(
-        glb = glb,
-        agn = agn
+        glb = init_substates_global(p),
+        agn = init_substates_agent(p)
     )
 end
 
@@ -69,15 +80,16 @@ function abstractsimulator(
         simout = sol_to_df(sol) # convert solution to dataframe
         return simout
     end
-
-    if returntype == odesolution
-        return sol
-    end
-
+    
     if returntype == matrix
-        simout = sol_to_mat(sol)
+        simout = sol_to_mat(sol) # convert solution to matrix
         return simout
     end
+
+    if returntype == odesolution
+        return sol # directly return the ODESolution object
+    end
+
 end
 
 """
@@ -93,7 +105,7 @@ Run the DEBBase model from a `DEBParamCollection` instance. <br>
 """
 function simulator(
     p::DEBParamCollection; 
-    model = DEB!,
+    model = DEBODE!,
     AgentParamType::DataType = AgentParams,
     kwargs...
     )
@@ -107,23 +119,6 @@ function simulator(
         reltol = 1e-6,
         kwargs...
         )
-end
-
-"""
-    simulator(
-        p::Ref{DEBParamCollection};
-        saveat = 1,
-        kwargs...
-        )
-Run the DEBBase model from a reference to `DEBParamCollection`.
-"""
-function simulator(
-    p::Ref{DEBParamCollection};
-    saveat = 1,
-    kwargs...
-    )
-
-    return simulator(p.x; saveat = saveat, abstol = abstol, reltol = reltol, kwargs...) # run simulation
 end
 
 
@@ -154,29 +149,29 @@ macro replicates(simcall::Expr, nreps::Int64)
 end
 
 
-"""
-    sweep(simcall::Expr, component::AbstractParams, param::Symbol, range::Union{U,AbstractVector}) where {U <: UnitRange}
-
-Perform a parameter sweep over a single parameter. 
-
-- `simcall::Expr`: expression to evaluate a single iteration.
-- `component::AbstractParams`: instance of a parameter struct which contains the parameter to be screened.
-- `param::Symbol`: parameter to be screened.
-- `range`: parameter range
-
-----
-
-Example:
-
-    theta = DEBParamCollection() # use default parameters 
-    theta.spc.Z = Truncated(Normal(1, 0.05), 0, Inf) # include agent variability
-
-    yhat = sweep(
-        :(@replicates simulator(theta) 10), # evaluate 10 replicates per iteration
-        theta.spc, :Idot_max_rel, # screen parameter Idot_max_rel contained in theta.spc
-        range(10, 25, length = 10) # evaluate 10 values between 10 and 25
-        )
-"""
+#"""
+#    sweep(simcall::Expr, component::AbstractParams, param::Symbol, range::Union{U,AbstractVector}) where {U <: UnitRange}
+#
+#Perform a parameter sweep over a single parameter. 
+#
+#- `simcall::Expr`: expression to evaluate a single iteration.
+#- `component::AbstractParams`: instance of a parameter struct which contains the parameter to be screened.
+#- `param::Symbol`: parameter to be screened.
+#- `range`: parameter range
+#
+#----
+#
+#Example:
+#
+#    theta = DEBParamCollection() # use default parameters 
+#    theta.spc.Z = Truncated(Normal(1, 0.05), 0, Inf) # include agent variability
+#
+#    yhat = sweep(
+#        :(@replicates simulator(theta) 10), # evaluate 10 replicates per iteration
+#        theta.spc, :Idot_max_rel, # screen parameter Idot_max_rel contained in theta.spc
+#        range(10, 25, length = 10) # evaluate 10 values between 10 and 25
+#        )
+#"""
 #macro sweep(
 #    simcall::Expr, 
 #    component::A,

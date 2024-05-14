@@ -14,7 +14,7 @@ using StaticArrays
 using StatsBase
 
 include("Structures.jl")
-export GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
+export AbstractABM, AbstractAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
 include("IO.jl")
 export setproperty!, isolate_pmoas!, set_equal!
@@ -25,7 +25,7 @@ include("ModelFunctions.jl")
 export sig, clipneg
 
 include("Simulators.jl")
-export abstractsimulator, returntypes, simulator, @replicates
+export init_substates_agent, init_substates_global, abstractsimulator, returntypes, simulator, @replicates
 
 include("ImpliedTraits.jl")
 
