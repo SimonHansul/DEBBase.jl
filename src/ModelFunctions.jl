@@ -44,7 +44,7 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
     t::Real
     ) 
     
-    du.I_emb = sig(
+    du.agn.I_emb = sig(
         u.agn.X_emb, # uptake from vitellus depends on mass of vitellus
         0., # the switch occurs when vitellus is used up 
         0., # when the vitellus is used up, there is no uptake
@@ -52,14 +52,14 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
         beta = 1e20 # for switches around 0, we need very high beta values
         )
 
-    du.I_p = sig(
+    du.agn.I_p = sig(
         u.agn.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
         functional_response(du, u, p, t) * p.agn.Idot_max_rel * (Complex(u.agn.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
         0.; # while there is still vitellus left, there is no uptake from the external resource
         beta = 1e20 # again we have a switch around 0, requiring very high beta
         )
-    du.I = du.I_emb + du.I_p
+    du.agn.I = du.agn.I_emb + du.agn.I_p
 end
 
 """
@@ -71,7 +71,7 @@ Assimilation rate
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real) 
-    du.A = du.I * p.spc.eta_IA * u.agn.y_A
+    du.agn.A = du.agn.I * p.spc.eta_IA * u.agn.y_A
 end
 
 """
@@ -83,7 +83,7 @@ Somatic maintenance rate
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real) 
-    du.M = u.agn.S * p.spc.k_M * u.agn.y_M
+    du.agn.M = u.agn.S * p.spc.k_M * u.agn.y_M
 end
 
 """
@@ -96,7 +96,7 @@ Maturity maintenance rate
     p::AbstractParamCollection,
     t::Real
     ) 
-    du.J = u.agn.H * p.spc.k_J * u.agn.y_M
+    du.agn.J = u.agn.H * p.spc.k_J * u.agn.y_M
 end
 
 """
@@ -109,7 +109,7 @@ Positive somatic growth
     p::AbstractParamCollection,
     t::Real
     ) 
-    return p.spc.eta_AS * u.agn.y_G * (p.spc.kappa * du.A - du.M)
+    return p.spc.eta_AS * u.agn.y_G * (p.spc.kappa * du.agn.A - du.agn.M)
 end
 
 """
@@ -122,7 +122,7 @@ Negative somatic growth
     p::AbstractParamCollection,
     t::Real
     ) 
-    return -(du.M / p.spc.eta_SA - p.spc.kappa * du.A)
+    return -(du.agn.M / p.spc.eta_SA - p.spc.kappa * du.agn.A)
 end
 
 function Sdot(
@@ -132,8 +132,8 @@ function Sdot(
     t::Real
     ) 
     return sig(
-        p.spc.kappa * du.A, # growth depends on maintenance coverage
-        du.M, # switch occurs based on maintenance costs
+        p.spc.kappa * du.agn.A, # growth depends on maintenance coverage
+        du.agn.M, # switch occurs based on maintenance costs
         Sdot_negative(du, u, p, t), # left of the threshold == maintenance costs cannot be covered == negative growth
         Sdot_positive(du, u, p, t) # right of the threshold == maintenance costs can be covered == positive growth
     )
@@ -149,7 +149,7 @@ Somatic growth rate, including application of shrinking equation.
     p::AbstractParamCollection,
     t::Real
     ) 
-    du.S = Sdot(du, u, p, t)
+    du.agn.S = Sdot(du, u, p, t)
 end
 
 """
@@ -168,10 +168,10 @@ mortality or embryonic hazard (TBD).
     p::AbstractParamCollection,
     t::Real
     ) 
-    du.H = sig(
+    du.agn.H = sig(
         u.agn.H, # maturation depends on maturity
         p.agn.H_p, # switch occurs at maturity at puberty H_p
-        clipneg(((1 - p.spc.kappa) * du.A) - du.J), # maturation for embryos and juveniles
+        clipneg(((1 - p.spc.kappa) * du.agn.A) - du.agn.J), # maturation for embryos and juveniles
         0., # maturation for adults
     )
 end
@@ -188,11 +188,11 @@ This way, we obtain H_b as an implied trait and can use it later (for example in
     p::AbstractParamCollection,
     t::Real
     ) 
-    du.H_b = DEBBase.sig(
+    du.agn.H_b = sig(
         u.agn.X_emb, # estimate depends on embryonic state
         0., # switch occurs when vitellus is gone
         0., # post-embryonic: H_b stays fixed
-        du.H # embryonic: H_b tracks H
+        du.agn.H # embryonic: H_b tracks H
     )
 end
 
@@ -206,11 +206,11 @@ Reproduction rate.
     p::AbstractParamCollection,
     t::Real
     ) 
-    du.R = sig(
+    du.agn.R = sig(
         u.agn.H, # reproduction depends on maturity
         p.agn.H_p, # switch occurs at maturity at puberty H_p
         0., # reproduction for embryos and juveniles
-        clipneg(u.agn.y_R * p.spc.eta_AR * ((1 - p.spc.kappa) * du.A - du.J)) # reproduction for adults
+        clipneg(u.agn.y_R * p.spc.eta_AR * ((1 - p.spc.kappa) * du.agn.A - du.agn.J)) # reproduction for adults
     )
 end
 
@@ -247,11 +247,11 @@ If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-speci
     ) 
 
     for z in eachindex(u.glb.x.C_W)
-        @inbounds du.D_G[z] = sig(u.agn.X_emb, 0., p.spc.k_D_G[z] * (u.glb.x.C_W[z] - u.D_G[z]), 0.)
-        @inbounds du.D_M[z] = sig(u.agn.X_emb, 0., p.spc.k_D_M[z] * (u.glb.x.C_W[z] - u.D_M[z]), 0.)
-        @inbounds du.D_A[z] = sig(u.agn.X_emb, 0., p.spc.k_D_A[z] * (u.glb.x.C_W[z] - u.D_A[z]), 0.)
-        @inbounds du.D_R[z] = sig(u.agn.X_emb, 0., p.spc.k_D_R[z] * (u.glb.x.C_W[z] - u.D_R[z]), 0.)
-        @inbounds du.D_h[z] = sig(u.agn.X_emb, 0., p.spc.k_D_h[z] * (u.glb.x.C_W[z] - u.D_h[z]), 0.)
+        @inbounds du.agn.D_G[z] = sig(u.agn.X_emb, 0., p.spc.k_D_G[z] * (u.glb.x.C_W[z] - u.agn.D_G[z]), 0.)
+        @inbounds du.agn.D_M[z] = sig(u.agn.X_emb, 0., p.spc.k_D_M[z] * (u.glb.x.C_W[z] - u.agn.D_M[z]), 0.)
+        @inbounds du.agn.D_A[z] = sig(u.agn.X_emb, 0., p.spc.k_D_A[z] * (u.glb.x.C_W[z] - u.agn.D_A[z]), 0.)
+        @inbounds du.agn.D_R[z] = sig(u.agn.X_emb, 0., p.spc.k_D_R[z] * (u.glb.x.C_W[z] - u.agn.D_R[z]), 0.)
+        @inbounds du.agn.D_h[z] = sig(u.agn.X_emb, 0., p.spc.k_D_h[z] * (u.glb.x.C_W[z] - u.agn.D_h[z]), 0.)
         
         #@inbounds du.D_G[z] = sig(u.X_emb, 0., p.spc.k_D_G[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_G[z]) - u.D_G[z] * (du.S / u.S), 0.)
         #@inbounds du.D_M[z] = sig(u.X_emb, 0., p.spc.k_D_M[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_M[z]) - u.D_M[z] * (du.S / u.S), 0.)
@@ -300,7 +300,7 @@ end
     p::AbstractParamCollection,
     t::Real
     ) 
-    du.X_emb = -du.agn.I_emb
+    du.agn.X_emb = -du.agn.I_emb
 end
 
 @inline function y!(

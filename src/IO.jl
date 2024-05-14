@@ -16,11 +16,12 @@ Extract the column names of output data frame from a ODE solution object.
 This function assumes that ComponentArrays is used.
 """
 function extract_colnames(sol::O)::Vector{Symbol} where {O <:ODESolution}
-    let u = sol.u[1]
-        colnames = []
+    let u = sol.u[1], colnames = []
 
-        for k in keys(u)
-            push!(colnames, extract_colnames(u[k], k))
+        for uarr in (u.glb.x, u.agn)
+            for k in keys(uarr)
+                push!(colnames, extract_colnames(uarr[k], k))
+            end
         end
 
         colnames = vcat([:t], colnames...)
@@ -29,13 +30,21 @@ function extract_colnames(sol::O)::Vector{Symbol} where {O <:ODESolution}
 end
 
 """
+    sol_to_mat(sol::O)::Matrix{Float64}
+Convert ODE solution object to matrix.
+"""
+function sol_to_mat(sol::O)::Matrix{Float64} where O <: ODESolution
+    return hcat(sol.t, hcat(sol.u...)')
+end
+
+"""
 Convert ODE solution object to output data frame.
 $(TYPEDSIGNATURES)
 """
 function sol_to_df(sol::O)::DataFrame where O <: ODESolution
     simout = DataFrame(
-        hcat(sol.t, hcat(sol.u...)'), # ODE output converted to wide matrix
-        extract_colnames(sol)
+        sol_to_mat(sol), # ODE output converted to matrix
+        extract_colnames(sol) # column names inferred from component array keys
     )
     return simout
 end

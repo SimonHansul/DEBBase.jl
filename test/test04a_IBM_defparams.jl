@@ -14,6 +14,7 @@
     using Parameters, DEBParamStructs
     using ComponentArrays
     include("../src/ModelFunctions.jl")
+    include("../src/Simulators.jl")
 end
 
 #=
@@ -44,13 +45,45 @@ which also tests the initalization of agent params and induction of individual v
 end
 
 #=
-## Implementing an Agent object. 
+## Model object
+=#
+
+
+abstract type AbstractABM end
+
+"""
+Definition of basic ABM object. <br>
+Currently assumes that only a single species of type `AgentType` is simulated at a time.
+"""
+@with_kw mutable struct ABM <: AbstractABM
+    p::AbstractParamCollection # parameter collection
+    agents # agents
+    t::Float64 # current simulation time
+    dt::Float64 # timestep
+    unique_id_count::Int64 # cumulative number of agents in the simulation
+
+    """
+    Instantiate ABM from param collection `p`. 
+    """
+    function ABM(theta::A; AgentType = BaseAgent, dt = 1/24) where A <: AbstractParamCollection
+        abm = new() # initialize ABM object
+        abm.p= p # 
+        abm.t = 0.
+        abm.dt = dt
+
+        abm.agents = init_pop(p)
+
+        return abm
+    end
+end
+
+
+#=
+## Agent Object
 =#
 
 using ComponentArrays
 abstract type AbstractAgent end
-
-using DEBBase
 
 """
 DEBBase Agent. <br>
@@ -84,9 +117,9 @@ end
     initialize_statevars!(agent::AbstractAgent)
 Initialize agent-level state variables.
 """
-function initialize_statevars!(agent::AbstractAgent)
+function initialize_statevars!(agent::AbstractAgent, abm::AbstractABM)::Nothing
+
     agent.u = ComponentArray( # initial states
-        #X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
         X_emb = Float64(p.agn.X_emb_int), # initial mass of vitellus
         S = Float64(p.agn.X_emb_int * 0.001), # initial structure is a small fraction of initial reserve // mass of vitellus
         H = Float64(0.), # maturity
@@ -98,7 +131,6 @@ function initialize_statevars!(agent::AbstractAgent)
         A = Float64(0.), # assimilation
         M = Float64(0.), # somatic maintenance
         J = Float64(0.), # maturity maintenance 
-        #C_W = (p.glb.C_W), # external stressor concentrations
         D_G = MVector{length(p.spc.k_D_G), Float64}(zeros(length(p.spc.k_D_G))), # scaled damage | growth efficiency
         D_M = MVector{length(p.spc.k_D_M), Float64}(zeros(length(p.spc.k_D_M))), # scaled damage | maintenance costs 
         D_A = MVector{length(p.spc.k_D_A), Float64}(zeros(length(p.spc.k_D_A))), # scaled damage | assimilation efficiency
@@ -111,6 +143,8 @@ function initialize_statevars!(agent::AbstractAgent)
         h_z = Float64(0.), # hazard rate | chemical stressors
         h_S = Float64(0.)  # hazard rate | starvation
     )
+
+    return nothing
 end
 
 """
@@ -138,36 +172,6 @@ function init_pop(p::DEBParamCollection; AgentType = BaseAgent)
 
     return agents
 end
-
-abstract type AbstractABM end
-
-"""
-Definition of basic ABM object. <br>
-Currently assumes that only a single species of type `AgentType` is simulated at a time.
-"""
-@with_kw mutable struct ABM <: AbstractABM
-    p::AbstractParamCollection # parameter collection
-    agents # agents
-    t::Float64 # current simulation time
-    dt::Float64 # timestep
-    unique_id_count::Int64 # cumulative number of agents in the simulation
-
-    """
-    Instantiate ABM from param collection `p`. 
-    """
-    function ABM(theta::A; AgentType = BaseAgent, dt = 1/24) where A <: AbstractParamCollection
-        abm = new() # initialize ABM object
-        abm.p= p # 
-        abm.t = 0.
-        abm.dt = dt
-
-        abm.agents = init_pop(p)
-
-        return abm
-    end
-end
-
-
 
 
 #=

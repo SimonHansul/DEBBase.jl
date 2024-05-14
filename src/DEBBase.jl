@@ -25,7 +25,7 @@ include("ModelFunctions.jl")
 export sig, clipneg
 
 include("Simulators.jl")
-export abstractsimulator, simulator, @replicates
+export abstractsimulator, returntypes, simulator, @replicates
 
 include("ImpliedTraits.jl")
 

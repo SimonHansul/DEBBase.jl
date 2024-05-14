@@ -35,14 +35,6 @@ Testing the default parameters
     @test isapprox(maximum(yhat.S), DEBBase.calc_S_max(p.spc), rtol = 0.1)
 end;
 
-AgentParamType = AgentParams
-p.agn = AgentParamType(p.spc) # initialize agent parameters incl. individual variability
-    
-u = DEBBase.initialize_statevars(p)
-model = DEBBase.DEB!
-prob = ODEProblem(model, u, (0, p.glb.t_max), p) # define the problem
-sol = solve(prob, Euler(), dt = 1/24) # get solution to the IVP
-
 #=
 Basic test of @replicates macro
 =#
@@ -79,4 +71,3 @@ Basic test of @replicates macro
     @test cvs.H > 0.05
     @test cvs.R > 0.05
 end;
-

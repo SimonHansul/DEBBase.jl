@@ -1,61 +1,83 @@
-"""
-    initialize_statevars(p::AbstractParamCollection, pagnt::ComponentVector{Float64})::ComponentArray 
-Initialize the component vector of state variables, `u`, based on common parameters `p` and agent parameters `pagnt`.
-"""
-function initialize_statevars(p::AbstractParamCollection)::ComponentArray 
+function init_substates_agent()
+    return ComponentArray( # initial states
+        X_emb = Float64(p.agn.X_emb_int), # initial mass of vitellus
+        S = Float64(p.agn.X_emb_int * 0.001), # initial structure is a small fraction of initial reserve // mass of vitellus
+        H = Float64(0), # maturity
+        H_b = Float64(0), # maturity at birth (will be derived from model output)
+        R = Float64(0), # reproduction buffer
+        I_emb = Float64(0), # ingestion from vitellus
+        I_p = Float64(0), # ingestion from external food resource
+        I = Float64(0), # total ingestion
+        A = Float64(0), # assimilation
+        M = Float64(0), # somatic maintenance
+        J = Float64(0), # maturity maintenance 
 
-    glb = ComponentArray(
-        X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
-        C_W = (p.glb.C_W), # external stressor concentrations
-    )
+        D_G = MVector{length(p.spc.k_D_G), Float64}(zeros(length(p.spc.k_D_G))), # scaled damage | growth efficiency
+        D_M = MVector{length(p.spc.k_D_M), Float64}(zeros(length(p.spc.k_D_M))), # scaled damage | maintenance costs 
+        D_A = MVector{length(p.spc.k_D_A), Float64}(zeros(length(p.spc.k_D_A))), # scaled damage | assimilation efficiency
+        D_R = MVector{length(p.spc.k_D_R), Float64}(zeros(length(p.spc.k_D_R))), # scaled damage | reproduction efficiency
+        D_h = MVector{length(p.spc.k_D_h), Float64}(zeros(length(p.spc.k_D_h))), # scaled damage | hazard rate
 
-    return ComponentArray(
-        glb = glb,
-        agn = ComponentArray( # initial states
-            X_emb = Float64(p.agn.X_emb_int), # initial mass of vitellus
-            S = Float64(p.agn.X_emb_int * 0.001), # initial structure is a small fraction of initial reserve // mass of vitellus
-            H = Float64(0.), # maturity
-            H_b = 0., # maturity at birth (will be derived from model output)
-            R = Float64(0.), # reproduction buffer
-            I_emb = Float64(0.), # ingestion from vitellus
-            I_p = Float64(0.), # ingestion from external food resource
-            I = Float64(0.), # total ingestion
-            A = Float64(0.), # assimilation
-            M = Float64(0.), # somatic maintenance
-            J = Float64(0.), # maturity maintenance 
-        
-            D_G = MVector{length(p.spc.k_D_G), Float64}(zeros(length(p.spc.k_D_G))), # scaled damage | growth efficiency
-            D_M = MVector{length(p.spc.k_D_M), Float64}(zeros(length(p.spc.k_D_M))), # scaled damage | maintenance costs 
-            D_A = MVector{length(p.spc.k_D_A), Float64}(zeros(length(p.spc.k_D_A))), # scaled damage | assimilation efficiency
-            D_R = MVector{length(p.spc.k_D_R), Float64}(zeros(length(p.spc.k_D_R))), # scaled damage | reproduction efficiency
-            D_h = MVector{length(p.spc.k_D_h), Float64}(zeros(length(p.spc.k_D_h))), # scaled damage | hazard rate
-            y_G = Float64(1.), # relative response | growth efficiency
-            y_M = Float64(1.), # relative response | maintenance costs 
-            y_A = Float64(1.), # relative response | assimilation efficiency
-            y_R = Float64(1.), # relative response | reproduction efficiency
-            h_z = Float64(0.), # hazard rate | chemical stressors
-            h_S = Float64(0.)  # hazard rate | starvation
-            )
+        y_G = Float64(1.), # relative response | growth efficiency
+        y_M = Float64(1.), # relative response | maintenance costs 
+        y_A = Float64(1.), # relative response | assimilation efficiency
+        y_R = Float64(1.), # relative response | reproduction efficiency
+        h_z = Float64(0.), # hazard rate | chemical stressors
+        h_S = Float64(0.)  # hazard rate | starvation
     )
 end
 
+
+"""
+    initialize_statevars(p::AbstractParamCollection, pagnt::ComponentVector{Float64})::ComponentArray 
+For initialization of ODE simulator, initialize the component vector of state variables, `u`, based on common parameters `p`.
+"""
+function initialize_statevars(p::AbstractParamCollection)::ComponentArray 
+    glb = ComponentArray(
+        x = ComponentArray( # we add the 'x' to mimic the ABM syntax where agn.u.glb is a reference to the actual glbinstance
+            X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
+            C_W = (p.glb.C_W) # external stressor concentrations
+        )
+    )
+
+    agn = init_substates_agent()
+
+    return ComponentArray(
+        glb = glb,
+        agn = agn
+    )
+end
+
+@enum ReturnType dataframe odesolution matrix # possible return types
 
 function abstractsimulator(
     p::AbstractParamCollection,
     model, 
     AgentParamType::DataType;
     alg = Tsit5(),
+    returntype::ReturnType = dataframe,
     kwargs...
-    )::DataFrame
+    )::Union{DataFrame,ODESolution}
 
     p.agn = AgentParamType(p.spc) # initialize agent parameters incl. individual variability
     
     u = initialize_statevars(p)
     prob = ODEProblem(model, u, (0, p.glb.t_max), p) # define the problem
     sol = solve(prob, alg; kwargs...) # get solution to the IVP
-    simout = sol_to_df(sol) # convert solution to dataframe
-  
-    return simout
+
+    if returntype == dataframe
+        simout = sol_to_df(sol) # convert solution to dataframe
+        return simout
+    end
+
+    if returntype == odesolution
+        return sol
+    end
+
+    if returntype == matrix
+        simout = sol_to_mat(sol)
+        return simout
+    end
 end
 
 """
@@ -88,8 +110,12 @@ function simulator(
 end
 
 """
+    simulator(
+        p::Ref{DEBParamCollection};
+        saveat = 1,
+        kwargs...
+        )
 Run the DEBBase model from a reference to `DEBParamCollection`.
-$(TYPEDSIGNATURES)
 """
 function simulator(
     p::Ref{DEBParamCollection};
@@ -172,8 +198,7 @@ Example:
 
 
 #"""
-# This macro is currently outcommented because it turned out that models defined with @compose
-# execute very slowly.
+# NOTE : This macro is currently outcommented because it turned out that models defined with @compose execute very slowly.
 # Also, the usefulness of @compose has to be critically evaluated.
 #
 #    @compose(derivs)
