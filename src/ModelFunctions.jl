@@ -44,7 +44,7 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
     t::Real
     ) 
     
-    du.agn.I_emb = sig(
+    du.agn.I_emb = sig( # uptake from vitellus
         u.agn.X_emb, # uptake from vitellus depends on mass of vitellus
         0., # the switch occurs when vitellus is used up 
         0., # when the vitellus is used up, there is no uptake
@@ -52,7 +52,7 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
         beta = 1e20 # for switches around 0, we need very high beta values
         )
 
-    du.agn.I_p = sig(
+    du.agn.I_p = sig( # uptake from external resource p
         u.agn.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
         functional_response(du, u, p, t) * p.agn.Idot_max_rel * (Complex(u.agn.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
@@ -63,8 +63,7 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
 end
 
 """
-Assimilation rate
-
+Assimilation flux
 """
 @inline function Adot!(
     du::ComponentArray,
@@ -75,8 +74,7 @@ Assimilation rate
 end
 
 """
-Somatic maintenance rate
-
+Somatic maintenance flux
 """
 @inline function Mdot!(
     du::ComponentArray,
@@ -87,7 +85,7 @@ Somatic maintenance rate
 end
 
 """
-Maturity maintenance rate
+Maturity maintenance flux
 
 """
 @inline function Jdot!(
@@ -101,7 +99,6 @@ end
 
 """
 Positive somatic growth
-
 """
 @inline function Sdot_positive(
     du::ComponentArray,
@@ -114,7 +111,6 @@ end
 
 """
 Negative somatic growth
-()
 """
 @inline function Sdot_negative(
     du::ComponentArray,
@@ -140,8 +136,7 @@ function Sdot(
 end
 
 """
-Somatic growth rate, including application of shrinking equation.
-
+Somatic growth, including application of shrinking equation.
 """
 @inline function Sdot!(
     du::ComponentArray,
@@ -153,14 +148,13 @@ Somatic growth rate, including application of shrinking equation.
 end
 
 """
-Maturation rate. 
-Maturity is dissipated energy and can therefore not be burned to cover maintenance costs. <br>
+Maturation flux. 
+Maturity is dissipated energy and can therefore not be burned to cover maintenance costs. 
 Currently there are no consequences for an organism not covering maturity maintenance. 
 If this turns out to be an issue, we might consider to add a damage pool D_H,
 where the amount of maturity maintenance that could not be covered is accumulated. 
 This might then lead to a fitness penalty depending on D_H, for example in the form of additional 
 mortality or embryonic hazard (TBD). 
-
 """
 @inline function Hdot!(
     du::ComponentArray,
@@ -179,7 +173,7 @@ end
 """
 Update the current estimate of H_b. 
 The current estimate of maturity at birth is equal to current maturity for embryos, 
-and will be fixed to the current value upon completion of embryonic development. \n
+and will be fixed to the current value upon completion of embryonic development.
 This way, we obtain H_b as an implied trait and can use it later (for example in `abj()`).
 """
 @inline function H_bdot!(
@@ -197,8 +191,7 @@ This way, we obtain H_b as an implied trait and can use it later (for example in
 end
 
 """
-Reproduction rate.
-
+Reproduction flux.
 """
 @inline function Rdot!(
     du::ComponentArray,
@@ -216,7 +209,6 @@ end
 
 """
 Calculation of the total dissipation flux, equal to the sum of maintenance costs and overheads paid for assimilation, mobilization, growth and reproduction.
-
 """
 function Qdot!(
     du::ComponentArray,
@@ -237,7 +229,6 @@ end
 """
 TK for spc-TKTD model, including effect of surface area to volume ratio and dilution by growth. 
 If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-specific. 
-
 """
 @inline function Ddot!(
     du::ComponentVector,
@@ -310,7 +301,7 @@ end
     t::Real
     ) 
 
-    @inbounds u.agn.y_G = prod([p.spc.drc_functs_G[z](u.agn.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.glb.x.C_W)]) # combined relative responses for sublethal effects
+    @inbounds u.agn.y_G = prod([p.spc.drc_functs_G[z](u.agn.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.glb.x.C_W)]) # combined relative responses for sublethal effects per PMoA
     @inbounds u.agn.y_M = prod([p.spc.drc_functs_M[z](u.agn.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.glb.x.C_W)])
     @inbounds u.agn.y_A = prod([p.spc.drc_functs_A[z](u.agn.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.glb.x.C_W)])
     @inbounds u.agn.y_R = prod([p.spc.drc_functs_R[z](u.agn.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.glb.x.C_W)])

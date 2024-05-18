@@ -2,6 +2,9 @@ abstract type AbstractSpeciesParams <: AbstractParams end
 abstract type AbstractAgent end
 abstract type AbstractABM end
 
+#=
+## General structures
+=#
 
 """
 `GlobalParams` contain the global parameters (simulated timespan `t_max`, nutrient influx rate `Xdot_in`, etc.)
@@ -12,7 +15,7 @@ abstract type AbstractABM end
     Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default SpeciesParams
     V_patch::Float64 = 0.05 # volume of a patch (L) (or the entire similated environment)
     C_W::Vector{Float64} = [0.] # external chemical concentrations
-    AgentType::DataType = AbstractAgent # the type of agent simulated
+    AgentType::DataType = BaseAgent # the type of agent simulated
 end
 
 """
@@ -153,3 +156,71 @@ Initialize the default parameter collection with `DEBParamCollection()`.
 end
 
 
+#=
+## ABM structures
+=#
+
+"""
+Definition of basic ABM object. <br>
+Currently assumes that only a single species of type `AgentType` is simulated at a time.
+"""
+@with_kw mutable struct ABM <: AbstractABM
+    p::AbstractParamCollection # parameter collection
+    agents # agents
+    t::Float64 # current simulation time
+    dt::Float64 # timestep
+    unique_id_count::Int64 # cumulative number of agents in the simulation
+    u::ComponentVector # global state variables
+    du::ComponentVector # global derivatives
+
+
+    """
+    Instantiate ABM from param collection `p`. 
+    """
+    function ABM(p::A; dt = 1/24) where A <: AbstractParamCollection
+        abm = new() # initialize ABM object
+        abm.p = p # store the parameters
+        abm.t = 0. # initialize simulation time
+        abm.dt = dt # timestep is given as keyword argument
+
+        abm.u = init_substates_global(p) # initialize the global substates
+        abm.du = similar(abm.u) # initialize the global derivatives
+        abm.du.X_p = 0.
+        abm.du.C_W .= 0.
+
+        initialize_agents!(abm) # initailize the population of agents
+
+        return abm
+    end
+end
+
+"""
+DEBBase Agent.
+Each agent owns a parameter collection, state variables and derivatives. 
+The states and derivatives include referencs to the global states and derivatives.
+"""
+mutable struct BaseAgent <: AbstractAgent
+    p::AbstractParamCollection
+    u::ComponentVector
+    du::ComponentVector
+    unique_id::Int64
+
+    """
+        BaseAgent(p::AbstractParamCollection, unique_id::Int64)
+    
+    Initialize a base agent from parameters. 
+    """
+    function BaseAgent(abm::ABM)
+        a = new()
+
+        a.unique_id = abm.unique_id_count # identifier
+        a.p = copy(abm.p) # parameters TODO: avoid copying everything
+        a.p.agn = AgentParams(a.p.spc) # assign agent-level parameters (induces individual variability)
+        initialize_statevars!(a, abm) # initialize agent-level state variables
+        a.du = similar(a.u) # initialize agent-level derivatives
+        a.du.glb = Ref(abm.du) # reference to global derivatives
+        a.du.agn = similar(abm.u.agn) # derivatives of agent substates
+        
+        return a
+    end
+end

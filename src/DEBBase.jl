@@ -14,12 +14,13 @@ using StaticArrays
 using StatsBase
 
 include("Structures.jl")
-export AbstractABM, AbstractAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
+export AbstractABM, ABM, AbstractAgent, BaseAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
+
+include("Initialize.jl")
+export init_substates_agent, init_substates_global, initialize_statevars, initialize_statevars!, initialize_agents!
 
 include("IO.jl")
-export setproperty!, isolate_pmoas!, set_equal!
-
-export relative_response
+export setproperty!, isolate_pmoas!, set_equal!, relative_response
 
 include("ModelFunctions.jl")
 export sig, clipneg
@@ -31,7 +32,7 @@ include("ImpliedTraits.jl")
 
 @compile_workload begin
     # precompile the default simulator
-    yhat = simulator(DEBParamCollection())
+    #yhat = simulator(DEBParamCollection())
 end
 
 end # module DEBBase
