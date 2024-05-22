@@ -18,7 +18,7 @@ Generic in terms of state variables and parameters, i.e. we don't need to make a
     using ComponentArrays
     using StaticArrays
     using OrdinaryDiffEq
-
+    using Agents
     using DEBBase
     using Parameters, DEBParamStructs
     using Revise
@@ -27,21 +27,9 @@ Generic in terms of state variables and parameters, i.e. we don't need to make a
     include("../src/IO.jl");
 end
 
-#=
-## Implementation strategy 
-
-- Ignore ODE simulation, everything is centered around ABM 
-- Re-implement ODE later
-    - Define ODESimulator, which initializes a single agent and uses an ODE solver
-=#
-
-#=
-Agent step
-=#
-
 
 """
-    step!(agent::AbstractAgent, abm::AbstractABM; odefuncs::Vector{Function}, rulefuncs::Vector{Function})
+    step!(agent::AbstractAgent, abm::DEBABM; odefuncs::Vector{Function}, rulefuncs::Vector{Function})
 
 Definition of agent step. \n
 This definition is generic, so that the function body does not have to be modified 
@@ -59,15 +47,16 @@ The definition of this system can be modified through the keyword argument `odef
 Args:
 
 - `agent::AbstractAgent`: Any agent object
-- `abm::AbstractABM`: Any ABM object
+- `abm::DEBABM`: Any ABM object
 
 Kwargs:
 
 - `odefuncs::Vector{Function}`: Vector of ODE-based functions
 - `rulefuncs::Vector{Function}`: Vector of rule-based functions
 """
-function step!(
-    agent::BaseAgent, abm::ABM, 
+function agent_step!(
+    agent::DEBAgent, 
+    abm::DEBABM, 
     odefuncs = [
         y!, 
         Idot!, 
@@ -86,7 +75,8 @@ function step!(
         reproduce!,
         die!
     ]
-    )
+    )::Nothing
+
     du, u, p = agent.du, agent.u, agent.p # unpack agent substates, derivatives and parameters
     t = abm.t
 
@@ -99,89 +89,77 @@ function step!(
     end
 
     map!(abm.euler, u.agn, du.agn, u.agn) # apply the euler scheme to agent substates
+
+    return nothing
 end
+
 
 """
     record!(agent::BaseAgent, abm::ABM)
 
 Record agent data (only if `p.glb.recordagentvars == true`).
 """
-function record!(agent::BaseAgent, abm::ABM)
+function record!(agent::AbstractAgent, abm::DEBABM)::Nothing
     if abm.p.glb.recordagentvars && isapprox(abm.t%abm.saveat, 0, atol = abm.dt)
         push!(abm.aout, (t = abm.t, AgentID = agent.AgentID, u = copy(agent.u.agn)))
     end
+
+    return nothing
 end
 
-function step!(abm::ABM; sysfuncs = [C_Wdot!, X_pdot_glb!])
+
+"""
+    step!(abm::ABM; odefuncs = [C_Wdot!, X_pdot_glb!], rulefuncs = [])::Nothing
+
+Execute an ABM step. 
+
+First, global functions are executed. 
+As for the agent step, these are divided into ode-based functions and rule-based functions with the corresponding signatures: 
+
+- `odefunc(du, u, p, t)::Nothing`
+- `rulefunc(abm)::Nothing`
+
+Secondly, the agent steps are executed.
+
+"""
+function model_step!(
+    abm::DEBABM; 
+    odefuncs = [C_Wdot_const!, X_pdot_chemstat!], 
+    rulefuncs = [])::Nothing
+
     du, u, p = abm.du, abm.u, abm.p
     t = abm.t
 
-    for func! in sysfuncs # execute global functions
+    for func! in odefuncs # execute global ode-based functions
         func!(du, u, p, t)
     end
 
-    for a in abm.agents 
-        step!(a, abm) # execute agent steps
+    for func! in rulefuncs # execute global rule-based functions
+        func!(abm)
+    end
+
+    for a in filter(a -> !a.dead, abm.agents) # for every living agent
+        agent_step!(a, abm) # execute agent step
         record!(a, abm) # record agent data
     end
+
+    abm.t += abm.dt
+
+    return nothing
 end
 
 
-using DEBBase
-using ProfileView
-using BenchmarkTools
-
-begin
-    """
-        update!(agent::AbstractAgent, abm::AbstractABM)
-    Update agent state by applying the Euler scheme.
-    """
-    function update!(agent::AbstractAgent, abm::AbstractABM)
-        for var in keys(agent.du.agn) # for every agent-level state variable
-            setproperty!(agent.u.agn, var, euler(getproperty(agent.du.agn, var), getproperty(agent.u.agn, var), abm.dt)) # update agent substates
-        end
-    end
-
-    #=
-    ## Test: Simulate agents independently
-    =#
-
-    using ProfileView
-    using DEBBase
-
-    p = DEBParamCollection()
-    abm = ABM(p)
-
-    @time begin    
-        p = DEBParamCollection()
-        p.glb.N0 = 100
-        p.glb.t_max = 56.
-        p.spc.Z = Truncated(Normal(1, 0.1), 0, Inf)
-        abm = ABM(p, dt = 1/24)
+p = DEBParamCollection()
 
 
-        aout = []
 
-        while abm.t <= abm.p.glb.t_max
-            for a in abm.agents
-                step!(a, abm)
-
-                if abm.p.glb.recordagentvars && isapprox(abm.t%abm.saveat, 0, atol = abm.dt)
-                    push!(aout, (t = abm.t, AgentID = a.AgentID, u = copy(a.u.agn)))
-                end
-            end
-            
-            abm.t += abm.dt # advance simulation time 
-        end
-    end
-end
-
-aout_df = DataFrame(hcat([[x.t, x.AgentID] for x in aout]...)', [:t, :AgentID]) |> 
-x-> hcat(x, DataFrame(hcat([a.u for a in aout]...)', extract_colnames(aout[1].u)))
+    StandardABM(
+    DEBAgent; 
+    agent_step! = agent_step!, 
+    model_step! = model_step!,
+    properties = DEBABM
+    )
 
 
-@df aout_df plot(
-    plot(:t, :S, group = :AgentID)
-)
 
-aout_df.AgentID |> unique
+

@@ -63,6 +63,8 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
         )
 
     du.agn.I = du.agn.I_emb + du.agn.I_p
+
+    return nothing
 end
 
 """
@@ -75,6 +77,8 @@ Assimilation flux
     t::Real)::Nothing
 
     du.agn.A = du.agn.I * p.spc.eta_IA * u.agn.y_A
+
+    return nothing
 end
 
 """
@@ -87,6 +91,8 @@ Somatic maintenance flux
     t::Real)::Nothing
 
     du.agn.M = u.agn.S * p.spc.k_M * u.agn.y_M
+
+    return nothing
 end
 
 """
@@ -101,6 +107,8 @@ Maturity maintenance flux
     )::Nothing
 
     du.agn.J = u.agn.H * p.spc.k_J * u.agn.y_M
+
+    return nothing
 end
 
 """
@@ -124,7 +132,7 @@ Negative somatic growth
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    )::Nothing 
+    )::Float64 
 
     return -(du.agn.M / p.spc.eta_SA - p.spc.kappa * du.agn.A)
 end
@@ -155,6 +163,8 @@ Somatic growth, including application of shrinking equation.
     )::Nothing
 
     du.agn.S = Sdot(du, u, p, t)
+
+    return nothing
 end
 
 """
@@ -179,6 +189,8 @@ mortality or embryonic hazard (TBD).
         clipneg(((1 - p.spc.kappa) * du.agn.A) - du.agn.J), # maturation for embryos and juveniles
         0., # maturation for adults
     )
+
+    return nothing
 end
 
 """
@@ -200,6 +212,8 @@ This way, we obtain H_b as an implied trait and can use it later (for example in
         0., # post-embryonic: H_b stays fixed
         du.agn.H # embryonic: H_b tracks H
     )
+
+    return nothing
 end
 
 """
@@ -218,6 +232,8 @@ Reproduction flux.
         0., # reproduction for embryos and juveniles
         clipneg(u.agn.y_R * p.spc.eta_AR * ((1 - p.spc.kappa) * du.agn.A - du.agn.J)) # reproduction for adults
     )
+
+    return nothing
 end
 
 """
@@ -244,6 +260,8 @@ function Qdot!(
         Qdot_R = du.R * (1 - p.spc.eta_AR) / p.spc.eta_AR
         du.Q =  Qdot_A + Qdot_S + Qdot_C + Qdot_R + Mdot + Jdot + Hdot
     end
+
+    return nothing
 end
 
 """
@@ -265,6 +283,8 @@ Currently simply returns zeros because time-variable exposure is not yet impleme
     )::Nothing 
 
     du.glb.x.C_W = zeros(length(u.glb.x.C_W)) # constant exposure : derivative is 0
+
+    return nothing
 end
 
 
@@ -287,6 +307,8 @@ This function is useful if a single agent is simulated.
     )::Nothing 
 
     du.glb.x.X_p = p.glb.Xdot_in - du.agn.I_p
+
+    return nothing
 end
 
 """
@@ -307,6 +329,8 @@ Decrease of resource abundance due to ingestion by a single agent.
     )::Nothing
 
     du.glb.x.X_p = -du.agn.I_p
+
+    return nothing
 end
 
 @inline function X_embdot!(
@@ -317,6 +341,51 @@ end
     )::Nothing 
 
     du.agn.X_emb = -du.agn.I_emb
+
+    return nothing
+end
+
+"""
+    X_pdot_chemstat!(
+        du::ComponentVector,
+        u::ComponentVector,
+        p::AbstractParamCollection,
+        t::Real
+        )::Nothing 
+
+Change in environmental resource abundance for simulation of a chemostat.
+"""
+function X_pdot_chemstat!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::AbstractParamCollection,
+    t::Real
+    )::Nothing 
+
+    du.X_p = p.glb.Xdot_in - p.glb.k_V * u.X_p
+
+    return nothing
+end
+
+"""
+    C_Wdot_const!(
+        du::ComponentVector,
+        u::ComponentVector,
+        p::AbstractParamCollection,
+        t::Real
+        )::Nothing
+Constant concentration of external chemical stressor:
+"""
+function C_Wdot_const!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::AbstractParamCollection,
+    t::Real
+    )::Nothing
+
+    du.C_W = zeros(length(u.C_W))
+
+    return nothing
 end
 
 
@@ -345,6 +414,8 @@ If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-speci
         #
         #@inbounds du.D_h[z] = sig(u.X_emb, 0., p.spc.k_D_h[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_h[z]) - u.D_h[z] * (du.S / u.S), 0.)
     end
+
+    return nothing
 end
 
 @inline function y!(
@@ -360,6 +431,8 @@ end
     @inbounds u.agn.y_R = prod([p.spc.drc_functs_R[z](u.agn.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.glb.x.C_W)])
 
     @inbounds u.agn.h_z = sum([p.spc.drc_functs_h[z](u.agn.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.glb.x.C_W)]) # hazard rate
+
+    return nothing
 end
 
 """
@@ -381,8 +454,37 @@ function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float6
             p_bj, 
             p_b),
         p_j
-    )::Nothing
+    )
+
     return p
+end
+
+
+"""
+    reproduce_opportunistic!(agent::AbstractAgent, abm::DEBABM)::Nothing
+
+Reproduction according to an opportunistic reproduction strategy. 
+Offspring is created whenever there is enough energy in the reproduction buffer.
+"""
+function reproduce_opportunistic!(agent::AbstractAgent, abm::DEBABM)::Nothing
+    
+    let num_offspring = trunc(agent.R / agent.p.agn.X_emb_int) # calculate the number of offspring produced
+        for _ in 1:num_offspring # for the given number of offspring agents
+            offspring = abm.p.glb.AgentType(abm) # initialize a new agent
+            offpsring.cohort = agent.cohort + 1 # the offspring agent is part of a new cohort
+            push!(abm.agents, offspring) # add offspring to agents vector
+            agent.R -= agent.p.agn.X_emb_int # 
+        end
+        agent.cum_repro += num_offspring
+    end
+
+    return nothing
+end
+
+function die!(agent::AbstractAgent, abm::DEBABM)::Nothing
+    agent.dead = false
+
+    return nothing
 end
 
 """
@@ -390,7 +492,7 @@ end
 Definition of base model as a system of ordinary differential equations. 
 This model definition is suitable for simulating the life-history of a single organism in conjecture with DifferentialEquations.jl.
 """
-function DEBODE!(du, u, p, t)
+function DEBODE!(du, u, p, t)::Nothing
 
     #### stressor responses
     y!(du, u, p, t)
@@ -410,4 +512,6 @@ function DEBODE!(du, u, p, t)
     X_embdot!(du, u, p, t) # vitellus
     Ddot!(du, u, p, t) # damage
     C_Wdot!(du, u, p, t) # external stressor concentration  
+
+    return nothing
 end

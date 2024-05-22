@@ -61,10 +61,10 @@ function initialize_statevars(p::AbstractParamCollection)::ComponentArray
 end
 
 """
-    initialize_statevars!(agent::AbstractAgent)
+    initialize_statevars!(agent::DEBAgent, abm::DEBABM)::Nothing
 Initialize agent-level state variables.
 """
-function initialize_statevars!(agent::AbstractAgent, abm::AbstractABM)::Nothing
+function initialize_statevars!(agent::DEBAgent, abm::DEBABM)::Nothing
 
     agent.u = ComponentArray(
         glb = Ref(abm.u),
@@ -75,10 +75,10 @@ function initialize_statevars!(agent::AbstractAgent, abm::AbstractABM)::Nothing
 end
 
 """
-    initialize_statevars!(abm::AbstractABM)
+    initialize_statevars!(abm::DEBABM)
 Initialize ABM-level state variables.
 """
-function initialize_statevars!(abm::AbstractABM)
+function initialize_statevars!(abm::DEBABM)
     abm.u = ComponentArray(
         X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
         C_W = (p.glb.C_W), # external stressor concentrations
@@ -86,15 +86,15 @@ function initialize_statevars!(abm::AbstractABM)
 end
 
 """
-    init_agents!(abm::AbstractABM)::nothing
+    init_agents!(abm::DEBABM)::nothing
 Initialize the population of agents.
 """
-function initialize_agents!(abm::AbstractABM)::Nothing
+function initialize_agents!(abm::DEBABM)::Nothing
 
     abm.agents = [] # initialize a vector of agents with undefined values and defined length
 
-    for i in 1:abm.p.glb.N0 # for the number of initial agents
-        push!(abm.agents, BaseAgent(abm)) # initialize an agent and add it to the vector of agents
+    for _ in 1:abm.p.glb.N0 # for the number of initial agents
+        push!(abm.agents, abm.p.glb.AgentType(abm)) # initialize an agent and add it to the vector of agents
     end
 
     return nothing

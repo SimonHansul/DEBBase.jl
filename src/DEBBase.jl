@@ -12,11 +12,12 @@ using DataFrames
 using PrecompileTools
 using StaticArrays
 using StatsBase
+using Agents
 
 include("Solvers.jl")
 
 include("Structures.jl")
-export AbstractABM, ABM, AbstractAgent, BaseAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
+export DEBABM, ABM, AbstractAgent, BaseAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
 include("Initialize.jl")
 export init_substates_agent, init_substates_global, initialize_statevars, initialize_statevars!, initialize_agents!

@@ -1,6 +1,5 @@
 abstract type AbstractSpeciesParams <: AbstractParams end
-abstract type AbstractAgent end
-abstract type AbstractABM end
+abstract type AbstractAgentParams <: AbstractParams end
 
 #=
 ## General structures
@@ -12,10 +11,11 @@ abstract type AbstractABM end
 @with_kw mutable struct GlobalParams <: AbstractParams
     N0::Int64 = 1 #  initial number of individuals
     t_max::Float64 = 21. # maximum simulation time (d)
-    Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default SpeciesParams
+    Xdot_in::Float64 = 1200. # resource inflow rate
+    k_V::Float64 = 0.1 # chemostat dilution rate
     V_patch::Float64 = 0.05 # volume of a patch (L) (or the entire similated environment)
     C_W::Vector{Float64} = [0.] # external chemical concentrations
-    AgentType::DataType = BaseAgent # the type of agent simulated
+    AgentType::DataType = DEBAgent # the type of agent simulated
     recordagentvars::Bool = true # record agent-level output?
     saveat::Float64 = 1. # when to save output (d)
 end
@@ -108,7 +108,7 @@ end
 AgentParams are subject to agent variability. 
 This is in contrast to SpeciesParams, which define parameters on the species-level.
 """
-@with_kw mutable struct AgentParams <: AbstractParams
+@with_kw mutable struct AgentParams <: AbstractAgentParams
     Z::Float64
     Idot_max_rel::Float64
     Idot_max_rel_emb::Float64
@@ -158,15 +158,12 @@ Initialize the default parameter collection with `DEBParamCollection()`.
 end
 
 
-#=
-## ABM structures
-=#
-
 """
 Definition of basic ABM object. <br>
 Currently assumes that only a single species of type `AgentType` is simulated at a time.
 """
-mutable struct ABM <: AbstractABM
+mutable struct DEBABM
+
     p::AbstractParamCollection # parameter collection
     t::Float64 # current simulation time
     dt::Float64 # timestep
@@ -185,7 +182,7 @@ mutable struct ABM <: AbstractABM
     """
     Instantiate ABM from param collection `p`. 
     """
-    function ABM(p::A; dt = 1/24, saveat = 1) where A <: AbstractParamCollection
+    function DEBABM(p::A; dt = 1/24, saveat = 1) where A <: AbstractParamCollection
         abm = new() # initialize ABM object
         abm.p = p # store the parameters
         abm.t = 0. # initialize simulation time
@@ -206,36 +203,38 @@ mutable struct ABM <: AbstractABM
     end
 end
 
-"""
-DEBBase Agent.
-Each agent owns a parameter collection, state variables and derivatives. 
-The states and derivatives include referencs to the global states and derivatives.
-"""
-mutable struct BaseAgent <: AbstractAgent
+
+@agent struct DEBAgent(GraphAgent)
     p::AbstractParamCollection
     u::ComponentVector
     du::ComponentVector
     AgentID::Int64
+    dead::Bool
+    cohort::Int64
+    cum_repro::Int64
 
     """
         BaseAgent(p::AbstractParamCollection, AgentID::Int64)
     
     Initialize a base agent from parameters. 
     """
-    function BaseAgent(abm::ABM)
-        a = new()
+    function DEBAgent(abm::DEBABM)
+        agent = new()
 
-        a.AgentID = abm.AgentID_count # assign AgentID
+        agent.AgentID = abm.AgentID_count # assign AgentID
         abm.AgentID_count += 1 # increment AgentID counter
 
-        a.p = copy(abm.p) # parameters; TODO: #29 avoid copying everything
-        a.p.agn = AgentParams(a.p.spc) # assign agent-level parameters (induces individual variability)
-        initialize_statevars!(a, abm) # initialize agent-level state variables
-        a.du = similar(a.u) # initialize agent-level derivatives
-        a.du.glb = Ref(abm.du) # reference to global derivatives
-        a.du.agn = copy(a.u.agn) # derivatives of agent substates have same shape as states
+        agent.p = copy(abm.p) # parameters; TODO: #29 avoid copying everything
+        agent.p.agn = AgentParams(agent.p.spc) # assign agent-level parameters (induces individual variability)
+        initialize_statevars!(agent, abm) # initialize agent-level state variables
+        agent.du = similar(agent.u) # initialize agent-level derivatives
+        agent.du.glb = Ref(abm.du) # reference to global derivatives
+        agent.du.agn = copy(agent.u.agn) # derivatives of agent substates have same shape as states
 
-        return a
+        agent.dead = false
+        agent.cohort = 0
+        agent.cum_repro += 1
+
+        return agent
     end
 end
-
