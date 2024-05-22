@@ -16,7 +16,8 @@ Sigmoid switch function.
     y_left::Float64, 
     y_right::Float64; 
     beta::Float64 = 1e16
-    )
+    )::Float64
+
     return 1 / (1 + exp(-beta*(x - x_thr))) * (y_right - y_left) + y_left
 end
 
@@ -25,7 +26,8 @@ end
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Float64
+
     let X_V = u.glb.x.X_p / p.glb.V_patch # convert food abundance to concentration
         return X_V / (X_V + p.agn.K_X) # calculate type II functional response
     end
@@ -42,7 +44,7 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Nothing
     
     du.agn.I_emb = sig( # uptake from vitellus
         u.agn.X_emb, # uptake from vitellus depends on mass of vitellus
@@ -59,6 +61,7 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
         0.; # while there is still vitellus left, there is no uptake from the external resource
         beta = 1e20 # again we have a switch around 0, requiring very high beta
         )
+
     du.agn.I = du.agn.I_emb + du.agn.I_p
 end
 
@@ -69,7 +72,8 @@ Assimilation flux
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
-    t::Real) 
+    t::Real)::Nothing
+
     du.agn.A = du.agn.I * p.spc.eta_IA * u.agn.y_A
 end
 
@@ -80,7 +84,8 @@ Somatic maintenance flux
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
-    t::Real) 
+    t::Real)::Nothing
+
     du.agn.M = u.agn.S * p.spc.k_M * u.agn.y_M
 end
 
@@ -93,7 +98,8 @@ Maturity maintenance flux
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Nothing
+
     du.agn.J = u.agn.H * p.spc.k_J * u.agn.y_M
 end
 
@@ -105,7 +111,8 @@ Positive somatic growth
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Float64
+
     return p.spc.eta_AS * u.agn.y_G * (p.spc.kappa * du.agn.A - du.agn.M)
 end
 
@@ -117,7 +124,8 @@ Negative somatic growth
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Nothing 
+
     return -(du.agn.M / p.spc.eta_SA - p.spc.kappa * du.agn.A)
 end
 
@@ -126,7 +134,8 @@ function Sdot(
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Float64 
+
     return sig(
         p.spc.kappa * du.agn.A, # growth depends on maintenance coverage
         du.agn.M, # switch occurs based on maintenance costs
@@ -143,7 +152,8 @@ Somatic growth, including application of shrinking equation.
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Nothing
+
     du.agn.S = Sdot(du, u, p, t)
 end
 
@@ -161,7 +171,8 @@ mortality or embryonic hazard (TBD).
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Nothing 
+
     du.agn.H = sig(
         u.agn.H, # maturation depends on maturity
         p.agn.H_p, # switch occurs at maturity at puberty H_p
@@ -181,7 +192,8 @@ This way, we obtain H_b as an implied trait and can use it later (for example in
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Nothing
+
     du.agn.H_b = sig(
         u.agn.X_emb, # estimate depends on embryonic state
         0., # switch occurs when vitellus is gone
@@ -198,7 +210,8 @@ Reproduction flux.
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Nothing 
+
     du.agn.R = sig(
         u.agn.H, # reproduction depends on maturity
         p.agn.H_p, # switch occurs at maturity at puberty H_p
@@ -208,6 +221,13 @@ Reproduction flux.
 end
 
 """
+    Qdot!(
+        du::ComponentArray,
+        u::ComponentArray,
+        p::AbstractParamCollection,
+        t::Real
+        )::Nothing 
+
 Calculation of the total dissipation flux, equal to the sum of maintenance costs and overheads paid for assimilation, mobilization, growth and reproduction.
 """
 function Qdot!(
@@ -215,7 +235,8 @@ function Qdot!(
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Nothing 
+
     # dissipation fluxes for the individual processes
     let Qdot_A, Qdot_S, Qdot_C, Qdot_R
         Qdot_A = Idot * (1 - p.spc.eta_IA)
@@ -223,6 +244,79 @@ function Qdot!(
         Qdot_R = du.R * (1 - p.spc.eta_AR) / p.spc.eta_AR
         du.Q =  Qdot_A + Qdot_S + Qdot_C + Qdot_R + Mdot + Jdot + Hdot
     end
+end
+
+"""
+    C_Wdot!(
+        du::ComponentVector,
+        u::ComponentVector,
+        p::AbstractParamCollection,
+        t::Real
+        )::Nothing 
+
+Change in external concentrations. 
+Currently simply returns zeros because time-variable exposure is not yet implemented.
+"""
+@inline function C_Wdot!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::AbstractParamCollection,
+    t::Real
+    )::Nothing 
+
+    du.glb.x.C_W = zeros(length(u.glb.x.C_W)) # constant exposure : derivative is 0
+end
+
+
+"""
+    X_pdot!(
+        du::ComponentVector,
+        u::ComponentVector,
+        p::AbstractParamCollection,
+        t::Real
+        )::Nothing
+
+Change in resource abundance, accounting for constant influx and ingestion rate of a single agent. 
+This function is useful if a single agent is simulated.
+"""
+@inline function X_pdot!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::AbstractParamCollection,
+    t::Real
+    )::Nothing 
+
+    du.glb.x.X_p = p.glb.Xdot_in - du.agn.I_p
+end
+
+"""
+    X_pdot_out!(
+        du::ComponentVector,
+        u::ComponentVector,
+        p::AbstractParamCollection,
+        t::Real
+        )::Nothing
+
+Decrease of resource abundance due to ingestion by a single agent.
+"""
+@inline function X_pdot_out!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::AbstractParamCollection,
+    t::Real
+    )::Nothing
+
+    du.glb.x.X_p = -du.agn.I_p
+end
+
+@inline function X_embdot!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::AbstractParamCollection,
+    t::Real
+    )::Nothing 
+
+    du.agn.X_emb = -du.agn.I_emb
 end
 
 
@@ -235,7 +329,7 @@ If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-speci
     u::ComponentVector,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Nothing 
 
     for z in eachindex(u.glb.x.C_W)
         @inbounds du.agn.D_G[z] = sig(u.agn.X_emb, 0., p.spc.k_D_G[z] * (u.glb.x.C_W[z] - u.agn.D_G[z]), 0.)
@@ -253,53 +347,12 @@ If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-speci
     end
 end
 
-@inline function C_Wdot!(
-    du::ComponentVector,
-    u::ComponentVector,
-    p::AbstractParamCollection,
-    t::Real
-    ) 
-    du.glb.x.C_W = zeros(length(u.glb.x.C_W)) # constant exposure : derivative is 0
-end
-
-@inline function X_pdot!(
-    du::ComponentVector,
-    u::ComponentVector,
-    p::AbstractParamCollection,
-    t::Real
-    ) 
-    du.glb.x.X_p = p.glb.Xdot_in - du.agn.I_p
-end
-
-"""
-Update of external resource for agent step. 
-Only the ingestion rate of the agent is considered.
-
-"""
-@inline function X_pdot_out!(
-    du::ComponentVector,
-    u::ComponentVector,
-    p::AbstractParamCollection,
-    t::Real
-    )
-    du.glb.x.X_p = -du.agn.I_p
-end
-
-@inline function X_embdot!(
-    du::ComponentVector,
-    u::ComponentVector,
-    p::AbstractParamCollection,
-    t::Real
-    ) 
-    du.agn.X_emb = -du.agn.I_emb
-end
-
 @inline function y!(
     du::ComponentVector,
     u::ComponentVector,
     p::AbstractParamCollection,
     t::Real
-    ) 
+    )::Nothing 
 
     @inbounds u.agn.y_G = prod([p.spc.drc_functs_G[z](u.agn.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.glb.x.C_W)]) # combined relative responses for sublethal effects per PMoA
     @inbounds u.agn.y_M = prod([p.spc.drc_functs_M[z](u.agn.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.glb.x.C_W)])
@@ -328,7 +381,7 @@ function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float6
             p_bj, 
             p_b),
         p_j
-    )
+    )::Nothing
     return p
 end
 

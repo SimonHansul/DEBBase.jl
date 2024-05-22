@@ -6,22 +6,28 @@ function extract_colnames(c::AbstractVector, k::Symbol)
     return [Symbol("$(k)_$(i)") for i in 1:length(c)]
 end
 
-# TODO: this should not be needed any more - confirm that it can be removed
-#function extract_colnames(c::AbstractMatrix, k::Symbol)
-#    return vcat([[Symbol("$(k)_$(j)_$(i)") for i in 1:size(c)[1]] for j in 1:size(c)[2]]...)
-#endc:\Users\simon\Downloads\CV_2024_03.pd
+"""
+    extract_colnames(u::ComponentVector)
+Extract the column names of an output dataframe from an ODE solution object.
+"""
+function extract_colnames(u::ComponentVector)
+    colnames = []
+    for k in keys(u)
+        push!(colnames, extract_colnames(u[k], k))
+    end
+    return vcat(colnames...)
+end
 
 """
-Extract the column names of output data frame from a ODE solution object. 
-This function assumes that ComponentArrays is used.
+    extract_colnames(sol::O)::Vector{Symbol} where {O <:ODESolution}
+
+Extract the column names of an output dataframe from an ODE solution object.
 """
 function extract_colnames(sol::O)::Vector{Symbol} where {O <:ODESolution}
     let u = sol.u[1], colnames = []
 
-        for uarr in (u.glb.x, u.agn)
-            for k in keys(uarr)
-                push!(colnames, extract_colnames(uarr[k], k))
-            end
+        for u_i in (u.glb.x, u.agn)
+            push!(colnames, extract_colnames(u_i))
         end
 
         colnames = vcat([:t], colnames...)
@@ -39,7 +45,6 @@ end
 
 """
 Convert ODE solution object to output data frame.
-$(TYPEDSIGNATURES)
 """
 function sol_to_df(sol::O)::DataFrame where O <: ODESolution
     simout = DataFrame(
@@ -52,7 +57,6 @@ end
 """
 Trim TKTD parameters to the smallest number of stressors indicated for any PMoA. <br>
 For example `k_D_G = [1., 0.], k_D_M = [1.]` will be trimmed to `k_D_G = [1.], k_D_M = [1.]`.
-$(TYPEDSIGNATURES)
 """
 function trim!(spc::AbstractParams)
 
@@ -88,7 +92,6 @@ end
 Isolate the indicated PMoAs for chemical stressor `z`. 
 That means, turn off all PMoAs (including lethal effects `h`) except for those indicated in `pmoas`-Vector. 
 This is done through the toxicokinetic rate constant.
-$(TYPEDSIGNATURES)
 """
 function isolate_pmoas(spc::AbstractParams, pmoas::Vector{String}, z::Int64)::AbstractParams
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
@@ -185,8 +188,6 @@ function relative_response(
     end
     return res
 end
-
-
 
 @enum PMoA h G M A R # these are the valid PMoAs
 

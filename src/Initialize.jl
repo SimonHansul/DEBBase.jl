@@ -49,7 +49,6 @@ function init_substates_global(p::AbstractParamCollection)
         )
 end
 
-
 """
     initialize_statevars(p::AbstractParamCollection, pagnt::ComponentVector{Float64})::ComponentArray 
 For initialization of ODE simulator, initialize the component vector of state variables, `u`, based on common parameters `p`.

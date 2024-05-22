@@ -13,6 +13,8 @@ using PrecompileTools
 using StaticArrays
 using StatsBase
 
+include("Solvers.jl")
+
 include("Structures.jl")
 export AbstractABM, ABM, AbstractAgent, BaseAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 

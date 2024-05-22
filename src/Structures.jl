@@ -16,6 +16,8 @@ abstract type AbstractABM end
     V_patch::Float64 = 0.05 # volume of a patch (L) (or the entire similated environment)
     C_W::Vector{Float64} = [0.] # external chemical concentrations
     AgentType::DataType = BaseAgent # the type of agent simulated
+    recordagentvars::Bool = true # record agent-level output?
+    saveat::Float64 = 1. # when to save output (d)
 end
 
 """
@@ -164,31 +166,41 @@ end
 Definition of basic ABM object. <br>
 Currently assumes that only a single species of type `AgentType` is simulated at a time.
 """
-@with_kw mutable struct ABM <: AbstractABM
+mutable struct ABM <: AbstractABM
     p::AbstractParamCollection # parameter collection
-    agents # agents
     t::Float64 # current simulation time
     dt::Float64 # timestep
-    unique_id_count::Int64 # cumulative number of agents in the simulation
+    euler::Function # definition of the euler function for the given dt
+    saveat::Float64
+    
     u::ComponentVector # global state variables
     du::ComponentVector # global derivatives
+
+    AgentID_count::Int64 # cumulative number of agents in the simulation
+    agents::AbstractVector # population of agents
+    aout::AbstractVector # agent output
+    mout::AbstractVector # model output
 
 
     """
     Instantiate ABM from param collection `p`. 
     """
-    function ABM(p::A; dt = 1/24) where A <: AbstractParamCollection
+    function ABM(p::A; dt = 1/24, saveat = 1) where A <: AbstractParamCollection
         abm = new() # initialize ABM object
         abm.p = p # store the parameters
         abm.t = 0. # initialize simulation time
         abm.dt = dt # timestep is given as keyword argument
-
+        abm.euler = defeuler(dt) # Euler function for the given dt
+        abm.saveat = saveat
+        
         abm.u = init_substates_global(p) # initialize the global substates
         abm.du = similar(abm.u) # initialize the global derivatives
         abm.du.X_p = 0.
         abm.du.C_W .= 0.
-
+        
+        abm.AgentID_count = 0 # set agent count
         initialize_agents!(abm) # initailize the population of agents
+        abm.aout = [] # initialize agent output
 
         return abm
     end
@@ -203,24 +215,27 @@ mutable struct BaseAgent <: AbstractAgent
     p::AbstractParamCollection
     u::ComponentVector
     du::ComponentVector
-    unique_id::Int64
+    AgentID::Int64
 
     """
-        BaseAgent(p::AbstractParamCollection, unique_id::Int64)
+        BaseAgent(p::AbstractParamCollection, AgentID::Int64)
     
     Initialize a base agent from parameters. 
     """
     function BaseAgent(abm::ABM)
         a = new()
 
-        a.unique_id = abm.unique_id_count # identifier
-        a.p = copy(abm.p) # parameters TODO: avoid copying everything
+        a.AgentID = abm.AgentID_count # assign AgentID
+        abm.AgentID_count += 1 # increment AgentID counter
+
+        a.p = copy(abm.p) # parameters; TODO: #29 avoid copying everything
         a.p.agn = AgentParams(a.p.spc) # assign agent-level parameters (induces individual variability)
         initialize_statevars!(a, abm) # initialize agent-level state variables
         a.du = similar(a.u) # initialize agent-level derivatives
         a.du.glb = Ref(abm.du) # reference to global derivatives
-        a.du.agn = similar(abm.u.agn) # derivatives of agent substates
-        
+        a.du.agn = copy(a.u.agn) # derivatives of agent substates have same shape as states
+
         return a
     end
 end
+
