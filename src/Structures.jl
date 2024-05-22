@@ -79,8 +79,6 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     d_A::Union{Nothing,Vector{Function}} = nothing
     d_R::Union{Nothing,Vector{Function}} = nothing
     d_h::Union{Nothing,Vector{Function}} = nothing
-
-    aux::Any = nothing # container for auxiliaray pramaters -- good for development purposes
 end
 
 """

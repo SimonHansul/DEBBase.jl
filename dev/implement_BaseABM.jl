@@ -132,15 +132,6 @@ using ProfileView
 using BenchmarkTools
 
 begin
-    """
-        update!(agent::AbstractAgent, abm::AbstractABM)
-    Update agent state by applying the Euler scheme.
-    """
-    function update!(agent::AbstractAgent, abm::AbstractABM)
-        for var in keys(agent.du.agn) # for every agent-level state variable
-            setproperty!(agent.u.agn, var, euler(getproperty(agent.du.agn, var), getproperty(agent.u.agn, var), abm.dt)) # update agent substates
-        end
-    end
 
     #=
     ## Test: Simulate agents independently
@@ -181,7 +172,3 @@ x-> hcat(x, DataFrame(hcat([a.u for a in aout]...)', extract_colnames(aout[1].u)
 
 
 @df aout_df plot(
-    plot(:t, :S, group = :AgentID)
-)
-
-aout_df.AgentID |> unique
