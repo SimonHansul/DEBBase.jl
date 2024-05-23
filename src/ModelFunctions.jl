@@ -502,7 +502,11 @@ end
 
 function die!(agent::AbstractAgent, abm::AbstractABM)::Nothing
     stochastic_death!(agent, abm, agent.u.agn.h_S; causeofdeath = 1.) # starvation mortality from loss of structure
+    return nothing
+end
 
+function N_tot!(abm::AbstractABM)::Nothing
+    abm.u.N_tot = length(abm.agents)
     return nothing
 end
 

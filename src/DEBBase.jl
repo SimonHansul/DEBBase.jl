@@ -11,7 +11,7 @@ using PrecompileTools
 
 include("Solvers.jl")
 
-include("Structures.jl")
+include("Params.jl")
 export AbstractABM, AbstractSpeciesParams, ABM, BaseAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
 include("Initialize.jl")
@@ -27,6 +27,8 @@ include("Simulators.jl")
 export init_substates_agent, init_substates_global, abstractsimulator, returntypes, simulator, @replicates
 
 include("ImpliedTraits.jl")
+
+include("DEBABM.jl")
 
 @compile_workload begin
     # precompile the default simulator

@@ -54,7 +54,8 @@ Initialize the global substates, i.e. the global state variables such as simulat
 function init_substates_global(p::AbstractParamCollection)
     return ComponentArray(
             X_p = Float64(p.glb.Xdot_in), # initial resource abundance equal to influx rate
-            C_W = p.glb.C_W # external stressor concentrations
+            C_W = p.glb.C_W, # external stressor concentrations
+            N_tot = p.glb.N0
         )
 end
 

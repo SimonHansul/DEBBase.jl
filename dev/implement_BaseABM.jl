@@ -24,9 +24,9 @@ Generic in terms of state variables and parameters, i.e. we don't need to make a
     using Revise
     using DEBBase
     
-    include("../src/ModelFunctions.jl");
-    include("../src/Simulators.jl");
-    include("../src/IO.jl");
+    #include("../src/ModelFunctions.jl");
+    #include("../src/Simulators.jl");
+    #include("../src/IO.jl");
 end
 
 #=
@@ -41,53 +41,14 @@ end
 Agent step
 =#
 
-"""
+ """
     step!(agent::AbstractAgent, abm::AbstractABM; odefuncs::Vector{Function}, rulefuncs::Vector{Function})
 
 Definition of agent step. \n
 This definition is generic, so that the function body does not have to be modified 
-in order to simulate different models. \n 
-An agent step is defined as the combination of an ODE system and rule-based functions. 
-The definition of this system can be modified through the keyword argument `odefuncs` and `rulefuncs`.
-`odefuncs` make up the part of the agent step which is represented as deterministic ordinary differential equations. 
-`rulefuncs` make up the part of the agent step which is represented as rule-based functions. 
-`odefuncs` and `rulefuncs` differ in their signature, but both are mutating:
-
-- `odefunc(du, u, p, t)::Nothing`
-- `rulefunc(agent, abm)::Nothing`
-
-
-Args:
-
-- `agent::AbstractAgent`: Any agent object
-- `abm::AbstractABM`: Any ABM object
-
-Kwargs:
-
-- `odefuncs::Vector{Function}`: Vector of ODE-based functions
-- `rulefuncs::Vector{Function}`: Vector of rule-based functions
+in order to simulate different models.
 """
-function step!(
-    agent::BaseAgent, abm::ABM, 
-    odefuncs = [
-        y_z!, 
-        h_S!,
-        Idot!, 
-        Adot!, 
-        Mdot!, 
-        Jdot!, 
-        Sdot!, 
-        Hdot!,
-        H_bdot!,
-        Rdot!,
-        Ddot!,
-        age!
-        ],
-    rulefuncs = [
-        reproduce_opportunistic!,
-        die!
-    ])
-
+function step!(agent::BaseAgent, abm::ABM)
     du, u, p = agent.du, agent.u, agent.p # unpack agent substates, derivatives and parameters
     t = abm.t
 
@@ -186,20 +147,9 @@ function run!(abm::AbstractABM)
     end
 end
 
-#=
-##FIXME: food density is not updated correctly..
-
-We shouldn't need reference to u.glb / du.glb as long as nothing is copied explicitly...
-
-- Replacing Ref(glb) with glb 
-- Replacing glb.x with glb
-
-=#
-
 begin    
     using DEBBase, DoseResponse
     using DEBFigures
-    include("../src/ModelFunctions.jl")
     
     p = DEBParamCollection()
     p.glb.N0 = 1
@@ -209,67 +159,19 @@ begin
     p.glb.t_max = 20.
     p.spc.e_S = 0.5
     p.spc.b_S = 100.
-    p.spc.eta_AR = 0.
+    p.spc.eta_AR = 0.5
 
 
+    mout, aout = ABM(p)
 
-    function simulator(p::AmphiDEBParamCollection)
-
-        abm = ABM(p)
-        run!(abm)
-        
-        aout_df = DataFrame(hcat([[x.t, x.AgentID] for x in abm.aout]...)', [:t, :AgentID]) |> 
-        x-> hcat(x, DataFrame(hcat([a.u for a in abm.aout]...)', extract_colnames(abm.aout[1].u)))
-        
-        mout_df = DataFrame(hcat([[x.t] for x in abm.mout]...)', [:t]) |> 
-        x-> hcat(x, DataFrame(hcat([m.u for m in abm.mout]...)', extract_colnames(abm.mout[1].u)))
-
-        return aout_df, mout_df
-    end
-
-    pa = @df aout_df plot(
+    pa = @df aout plot(
         groupedlineplot(:t, :S, :cohort)
     )
     
-    pN = combine(groupby(aout_df, :t), :AgentID => x -> length(unique(x))) |> 
+    pN = combine(groupby(aout, :t), :AgentID => x -> length(unique(x))) |> 
     x -> @df x plot(:t, :AgentID_function)
     
-    pm = @df mout_df plot(:t, :X_p)
+    pm = @df mout plot(:t, :X_p)
 
     plot(pa, pm, pN)
 end   
-
-#=
- 
-=#
-
-
-@df aout_df plot(:t, :S ./ :S_0, group = :AgentID)
-
-
-@agent struct DEBAgent(NoSpaceAgent)
-    p::AbstractParamCollection
-    u::ComponentVector
-    du::ComponentVector
-    AgentID::Int64
-
-    """
-        BaseAgent(p::AbstractParamCollection, AgentID::Int64)
-    
-    Initialize a base agent from parameters. 
-    """
-    function BaseAgent(abm::ABM)
-        a = new()
-
-        a.p = copy(abm.p) # parameters; TODO: #29 avoid copying everything
-        a.p.agn = AgentParams(a.p.spc) # assign agent-level parameters (induces individual variability)
-        initialize_statevars!(a, abm) # initialize agent-level state variables
-        a.du = similar(a.u) # initialize agent-level derivatives
-        a.du.glb = abm.du # reference to global derivatives
-        a.du.agn = copy(a.u.agn) # derivatives of agent substates have same shape as states
-        a.AgentID = abm.AgentID_count # assign AgentID
-        abm.AgentID_count += 1 # increment AgentID counter
-        
-        return a
-    end
-end
