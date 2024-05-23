@@ -4,7 +4,7 @@ using Reexport
 @reexport using DEBParamStructs
 @reexport using DoseResponse
 using ComponentArrays, StaticArrays
-using OrdinaryDiffEq, Agents
+using OrdinaryDiffEq
 using Distributions, StatsBase, Random
 using DataFrames
 using PrecompileTools

@@ -1,5 +1,5 @@
 abstract type AbstractSpeciesParams <: AbstractParams end
- #abstract type AbstractABM end
+abstract type AbstractABM end
 
 #=
 ## General structures
@@ -138,27 +138,6 @@ Initialize the default parameter collection with `DEBParamCollection()`.
     glb::AbstractParams = GlobalParams()
     spc::AbstractParams = SpeciesParams()
     agn::Union{Nothing,AbstractParams} = nothing
-
-    @assert length(spc.k_D_G) >= length(glb.C_W) "Length of k_D_G is not at least length of C_W in species"
-    @assert length(spc.k_D_M) >= length(glb.C_W) "Length of k_D_M is not at least length of C_W in species"
-    @assert length(spc.k_D_A) >= length(glb.C_W) "Length of k_D_A is not at least length of C_W in species"
-    @assert length(spc.k_D_R) >= length(glb.C_W) "Length of k_D_R is not at least length of C_W in species"
-    @assert length(spc.k_D_h) >= length(glb.C_W) "Length of k_D_h is not at least length of C_W in species"
-    @assert length(spc.drc_functs_G) >= length(glb.C_W) "Length of drc_functs_G is not at least length of C_W in species"
-    @assert length(spc.drc_functs_M) >= length(glb.C_W) "Length of drc_functs_M is not at least length of C_W in species"
-    @assert length(spc.drc_functs_A) >= length(glb.C_W) "Length of drc_functs_A is not at least length of C_W in species"
-    @assert length(spc.drc_functs_R) >= length(glb.C_W) "Length of drc_functs_R is not at least length of C_W in species"
-    @assert length(spc.drc_functs_h) >= length(glb.C_W) "Length of drc_functs_h is not at least length of C_W in species"
-    @assert length(spc.e_G) >= length(glb.C_W) "Length of e_G is not at least length of C_W in species"
-    @assert length(spc.e_M) >= length(glb.C_W) "Length of e_M is not at least length of C_W in species"
-    @assert length(spc.e_A) >= length(glb.C_W) "Length of e_A is not at least length of C_W in species"
-    @assert length(spc.e_R) >= length(glb.C_W) "Length of e_R is not at least length of C_W in species"
-    @assert length(spc.e_h) >= length(glb.C_W) "Length of e_h is not at least length of C_W in species"
-    @assert length(spc.b_G) >= length(glb.C_W) "Length of b_G is not at least length of C_W in species"
-    @assert length(spc.b_M) >= length(glb.C_W) "Length of b_M is not at least length of C_W in species"
-    @assert length(spc.b_A) >= length(glb.C_W) "Length of b_A is not at least length of C_W in species"
-    @assert length(spc.b_R) >= length(glb.C_W) "Length of b_R is not at least length of C_W in species"
-    @assert length(spc.b_h) >= length(glb.C_W) "Length of b_h is not at least length of C_W in species"
 end
 
 
@@ -215,7 +194,7 @@ DEBBase Agent.
 Each agent owns a parameter collection, state variables and derivatives. 
 The states and derivatives include referencs to the global states and derivatives.
 """
-@agent struct BaseAgent(NoSpaceAgent) <: Agents.AbstractAgent
+mutable struct BaseAgent <: AbstractAgent
     p::AbstractParamCollection
     u::ComponentVector
     du::ComponentVector
