@@ -12,6 +12,7 @@ function euler(du::Float64, u::Float64, dt::Float64)::Float64
     return u + du * dt
 end
 
+
 """
     defeuler(dt::Float64)
 

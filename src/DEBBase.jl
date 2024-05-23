@@ -2,21 +2,17 @@ module DEBBase
 
 using Reexport
 @reexport using DEBParamStructs
-using DoseResponse
-using Parameters
-using ComponentArrays
-using OrdinaryDiffEq
-using Distributions
-using DocStringExtensions
+@reexport using DoseResponse
+using ComponentArrays, StaticArrays
+using OrdinaryDiffEq, Agents
+using Distributions, StatsBase, Random
 using DataFrames
 using PrecompileTools
-using StaticArrays
-using StatsBase
 
 include("Solvers.jl")
 
 include("Structures.jl")
-export AbstractABM, ABM, AbstractAgent, BaseAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
+export AbstractABM, AbstractSpeciesParams, ABM, BaseAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
 include("Initialize.jl")
 export init_substates_agent, init_substates_global, initialize_statevars, initialize_statevars!, initialize_agents!

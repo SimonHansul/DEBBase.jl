@@ -14,16 +14,16 @@ using DEBBase
 p1 = DEBBaseParams()
 p2 = 
 
-p = @with_kw (f = x -> x^3, y = 3, z = "foo")
+p = @kwdef (f = x -> x^3, y = 3, z = "foo")
 
 p
 
 @defparams NewParamStruct
 
-@with_kw(a = 1, b = 3)
+@kwdef(a = 1, b = 3)
 
 
-@edit @with_kw
+@edit @kwdef
 
 NewParamStruct(1).Idot_max_rel
 
@@ -43,7 +43,7 @@ end
 begin
     macro extend_struct(struct_type, new_struct_name, fields...)
         quote
-            @with_kw mutable struct $new_struct_name
+            @kwdef mutable struct $new_struct_name
                 
                 #$(Expr(:copyn, struct_type().parameters.args[2:end]...))
                 #$(Expr(:tovector, Expr(:tuple, esc.(fields)...)))
