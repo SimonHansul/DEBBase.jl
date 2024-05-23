@@ -70,10 +70,10 @@ function initialize_statevars(p::AbstractParamCollection)::ComponentArray
 end
 
 """
-    initialize_statevars!(agent::Agents.AbstractAgent)
+    initialize_statevars!(agent::AbstractAgent)
 Initialize agent-level state variables.
 """
-function initialize_statevars!(agent::Agents.AbstractAgent, abm::AbstractABM)::Nothing
+function initialize_statevars!(agent::AbstractAgent, abm::AbstractABM)::Nothing
     agent.u = ComponentArray(
         glb = abm.u,
         agn = init_substates_agent(agent.p)
@@ -95,7 +95,7 @@ end
 
 """
     init_agents!(abm::AbstractABM)::nothing
-Initialize the population of agents.
+Initialize the population of 
 """
 function initialize_agents!(abm::AbstractABM)::Nothing
 

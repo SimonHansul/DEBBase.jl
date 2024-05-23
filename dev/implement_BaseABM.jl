@@ -8,19 +8,19 @@ Generic in terms of state variables and parameters, i.e. we don't need to make a
     TAG = splitpath(@__FILE__)[end] |> x -> split(x, ".")[1] |> String    
     using Pkg; Pkg.activate("test")
     using Test
+
     using Plots, StatsPlots, Plots.Measures
+    default(leg = false, lw = 1.5)
+    
     using SHUtils
     using DataFrames, DataFramesMeta
     using ProgressMeter
     using Distributions
-    default(leg = false, lw = 1.5)
     using ComponentArrays
     using StaticArrays
     using OrdinaryDiffEq
     using Parameters, DEBParamStructs
     using Random
-    using Agents
-
     using Revise
     using DEBBase
     
@@ -42,7 +42,7 @@ Agent step
 =#
 
 """
-    step!(agent::Agents.AbstractAgent, abm::AbstractABM; odefuncs::Vector{Function}, rulefuncs::Vector{Function})
+    step!(agent::AbstractAgent, abm::AbstractABM; odefuncs::Vector{Function}, rulefuncs::Vector{Function})
 
 Definition of agent step. \n
 This definition is generic, so that the function body does not have to be modified 
@@ -59,7 +59,7 @@ The definition of this system can be modified through the keyword argument `odef
 
 Args:
 
-- `agent::Agents.AbstractAgent`: Any agent object
+- `agent::AbstractAgent`: Any agent object
 - `abm::AbstractABM`: Any ABM object
 
 Kwargs:
@@ -150,21 +150,22 @@ Execution of a generic ABM step, following the schedule:
 
 It is important that the agent steps occur between calculation of the global derivatives and 
 updating the global states, because global derivatives which may be influenced by agent derivatives 
-are initialized during calculation of the global states and mutated by the agents. 
+are initialized during calculation of the global states and mutated by the  
 Changing this order will lead to erroneous computation of the interaction between agents and the environment.
 """
-function step!(
-    abm::ABM; 
-    sysfuncs = [C_Wdot_const!, X_pdot_chemstat!],
-    rulefuncs = [N_tot!]
-    )
+function step!(abm::ABM)
+
     du, u, p = abm.du, abm.u, abm.p
     t = abm.t
 
     shuffle!(abm.agents)
 
-    for func! in sysfuncs # execute global functions
+    for func! in abm.odefuncs # execute global ODE-based functions
         func!(du, u, p, t)
+    end
+
+    for func! in abm.rulefuncs # execute global rule-based functions
+        func!(abm)
     end
     
     for a in abm.agents # for every agent
@@ -173,7 +174,7 @@ function step!(
     end
     
     map!(abm.euler, u, du, u) # apply the euler scheme to global states
-    record!(abm)
+    record!(abm) # record global states
     filter!(a -> a.u.agn.dead == false, abm.agents) # remove dead agents
 
     abm.t += abm.dt
@@ -210,16 +211,21 @@ begin
     p.spc.b_S = 100.
     p.spc.eta_AR = 0.
 
+
+
     function simulator(p::AmphiDEBParamCollection)
 
-    abm = ABM(p)
-    @time run!(abm)
-    
-    aout_df = DataFrame(hcat([[x.t, x.AgentID] for x in abm.aout]...)', [:t, :AgentID]) |> 
-    x-> hcat(x, DataFrame(hcat([a.u for a in abm.aout]...)', extract_colnames(abm.aout[1].u)))
-    
-    mout_df = DataFrame(hcat([[x.t] for x in abm.mout]...)', [:t]) |> 
-    x-> hcat(x, DataFrame(hcat([m.u for m in abm.mout]...)', extract_colnames(abm.mout[1].u)))
+        abm = ABM(p)
+        run!(abm)
+        
+        aout_df = DataFrame(hcat([[x.t, x.AgentID] for x in abm.aout]...)', [:t, :AgentID]) |> 
+        x-> hcat(x, DataFrame(hcat([a.u for a in abm.aout]...)', extract_colnames(abm.aout[1].u)))
+        
+        mout_df = DataFrame(hcat([[x.t] for x in abm.mout]...)', [:t]) |> 
+        x-> hcat(x, DataFrame(hcat([m.u for m in abm.mout]...)', extract_colnames(abm.mout[1].u)))
+
+        return aout_df, mout_df
+    end
 
     pa = @df aout_df plot(
         groupedlineplot(:t, :S, :cohort)

@@ -68,13 +68,13 @@ git-tree-sha1 = "c2b9b3a291bff09f078e4e25f98241da4cf5f3d1"
 uuid = "46ada45e-f475-11e8-01d0-f70cc89e6671"
 version = "6.0.12"
 
-    [deps.Agents.extensions]
+    [deps.extensions]
     AgentsArrow = "Arrow"
     AgentsGraphVisualizations = ["Makie", "GraphMakie"]
     AgentsOSMVisualizations = ["Makie", "OSMMakie"]
     AgentsVisualizations = "Makie"
 
-    [deps.Agents.weakdeps]
+    [deps.weakdeps]
     Arrow = "69666777-d1a9-59fb-9406-91d4454c9d45"
     GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
     Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"

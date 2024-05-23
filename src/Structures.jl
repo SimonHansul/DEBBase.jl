@@ -1,5 +1,6 @@
 abstract type AbstractSpeciesParams <: AbstractParams end
 abstract type AbstractABM end
+abstract type AbstractAgent end
 
 #=
 ## General structures
@@ -8,7 +9,7 @@ abstract type AbstractABM end
 """
 `GlobalParams` contain the global parameters (simulated timespan `t_max`, nutrient influx rate `Xdot_in`, etc.)
 """
-@kwdef mutable struct GlobalParams <: AbstractParams
+@with_kw mutable struct GlobalParams <: AbstractParams
     N0::Int64 = 1 #  initial number of individuals [#]
     t_max::Float64 = 21. # maximum simulation time [t]
     Xdot_in::Float64 = 1200. # resource influx rate [m/t]
@@ -28,7 +29,7 @@ Variability is given by the zoom factor `Z::Distribution`, which is always appli
 and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`. <br>
 `Z` is `Dirac(1)` by default, i.e. there is no agent variability in the default parameters. <br>
 """
-@kwdef mutable struct SpeciesParams <: AbstractSpeciesParams
+@with_kw mutable struct SpeciesParams <: AbstractSpeciesParams
     Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. this can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
     Z_male::Float64 = 1. # zoom factor for males
     sex_ratio::Float64 = 1. # initial sex ratio (females vs males)
@@ -91,7 +92,7 @@ end
 AgentParams are subject to agent variability. 
 This is in contrast to SpeciesParams, which define parameters on the species-level, i.e. the population means.
 """
-@kwdef mutable struct AgentParams <: AbstractParams
+@with_kw mutable struct AgentParams <: AbstractParams
     Z::Float64
     Idot_max_rel::Float64
     Idot_max_rel_emb::Float64
@@ -134,7 +135,7 @@ end
 A `DEBParamCollection` contains global parameters `glb` and spc parameters `spc` (including TKTD-parameters). <br>
 Initialize the default parameter collection with `DEBParamCollection()`.
 """
-@kwdef mutable struct DEBParamCollection <: AbstractParamCollection
+@with_kw mutable struct DEBParamCollection <: AbstractParamCollection
     glb::AbstractParams = GlobalParams()
     spc::AbstractParams = SpeciesParams()
     agn::Union{Nothing,AbstractParams} = nothing
@@ -150,6 +151,10 @@ Definition of basic ABM object. <br>
 Currently assumes that only a single species of type `AgentType` is simulated at a time.
 """
 mutable struct ABM <: AbstractABM
+
+    odefuncs::Vector{Function} = Function[C_Wdot_const!, X_pdot_chemstat!] # ODE-based model step functions
+    rulefuncs::Vector{Function} = Function[N_tot!] # rule-based model step functions
+
     p::AbstractParamCollection # parameter collection
     t::Float64 # current simulation time
     dt::Float64 # timestep

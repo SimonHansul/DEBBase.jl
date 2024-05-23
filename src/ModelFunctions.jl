@@ -463,12 +463,12 @@ end
 
 
 """
-    reproduce_opportunistic!(agent::Agents.AbstractAgent, abm::AbstractABM)::Nothing
+    reproduce_opportunistic!(agent::AbstractAgent, abm::AbstractABM)::Nothing
 
 Reproduction according to an opportunistic reproduction strategy. 
 Offspring is created whenever there is enough energy in the reproduction buffer.
 """
-function reproduce_opportunistic!(agent::Agents.AbstractAgent, abm::AbstractABM)::Nothing
+function reproduce_opportunistic!(agent::AbstractAgent, abm::AbstractABM)::Nothing
     
     let num_offspring = trunc(agent.u.agn.R / agent.p.agn.X_emb_int) # calculate the number of offspring produced
         for _ in 1:num_offspring # for the given number of offspring agents
@@ -485,13 +485,13 @@ end
 
 
 """
-    stochastic_death!(agent::Agents.AbstractAgent, abm::AbstractABM, h_x::Float64)::Nothing
+    stochastic_death!(agent::AbstractAgent, abm::AbstractABM, h_x::Float64)::Nothing
 
 Apply stochastic death model to agent, with respect to hazard rate `h_x`. 
 
 Records the cause of death encoded in a number, given by keyword argument `causeofdeath`.
 """
-function stochastic_death!(agent::Agents.AbstractAgent, abm::AbstractABM, h_x::Float64; causeofdeath = 0.)::Nothing
+function stochastic_death!(agent::AbstractAgent, abm::AbstractABM, h_x::Float64; causeofdeath = 0.)::Nothing
     if rand() >= exp(-h_x / abm.dt)
         agent.u.agn.dead = 1.
         agent.u.agn.causeofdeath = causeofdeath
@@ -500,7 +500,7 @@ function stochastic_death!(agent::Agents.AbstractAgent, abm::AbstractABM, h_x::F
     return nothing
 end
 
-function die!(agent::Agents.AbstractAgent, abm::AbstractABM)::Nothing
+function die!(agent::AbstractAgent, abm::AbstractABM)::Nothing
     stochastic_death!(agent, abm, agent.u.agn.h_S; causeofdeath = 1.) # starvation mortality from loss of structure
 
     return nothing

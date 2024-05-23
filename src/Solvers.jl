@@ -1,6 +1,6 @@
 # Solvers.jl
 # Currently this only contains the Euler scheme. 
-# We could think about more sophisticated integration between the ABM and DifferentialEquations.jl, as described in https://juliadynamics.github.io/Agents.jl/v5.7/examples/diffeq/. 
+# We could think about more sophisticated integration between the ABM and DifferentialEquations.jl, as described in https://juliadynamics.github.io/jl/v5.7/examples/diffeq/. 
 # Currently not clear however how to best combine this with stochastic processes in the ABM. TBD.
 
 """
