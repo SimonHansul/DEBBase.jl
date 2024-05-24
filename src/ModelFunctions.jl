@@ -45,6 +45,8 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
     p::AbstractParamCollection,
     t::Real
     )::Nothing
+
+    u.agn.f_X = functional_response(du, u, p, t)
     
     du.agn.I_emb = sig( # uptake from vitellus
         u.agn.X_emb, # uptake from vitellus depends on mass of vitellus
@@ -57,7 +59,7 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
     du.agn.I_p = sig( # uptake from external resource p
         u.agn.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
-        functional_response(du, u, p, t) * p.agn.Idot_max_rel * (Complex(u.agn.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
+        u.agn.f_X * p.agn.Idot_max_rel * (Complex(u.agn.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
         0.; # while there is still vitellus left, there is no uptake from the external resource
         beta = 1e20 # again we have a switch around 0, requiring very high beta
         )

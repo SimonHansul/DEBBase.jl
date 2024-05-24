@@ -12,7 +12,7 @@ using PrecompileTools
 include("Solvers.jl")
 
 include("Params.jl")
-export AbstractABM, AbstractSpeciesParams, ABM, BaseAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
+export AbstractABM, AbstractSpeciesParams, ABM, DEBAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
 include("Initialize.jl")
 export init_substates_agent, init_substates_global, initialize_statevars, initialize_statevars!, initialize_agents!
@@ -23,7 +23,7 @@ export setproperty!, isolate_pmoas!, set_equal!, relative_response
 include("ModelFunctions.jl")
 export sig, clipneg
 
-include("Simulators.jl")
+include("DEBODE.jl")
 export init_substates_agent, init_substates_global, abstractsimulator, returntypes, simulator, @replicates
 
 include("ImpliedTraits.jl")

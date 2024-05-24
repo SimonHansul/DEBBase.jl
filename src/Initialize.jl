@@ -18,6 +18,7 @@ function init_substates_agent(p::AbstractParamCollection)
         H = Float64(0), # maturity
         H_b = Float64(0), # maturity at birth (will be derived from model output)
         R = Float64(0), # reproduction buffer
+        f_X = Float64(1), # scaled functional response 
         I_emb = Float64(0), # ingestion from vitellus
         I_p = Float64(0), # ingestion from external food resource
         I = Float64(0), # total ingestion
@@ -103,7 +104,7 @@ function initialize_agents!(abm::AbstractABM)::Nothing
     abm.agents = [] # initialize a vector of agents with undefined values and defined length
 
     for i in 1:abm.p.glb.N0 # for the number of initial agents
-        push!(abm.agents, BaseAgent(abm)) # initialize an agent and add it to the vector of agents
+        push!(abm.agents, DEBAgent(abm)) # initialize an agent and add it to the vector of agents
     end
 
     return nothing

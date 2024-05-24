@@ -16,9 +16,11 @@ abstract type AbstractAgent end
     k_V::Float64 = 0.1 # chemostatic dilution rate [t^-1]
     V_patch::Float64 = 0.05 # volume of a patch (or the entire similated environment) [V]
     C_W::Vector{Float64} = [0.] # external chemical concentrations [m/t], [n/t], ...
-    AgentType::DataType = BaseAgent # the type of agent simulated
+    AgentType::DataType = DEBAgent # the type of agent simulated
     recordagentvars::Bool = true # record agent-level output?
     saveat::Float64 = 1. # when to save output [t]
+    odefuncs::Vector{Function} = Function[C_Wdot_const!, X_pdot_chemstat!] # ODE-based global step functions
+    rulefuncs::Vector{Function} = Function[N_tot!] # rule-based global step functions
 end
 
 """
@@ -84,6 +86,25 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     d_A::Union{Nothing,Vector{Function}} = nothing
     d_R::Union{Nothing,Vector{Function}} = nothing
     d_h::Union{Nothing,Vector{Function}} = nothing
+
+    odefuncs::Vector{Function} = Function[
+            y_z!, 
+            h_S!,
+            Idot!, 
+            Adot!, 
+            Mdot!, 
+            Jdot!, 
+            Sdot!, 
+            Hdot!,
+            H_bdot!,
+            Rdot!,
+            Ddot!,
+            age!
+        ]
+    rulefuncs::Vector{Function} = Function[
+        reproduce_opportunistic!,
+        die!
+    ]
 end
 
 """
