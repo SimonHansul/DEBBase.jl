@@ -1,7 +1,3 @@
-abstract type AbstractSpeciesParams <: AbstractParams end
-abstract type AbstractABM end
-abstract type AbstractAgent end
-
 #=
 ## General structures
 =#
@@ -9,18 +5,14 @@ abstract type AbstractAgent end
 """
 `GlobalParams` contain the global parameters (simulated timespan `t_max`, nutrient influx rate `Xdot_in`, etc.)
 """
-@with_kw mutable struct GlobalParams <: AbstractParams
+@with_kw mutable struct GlobalParams
     N0::Int64 = 1 #  initial number of individuals [#]
     t_max::Float64 = 21. # maximum simulation time [t]
     Xdot_in::Float64 = 1200. # resource influx rate [m/t]
+    k_X_out::Float64 = 0.1 # dilution rate [1/t]
     k_V::Float64 = 0.1 # chemostatic dilution rate [t^-1]
     V_patch::Float64 = 0.05 # volume of a patch (or the entire similated environment) [V]
     C_W::Vector{Float64} = [0.] # external chemical concentrations [m/t], [n/t], ...
-    AgentType::DataType = DEBAgent # the type of agent simulated
-    recordagentvars::Bool = true # record agent-level output?
-    saveat::Float64 = 1. # when to save output [t]
-    odefuncs::Vector{Function} = Function[C_Wdot_const!, X_pdot_chemstat!] # ODE-based global step functions
-    rulefuncs::Vector{Function} = Function[N_tot!] # rule-based global step functions
 end
 
 """
@@ -31,10 +23,9 @@ Variability is given by the zoom factor `Z::Distribution`, which is always appli
 and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`. <br>
 `Z` is `Dirac(1)` by default, i.e. there is no agent variability in the default parameters. <br>
 """
-@with_kw mutable struct SpeciesParams <: AbstractSpeciesParams
+@with_kw mutable struct SpeciesParams
     Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. this can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
     Z_male::Float64 = 1. # zoom factor for males
-    sex_ratio::Float64 = 1. # initial sex ratio (females vs males)
     propagate_zoom::@NamedTuple{X_emb_int::Bool, H_p::Bool, K_X::Bool} = (X_emb_int = true, H_p = true, K_X = true) # Parameters to which Z will be propagated. Z is *always* applied to `Idot_max_rel` (with appropriate scaling).
     X_emb_int::Float64 = 19.42 # initial vitellus [m]
     K_X::Float64 = 1. # half-saturation constant for food uptake [m/V]
@@ -86,26 +77,8 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     d_A::Union{Nothing,Vector{Function}} = nothing
     d_R::Union{Nothing,Vector{Function}} = nothing
     d_h::Union{Nothing,Vector{Function}} = nothing
-
-    odefuncs::Vector{Function} = Function[
-            y_z!, 
-            h_S!,
-            Idot!, 
-            Adot!, 
-            Mdot!, 
-            Jdot!, 
-            Sdot!, 
-            Hdot!,
-            H_bdot!,
-            Rdot!,
-            Ddot!,
-            age!
-        ]
-    rulefuncs::Vector{Function} = Function[
-        reproduce_opportunistic!,
-        die!
-    ]
 end
+
 
 """
     AgentParams(spc::AbstractParams)
@@ -113,7 +86,7 @@ end
 AgentParams are subject to agent variability. 
 This is in contrast to SpeciesParams, which define parameters on the species-level, i.e. the population means.
 """
-@with_kw mutable struct AgentParams <: AbstractParams
+@with_kw mutable struct AgentParams
     Z::Float64
     Idot_max_rel::Float64
     Idot_max_rel_emb::Float64
@@ -124,7 +97,7 @@ This is in contrast to SpeciesParams, which define parameters on the species-lev
     """
     Initialize AgentParams from SpeciesParams `spc`.
     """
-    function AgentParams(spc::AbstractParams)
+    function AgentParams(spc::SpeciesParams)
         agn = new()
         agent_variability!(agn, spc)
         return agn
@@ -133,12 +106,12 @@ end
 
 
 """
-    agent_variability!(p::Ref{AbstractParams})
+    agent_variability!(agn::AgentParams, scp::SpeciesParams)
 Induce agent variability in spc parameters via zoom factor `Z`. 
 `Z` is sampled from the corresponding distribution given in `p` and assumed to represent a ratio between maximum structurel *masses* (not lengths), 
 so that the surface area-specific ingestion rate `Idot_max_rel` scales with `Z^(1/3)` and parameters which represent masses or energy pools scales with `Z`.
 """
-function agent_variability!(agn::AGN, spc::SPC) where {AGN <: AbstractParams, SPC <: AbstractParams}
+function agent_variability!(agn::AgentParams, spc::SpeciesParams)
     agn.Z = rand(spc.Z) # sample zoom factor Z for agent from distribution
     agn.Idot_max_rel = spc.Idot_max_rel * agn.Z^(1/3) # Z is always applied to Idot_max_rel
     agn.Idot_max_rel_emb = spc.Idot_max_rel_emb * agn.Z^(1/3) #, including the value for embryos
@@ -152,12 +125,3 @@ function agent_variability!(agn::AGN, spc::SPC) where {AGN <: AbstractParams, SP
     end 
 end
 
-"""
-A `DEBParamCollection` contains global parameters `glb` and spc parameters `spc` (including TKTD-parameters). <br>
-Initialize the default parameter collection with `DEBParamCollection()`.
-"""
-@with_kw mutable struct DEBParamCollection <: AbstractParamCollection
-    glb::AbstractParams = GlobalParams()
-    spc::AbstractParams = SpeciesParams()
-    agn::Union{Nothing,AbstractParams} = nothing
-end
