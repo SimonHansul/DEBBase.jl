@@ -3,12 +3,12 @@
 =#
 
 """
-`GlobalParams` contain the global parameters (simulated timespan `t_max`, nutrient influx rate `Xdot_in`, etc.)
+`GlobalParams` contain the global parameters (simulated timespan `t_max`, nutrient influx rate `X_pdot_in`, etc.)
 """
 @with_kw mutable struct GlobalParams
     N0::Int64 = 1 #  initial number of individuals [#]
     t_max::Float64 = 21. # maximum simulation time [t]
-    Xdot_in::Float64 = 1200. # resource influx rate [m/t]
+    X_pdot_in::Float64 = 1200. # resource influx rate [m/t]
     k_X_out::Float64 = 0.1 # dilution rate [1/t]
     k_V::Float64 = 0.1 # chemostatic dilution rate [t^-1]
     V_patch::Float64 = 0.05 # volume of a patch (or the entire similated environment) [V]
