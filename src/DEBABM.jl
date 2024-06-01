@@ -1,7 +1,8 @@
 
+
 """
 Definition of basic ABM object.
-Currently assumes that only a single species of type `AgentType` is simulated at a time.
+Currently assumes that all agents are represented by a single agent type `AgentType`.
 """
 mutable struct ABM <: AbstractABM
     p::AbstractParamCollection # parameter collection
@@ -24,7 +25,9 @@ mutable struct ABM <: AbstractABM
     function ABM(
         p::A; 
         dt = 1/24, 
-        saveat = 1) where A <: AbstractParamCollection
+        saveat = 1,
+        execute = true
+        ) where A <: AbstractParamCollection
 
         abm = new() # initialize ABM object
 
@@ -44,11 +47,16 @@ mutable struct ABM <: AbstractABM
         abm.aout = [] # initialize agent output
         abm.mout = [] # initialize model output
 
-        run!(abm) # run the model
+        if execute
+            run!(abm) # run the model
 
-        return prepare_output(abm) # prepare output in dataframes and return
+            return prepare_output(abm) # prepare output in dataframes and return
+        else
+            return abm
+        end
     end
 end
+
 
 
 """
@@ -81,6 +89,21 @@ mutable struct DEBAgent <: AbstractAgent
     end
 end
 
+"""
+    init_agents!(abm::AbstractABM)::nothing
+Initialize the population of 
+"""
+function initialize_agents!(abm::AbstractABM)::Nothing
+
+    abm.agents = [] # initialize a vector of agents with undefined values and defined length
+
+    for i in 1:abm.p.glb.N0 # for the number of initial agents
+        push!(abm.agents, DEBAgent(abm)) # initialize an agent and add it to the vector of agents
+    end
+
+    return nothing
+end
+
 
 """
     prepare_output(abm::AbstractABM)
@@ -93,12 +116,19 @@ function prepare_output(abm::AbstractABM)
     mout = DataFrame(hcat([[x.t] for x in abm.mout]...)', [:t]) |> 
     x-> hcat(x, DataFrame(hcat([m.u for m in abm.mout]...)', extract_colnames(abm.mout[1].u)))
     
-    aout = DataFrame(hcat([[x.t, x.AgentID] for x in abm.aout]...)', [:t, :AgentID]) |> 
-    x-> hcat(x, DataFrame(hcat([a.u for a in abm.aout]...)', extract_colnames(abm.aout[1].u)))
+    if abm.p.glb.recordagentvars
+        aout = DataFrame(hcat([[x.t, x.AgentID] for x in abm.aout]...)', [:t, :AgentID]) |> 
+        x-> hcat(x, DataFrame(hcat([a.u for a in abm.aout]...)', extract_colnames(abm.aout[1].u)))
+    else
+        aout = DataFrame()
+    end
 
     return mout, aout
 end
 
+function update_glb!(agent::AbstractAgent, abm::AbstractABM)
+    map!(x -> x, agent.u.glb, abm.u) 
+end
 
 """
 step!(agent::AbstractAgent, abm::AbstractABM; odefuncs::Vector{Function}, rulefuncs::Vector{Function})
@@ -111,13 +141,16 @@ function step!(agent::DEBAgent, abm::ABM)
     du, u, p = agent.du, agent.u, agent.p # unpack agent substates, derivatives and parameters
     t = abm.t
 
+    update_glb!(agent, abm) # update references to global state variables
+    
+    for func! in agent.p.spc.rulefuncs # apply all rule-based functions
+        func!(agent, abm)
+    end
+
     for func! in agent.p.spc.odefuncs # apply all ODE-based functions
         func!(du, u, p, t) 
     end
 
-    for func! in agent.p.spc.rulefuncs # apply all rule-based functions
-        func!(agent, abm)
-    end
 
     map!(abm.euler, u.agn, du.agn, u.agn) # apply the euler scheme to agent substates
 end
@@ -137,8 +170,6 @@ end
 """
 step!(
     abm::ABM; 
-    sysfuncs = [C_Wdot_const!, X_pdot_chemstat!],
-    rulefuncs = [N_tot!]
     )
 
 Execution of a generic ABM step, following the schedule: 
@@ -194,6 +225,12 @@ function record!(abm::ABM)
     end
 end
 
+
+
+
+"""
+Run the ABM.
+"""
 function run!(abm::AbstractABM)
     while abm.t <= abm.p.glb.t_max
         step!(abm)

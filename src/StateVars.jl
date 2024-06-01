@@ -77,8 +77,8 @@ Initialize agent-level state variables.
 """
 function initialize_statevars!(agent::AbstractAgent, abm::AbstractABM)::Nothing
     agent.u = ComponentArray(
-        glb = abm.u,
-        agn = init_substates_agent(agent.p)
+        agn = init_substates_agent(agent.p),
+        glb = init_substates_global(abm.p)
     )
     return nothing
 end
@@ -95,17 +95,3 @@ function initialize_statevars!(abm::AbstractABM)
     )
 end
 
-"""
-    init_agents!(abm::AbstractABM)::nothing
-Initialize the population of 
-"""
-function initialize_agents!(abm::AbstractABM)::Nothing
-
-    abm.agents = [] # initialize a vector of agents with undefined values and defined length
-
-    for i in 1:abm.p.glb.N0 # for the number of initial agents
-        push!(abm.agents, DEBAgent(abm)) # initialize an agent and add it to the vector of agents
-    end
-
-    return nothing
-end

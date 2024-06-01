@@ -9,12 +9,18 @@ using Distributions, StatsBase, Random
 using DataFrames
 using PrecompileTools
 
+abstract type AbstractSpeciesParams <: AbstractParams end
+abstract type AbstractABM end
+abstract type AbstractAgent end
+
 include("Solvers.jl")
 
 include("Params.jl")
-export AbstractABM, AbstractSpeciesParams, ABM, DEBAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
+export childstruct!, AbstractABM, AbstractSpeciesParams, ABM, DEBAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
-include("Initialize.jl")
+include("DEBABM.jl")
+
+include("StateVars.jl")
 export init_substates_agent, init_substates_global, initialize_statevars, initialize_statevars!, initialize_agents!
 
 include("IO.jl")
@@ -24,11 +30,11 @@ include("ModelFunctions.jl")
 export sig, clipneg
 
 include("DEBODE.jl")
-export init_substates_agent, init_substates_global, abstractsimulator, returntypes, simulator, @replicates
+export abstractsimulator, returntypes, simulator, @replicates
 
 include("ImpliedTraits.jl")
+include("Macros.jl")
 
-include("DEBABM.jl")
 
 @compile_workload begin
     # precompile the default simulator

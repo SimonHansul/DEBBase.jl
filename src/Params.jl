@@ -1,6 +1,40 @@
-abstract type AbstractSpeciesParams <: AbstractParams end
-abstract type AbstractABM end
-abstract type AbstractAgent end
+
+#=
+## Constructing child structures
+=#
+
+"""
+Define a childstruct
+"""
+function childstruct(
+    parentstruct, addnames, addtypes, adddefaults
+    )
+
+    childstructname = Symbol("ChildParamType_"*randstring('a':'z', 10))
+
+    defaultparentstruct = parentstruct() # get an instance 
+    parentabstracttype = supertype(parentstruct) # we assume that the parentstruct has an  abstract supertype
+    fields = vcat(fieldnames(parentstruct)..., addnames...) # get the full list of fields
+    types = vcat(fieldtypes(parentstruct)..., addtypes) # get the full list of types
+
+    defaults = vcat(
+        [getproperty(defaultparentstruct, field) for field in fieldnames(parentstruct)],
+        adddefaults
+    )
+
+    fielddefs = [:($(field)::$(type)=$(default)) for (field,type,default) in zip(fields,types,defaults)]
+
+    quote 
+        @with_kw mutable struct $childstructname <: $parentabstracttype
+            $(fielddefs...)
+        end 
+    end |> eval
+
+    return eval(quote $childstructname end)
+
+    #@info "Defined new structure $childstructname <: $parentabstracttype from $parentstruct"
+    #eval(quote $childstructname() end)
+end
 
 #=
 ## General structures
@@ -28,7 +62,7 @@ end
 DEBBase.jl uses a hierarchical modelling approach where the `SpeciesParams` are  parameters which are common across all agents of a species, 
 and `AgentParams` contain parameters which are specific for a species. <br>
 Variability is given by the zoom factor `Z::Distribution`, which is always applied to the surface-area specific ingestion rates 
-and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`. <br>
+and can optionally propagate to parameters indicated in `propagate_zoom::NamedTuple`. <br>
 `Z` is `Dirac(1)` by default, i.e. there is no agent variability in the default parameters. <br>
 """
 @with_kw mutable struct SpeciesParams <: AbstractSpeciesParams

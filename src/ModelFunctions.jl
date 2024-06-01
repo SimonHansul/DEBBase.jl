@@ -485,6 +485,17 @@ function reproduce_opportunistic!(agent::AbstractAgent, abm::AbstractABM)::Nothi
     return nothing
 end
 
+"""
+    ingestion!(agent::AbstractAgent, abm::AbstractABMagent)::Nothing
+
+Update resource abundance in model `abm` based on ingestion flux of `agent`.
+"""
+function ingestion!(agent::AbstractAgent, abm::AbstractABM)::Nothing
+    
+    abm.u.X_p = max(0, abm.u.X_p - agent.du.agn.I_p * abm.dt)
+    
+    return nothing
+end
 
 """
     stochastic_death!(agent::AbstractAgent, abm::AbstractABM, h_x::Float64)::Nothing
@@ -521,7 +532,7 @@ function DEBODE!(du, u, p, t)::Nothing
 
     #### physiological responses
     y_z!(du, u, p, t) # response to chemical stressors
-    h_S!(du, u, p, t) # starvation mortalitY
+    h_S!(du, u, p, t) # starvation mortality
 
     #### auxiliary state variables (record cumulative values)
     Idot!(du, u, p, t)
