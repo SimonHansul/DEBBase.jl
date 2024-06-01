@@ -179,7 +179,12 @@ function relative_response(
     #=
     Calculation of the relative response
     =#
-    res = leftjoin(res, reference, on = groupby_vars) # add references as new columns
+    if length(groupby_vars)>0
+        res = leftjoin(res, reference, on = groupby_vars) # add references as new columns
+    else
+        res = hcat(res, reference)
+    end
+    
     for var in response_vars # for every response variable
         y_var = Symbol("y_" * String(var)) # get the relative response column name
         var_ref = Symbol(String(var) * "_ref") # get the reference column name
