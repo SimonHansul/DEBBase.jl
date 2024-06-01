@@ -60,6 +60,17 @@ function simulator(
 end
 
 
+function idcol!(res::DataFrame, col::Symbol, val::Float64)
+    res[!,col] .= val
+end
+
+function idcol!(res::Tuple{DataFrame,DataFrame}, col::Symbol, val::Float64)
+    for res_i in res
+        res_i[!,col] .= val
+    end
+end
+
+
 """
     @replicates(simcall::Expr, nreps::Int64) 
 
@@ -79,7 +90,7 @@ macro replicates(simcall::Expr, nreps::Int64)
 
         for replicate in 1:$nreps
             yhat_i = $(esc(simcall))
-            yhat_i[!,:replicate] .= replicate
+            yhat_i[:,:replicate] .= replicate
             append!(yhat, yhat_i)
         end
         yhat
