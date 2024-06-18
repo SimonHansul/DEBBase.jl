@@ -11,6 +11,29 @@ using PrecompileTools
 using StaticArrays
 using StatsBase
 
+
+module Utils
+
+using CSV
+using DataFrames
+
+export skipinf, 
+vectify,
+which_in,
+geomrange,
+diffvec,
+fround,
+drop_na,
+drop_na!,
+replace_na!,
+get_treatment_names,
+lab,
+read_W3C,
+ismin
+
+
+end
+
 module ParamStructs
     include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
     include("ParamStructs/structgeneration.jl") # functions to generate new parameter structures from base params (experimental)
@@ -20,7 +43,7 @@ module DoseResponse
     include("DoseResponse/doseresponse.jl")
 end
 
-module DEB
+module DEBODE
     using Parameters
     using ComponentArrays
     using OrdinaryDiffEq
@@ -31,21 +54,22 @@ module DEB
     using StaticArrays
     using StatsBase
 
-    include("structs.jl")
+    using ..ParamStructs
+    using ..DoseResponse
+
+    include("DEBODE/structs.jl")
     export AbstractABM, AbstractAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
-    include("IO.jl")
-    export setproperty!, isolate_pmoas!, set_equal!
+    include("DEBODE/IO.jl")
+    export setproperty!, isolate_pmoas!, set_equal!, relative_response
 
-    export relative_response
-
-    include("derivatives.jl")
+    include("DEBODE/derivatives.jl")
     export sig, clipneg
 
-    include("simulators.jl")
-    export init_substates_agent, init_substates_global, abstractsimulator, returntypes, simulator, @replicates
+    include("DEBODE/simulators.jl")
+    export initialize_statevars, abstractsimulator, simulator, @replicates
 
-    include("traits.jl")
+    include("DEBODE/traits.jl")
 
     @compile_workload begin
         # precompile the default simulator
