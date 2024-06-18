@@ -1,18 +1,38 @@
 """
 simulator(
-    p::DEBParamCollection; 
-    model = DEB!,
+    p::AbstractParamCollection; 
+    model = DEBODE!,
     alg = Tsit5(),
     saveat = 1,
     reltol = 1e-6,
     AgentParamType::DataType = AgentParams,
     kwargs...)::DataFrame
 
-Run the DEBBase model from a `DEBParamCollection` instance. <br>
+Run an ODE-based model. 
+
+**args**:
+
+- `theta::AbstractParamCollection`: A parameter collection with defined global parameters (`<: AbstractGlobalParams`) and species parameters (`<: AbstractSpeciesParams`).
+
+**kwargs**:
+
+- `model = DEBODE!`: Definition of the derivatives. A function form `du!(du, u, p, t)::Nothing`. See definition of `DEBODE!` in `derivatives.jl` for an example, or see docs and examples of [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/) for more details.
+- `alg = Tsit5()`: Algorithm to be used by `solve` function 
+- `saveat = 1`: When or how often to save ODE solutions to output
+- `reltol = 1e-6`: Relative tolerance of ODE solutions
+- `AgentParamType::DataType = AgentParams`: The data type that stores those parameters that are affected by individual variability. There has to be a corresponding constructor so that `theta.agn = AgentParamType(theta.spc)` works. 
+- `kwargs...`: Additional keyword argument are passed on to `OrdinaryDiffEq.solve`
+
+**Example**: 
+
+```Julia
+yhat = simulator(DEBParamCollection())
+```
+
 """
 function simulator(
-    p::DEBParamCollection; 
-    model = DEB!,
+    theta::AbstractParamCollection; 
+    model = DEBODE!,
     alg = Tsit5(),
     saveat = 1,
     reltol = 1e-6,
@@ -20,11 +40,11 @@ function simulator(
     kwargs...
     )::DataFrame
 
-    p.agn = AgentParamType(p.spc) # initialize agent parameters incl. individual variability
+    theta.agn = AgentParamType(theta.spc) # initialize agent parameters incl. individual variability
 
-    u = initialize_statevars(p)
-    prob = ODEProblem(model, u, (0, p.glb.t_max), p) # define the problem
-    sol = solve(prob, alg; kwargs...) # get solution to the IVP
+    u = initialize_statevars(theta)
+    prob = ODEProblem(model, u, (0, theta.glb.t_max), theta) # define the problem
+    sol = solve(prob, alg; saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
 
     return simout
@@ -56,68 +76,3 @@ macro replicates(simcall::Expr, nreps::Int64)
         yhat
     end
 end
-
-
-"""
-    sweep(simcall::Expr, component::AbstractParams, param::Symbol, range::Union{U,AbstractVector}) where {U <: UnitRange}
-
-Perform a parameter sweep over a single parameter. 
-
-- `simcall::Expr`: expression to evaluate a single iteration.
-- `component::AbstractParams`: instance of a parameter struct which contains the parameter to be screened.
-- `param::Symbol`: parameter to be screened.
-- `range`: parameter range
-
-----
-
-Example:
-
-    theta = DEBParamCollection() # use default parameters 
-    theta.spc.Z = Truncated(Normal(1, 0.05), 0, Inf) # include agent variability
-
-    yhat = sweep(
-        :(@replicates simulator(theta) 10), # evaluate 10 replicates per iteration
-        theta.spc, :Idot_max_rel, # screen parameter Idot_max_rel contained in theta.spc
-        range(10, 25, length = 10) # evaluate 10 values between 10 and 25
-        )
-"""
-#macro sweep(
-#    simcall::Expr, 
-#    component::A,
-#    param::Symbol, 
-#    range::Union{U,AbstractVector}) where {U <: UnitRange, A <: AbstractParams}
-#    
-#    quote
-#        yhat = DataFrame()
-#
-#        for val in $range
-#            setproperty!($component, $param, $val)
-#            yhat_i = $(esc(simcall))
-#            yhat_i[!,$param] .= val
-#            append!(yhat, yhat_i)
-#        end
-#        yhat
-#    end
-#end
-
-
-#"""
-# This macro is currently outcommented because it turned out that models defined with @compose
-# execute very slowly.
-# Also, the usefulness of @compose has to be critically evaluated.
-#
-#    @compose(derivs)
-#    
-#Compose a model system from a list of derivative functions. <br>
-#Each `deriv` is called as `deriv!(du, u, p..., t).`
-#"""
-#macro compose(derivs)
-#    quote
-#        function du!(du, u, p, t)
-#            for deriv! in $(esc(derivs))
-#                deriv!(du, u, p, t)
-#            end
-#        end
-#    end
-#end
-
