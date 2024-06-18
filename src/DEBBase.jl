@@ -1,8 +1,6 @@
 module DEBBase
 
 using Reexport
-@reexport using DEBParamStructs
-using DoseResponse
 using Parameters
 using ComponentArrays
 using OrdinaryDiffEq
@@ -13,25 +11,81 @@ using PrecompileTools
 using StaticArrays
 using StatsBase
 
-include("Structures.jl")
-export AbstractABM, AbstractAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
+module ParamStructs
+    include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
+    include("ParamStructs/structgeneration.jl") # functions to generate new parameter structures from base params (experimental)
+end
 
-include("IO.jl")
-export setproperty!, isolate_pmoas!, set_equal!
+module DoseResponse
+    include("DoseResponse/doseresponse.jl")
+end
 
-export relative_response
+module DEB
+    using Parameters
+    using ComponentArrays
+    using OrdinaryDiffEq
+    using Distributions
+    using DocStringExtensions
+    using DataFrames
+    using PrecompileTools
+    using StaticArrays
+    using StatsBase
 
-include("ModelFunctions.jl")
-export sig, clipneg
+    include("structs.jl")
+    export AbstractABM, AbstractAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
-include("Simulators.jl")
-export init_substates_agent, init_substates_global, abstractsimulator, returntypes, simulator, @replicates
+    include("IO.jl")
+    export setproperty!, isolate_pmoas!, set_equal!
 
-include("ImpliedTraits.jl")
+    export relative_response
 
-@compile_workload begin
-    # precompile the default simulator
-    yhat = simulator(DEBParamCollection())
+    include("derivatives.jl")
+    export sig, clipneg
+
+    include("simulators.jl")
+    export init_substates_agent, init_substates_global, abstractsimulator, returntypes, simulator, @replicates
+
+    include("traits.jl")
+
+    @compile_workload begin
+        # precompile the default simulator
+        yhat = simulator(DEBParamCollection())
+    end
+end
+
+module ABC
+    using DataFrames
+    using SHUtils
+    using DocStringExtensions
+    using StatsBase
+    using KernelDensity
+    using Distributions
+    using Parameters
+    using RecipesBase
+    import Base:rand
+    using Base.Threads
+    using Dates
+    using Random
+
+    include("ABC/structs.jl")
+    export Priors, get, SMCResult, opc
+
+    include("ABC/paramhandling.jl")
+    export assign!, getparam
+
+    include("ABC/sampling.jl")
+    export rand!, posterior_sample!
+
+    include("ABC/initialization.jl")
+    export deftruncnorm, deflognorm
+
+    include("ABC/evaluation.jl")
+    export summarize_accpeted, ppc
+
+    include("ABC/smc.jl")
+    export SMC
+
+    include("ABC/recipes.jl")
 end
 
 end # module DEBBase
