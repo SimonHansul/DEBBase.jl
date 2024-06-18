@@ -5,7 +5,6 @@ using Parameters
 using ComponentArrays
 using OrdinaryDiffEq
 using Distributions
-using DocStringExtensions
 using DataFrames
 using PrecompileTools
 using StaticArrays
@@ -34,18 +33,18 @@ module DoseResponse
 end
 
 module DEBODE
+
     using Parameters
     using ComponentArrays
     using OrdinaryDiffEq
     using Distributions
-    using DocStringExtensions
     using DataFrames
     using PrecompileTools
     using StaticArrays
     using StatsBase
 
-    using ..ParamStructs
-    using ..DoseResponse
+    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+    using ..DoseResponse: LL2, LL2M, LL2h
 
     include("DEBODE/paramstructs.jl")
     export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
@@ -71,7 +70,6 @@ end
 
 module ABC
     using DataFrames
-    using DocStringExtensions
     using StatsBase
     using KernelDensity
     using Distributions
@@ -82,10 +80,11 @@ module ABC
     using Dates
     using Random
 
-    using ..Utils
+    #using ..Utils
+    using ..ParamStructs: AbstractParams
 
     include("ABC/structs.jl")
-    export Priors, get, SMCResult, opc
+    export Priors, SMCResult, ppc
 
     include("ABC/paramhandling.jl")
     export assign!, getparam

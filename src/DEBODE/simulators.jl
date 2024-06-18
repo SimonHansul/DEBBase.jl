@@ -81,7 +81,6 @@ end
 
 """
 Run the DEBBase model from a reference to `DEBParamCollection`.
-$(TYPEDSIGNATURES)
 """
 function simulator(
     p::Ref{DEBParamCollection};

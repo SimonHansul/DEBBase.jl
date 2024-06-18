@@ -115,7 +115,6 @@ end
 
 """
 Calculate perturbation kernel scales from a Vector of accepted particles.
-$(TYPEDSIGNATURES)
 """
 function calculatescales(
     num_params::Int64, 
@@ -143,7 +142,6 @@ end
 
 """
 Resample from previously accepted particles, with account for SMC sampling weights.
-$(TYPEDSIGNATURES)
 """
 function resample(
     accepted_particles::Vector{Vector{Float64}}, 
@@ -420,7 +418,6 @@ function SMC(
 
         # assemble metadata
 
-      
         res = SMCResult(
             accepted = accepted,
             defaultparams = defaultparams,

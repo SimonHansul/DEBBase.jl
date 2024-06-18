@@ -7,24 +7,8 @@ function zip(priors::Priors)
     Base.zip(priors.params, priors.priors)
 end
 
-import Base:setproperty!
-"""
-    setproperty!(particle::AbstractParams, param::Symbol, value::Float64)
-When attempting to set a distribution parameter using a scalar value, we assume a Dirac distribution.
-"""
-function setproperty!(particle::AbstractParams, param::Symbol, value::R) where R <: Real
-    # if the property is not a distribution, we just set the field
-    if !(typeof(getproperty(particle, param)) <: Distribution)
-        setfield!(particle, param, value)
-    # otherwise, we first convert the value to a Dirac distribution
-    else
-        setfield!(particle, param, Dirac{Float64}(value))
-    end
-end
-
 """
 Given parameter `param`, convert vector of parameter structures containg `param` into vector of values of `param`.
-$(TYPEDSIGNATURES)
 """
 function pvec(particles::Vector{P}, param::Symbol) where P <: AbstractParams
 
@@ -97,8 +81,7 @@ getfieldname(paramname::Symbol)::Symbol = join(split(String(paramname), "_")[1:e
     assign!(particle::AbstractParams, paramname::Symbol, value::Float64)
 
 Assign a sample to a param struct. 
-This accounts for the possibility that parameters are stored as vectors within `params`. 
-
+This accounts for the possibility that some parameters might be stored in vectors (e.g. TKTD parameters where each vector element corresponds to a chemical). 
 """
 function assign!(particle::AbstractParams, paramname::Symbol, value::Float64)
     if isvecparam(paramname, particle) # does the parameter name indicate an index?
