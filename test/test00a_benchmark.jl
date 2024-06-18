@@ -4,8 +4,7 @@ using OrdinaryDiffEq
 using Test
 using Revise
 using DEBBase
+using DEBBase.DEBODE
 
-DEBBase.DEBParamCollection()
-
-@benchmark out = simulator(DEBParamCollection()) 
-@test true # this just has to run without an error
+b = @benchmark out = simulator(DEBParamCollection()) 
+@test median(b.times) < 10e6 # computation time should be (clearly) below 10ms for the default parameters

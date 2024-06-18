@@ -13,9 +13,9 @@ begin
     using OrdinaryDiffEq
     using Chain
 
-    using SHUtils
     using Revise
-    @time using DEBBase    
+    @time using DEBBase.DEBODE
+    @time using DEBBase.Utils
 end
 
 #=

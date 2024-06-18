@@ -103,8 +103,27 @@ module ABC
     
     include("ABC/evaluation.jl") # evaluation of smc output
     export summarize_accepted, ppc
-        
+      
     include("ABC/recipes.jl")
 end
+
+"""
+Recipes and convenience functions for plotting model output.
+"""
+module Figures
+    using RecipesBase
+
+    using StatsBase
+    using RecipesBase
+
+
+    include("Figures/figutils.jl")
+    include("Figures/recipes.jl")
+
+    export rugplot, lineplot, groupedlineplot, gridylabel, gridxlabel
+
+    @reexport plot
+end
+
 
 end # module DEBBase
