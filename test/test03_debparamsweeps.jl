@@ -42,8 +42,8 @@ end
         size = (1200,350), 
         xlabel = "Time (d)"
         )
-
-    YHAT = DataFrame()
+    
+    yhat = DataFrame()
     # iterate over nutrient input concentrations
     let Xdot_in = 4800.
         for _ in 1:5
@@ -63,13 +63,13 @@ end
                 )
 
             yhat[!,:Xdot_in] .= Xdot_in 
-            append!(YHAT, yhat)
+            append!(yhat, yhat)
         end
         hline!(plt, [DEBODE.calc_S_max(SpeciesParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
         display(plt)
     end
 
-    rankcor = combine(groupby(YHAT,:Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
+    rankcor = combine(groupby(yhat,:Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
 
     @test rankcor == 1 # maximm size should be strictly monotonically increasing with Xdot_in
 end
