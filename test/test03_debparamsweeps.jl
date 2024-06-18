@@ -2,19 +2,18 @@
     using Pkg; Pkg.activate("test")
     using Plots, StatsPlots, Plots.Measures
     default(titlefontsize = 10, lw = 1.5, leg = false)
-    using SHUtils
     using DataFrames
     using StatsBase
     
     using Revise 
-    using DEBBase
+    using DEBBase.DEBODE
 
     TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 end
 
 begin 
     p = DEBParamCollection()
-    yhat = DEBBase.simulator(p)
+    yhat = simulator(p)
 
     plt = @df yhat plot(
         plot(:t, :S, ylabel = "S"), 
@@ -50,7 +49,7 @@ end
         for _ in 1:5
             Xdot_in /= 2
             # generate the predidction
-            yhat = DEBBase.simulator(
+            yhat = simulator(
                 DEBParamCollection(
                     glb = GlobalParams(Xdot_in = Xdot_in, t_max = 56.), 
                     spc = SpeciesParams(K_X = 12e3))
@@ -66,7 +65,7 @@ end
             yhat[!,:Xdot_in] .= Xdot_in 
             append!(YHAT, yhat)
         end
-        hline!(plt, [DEBBase.calc_S_max(SpeciesParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
+        hline!(plt, [DEBODE.calc_S_max(SpeciesParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
         display(plt)
     end
 
