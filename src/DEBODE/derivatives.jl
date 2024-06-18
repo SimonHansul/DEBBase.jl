@@ -28,7 +28,7 @@ end
     t::Real
     )::Float64
 
-    let X_V = u.glb.X_p / p.glb.V_patch # convert food abundance to concentration
+    let X_V = u.X_p / p.glb.V_patch # convert food abundance to concentration
         return X_V / (X_V + p.agn.K_X) # calculate type II functional response
     end
 end
@@ -46,28 +46,28 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
     t::Real
     )::Nothing
 
-    u.agn.f_X = functional_response(du, u, p, t)
+    u.f_X = functional_response(du, u, p, t)
     
-    du.agn.I_emb = sig( # uptake from vitellus
-        u.agn.X_emb, # uptake from vitellus depends on mass of vitellus
+    du.I_emb = sig( # uptake from vitellus
+        u.X_emb, # uptake from vitellus depends on mass of vitellus
         0., # the switch occurs when vitellus is used up 
         0., # when the vitellus is used up, there is no uptake
-        (Complex(u.agn.S)^(2/3)).re * p.agn.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
+        (Complex(u.S)^(2/3)).re * p.agn.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
         beta = 1e20 # for switches around 0, we need very high beta values
         )
 
-    du.agn.I_p = sig( # uptake from external resource p
-        u.agn.X_emb, # ingestion from external resource depends on mass of vitellus
+    du.I_p = sig( # uptake from external resource p
+        u.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
-        u.agn.f_X * p.agn.Idot_max_rel * (Complex(u.agn.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
+        u.f_X * p.agn.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
         0.; # while there is still vitellus left, there is no uptake from the external resource
         beta = 1e20 # again we have a switch around 0, requiring very high beta
         )
 
-    du.agn.I = du.agn.I_emb + du.agn.I_p
+    du.I = du.I_emb + du.I_p
 
-    du.glb.X_p -= du.agn.I_p
-    du.agn.X_emb = -du.agn.I_emb
+    du.X_p -= du.I_p
+    du.X_emb = -du.I_emb
 
     return nothing
 end
@@ -81,7 +81,7 @@ Assimilation flux
     p::AbstractParamCollection,
     t::Real)::Nothing
 
-    du.agn.A = du.agn.I * p.spc.eta_IA * u.agn.y_A
+    du.A = du.I * p.spc.eta_IA * u.y_A
 
     return nothing
 end
@@ -95,7 +95,7 @@ Somatic maintenance flux
     p::AbstractParamCollection,
     t::Real)::Nothing
 
-    du.agn.M = u.agn.S * p.spc.k_M * u.agn.y_M
+    du.M = u.S * p.spc.k_M * u.y_M
 
     return nothing
 end
@@ -111,7 +111,7 @@ Maturity maintenance flux
     t::Real
     )::Nothing
 
-    du.agn.J = u.agn.H * p.spc.k_J * u.agn.y_M
+    du.J = u.H * p.spc.k_J * u.y_M
 
     return nothing
 end
@@ -126,7 +126,7 @@ Positive somatic growth
     t::Real
     )::Float64
 
-    return p.spc.eta_AS * u.agn.y_G * (p.spc.kappa * du.agn.A - du.agn.M)
+    return p.spc.eta_AS * u.y_G * (p.spc.kappa * du.A - du.M)
 end
 
 """
@@ -139,7 +139,7 @@ Negative somatic growth
     t::Real
     )::Float64 
 
-    return -(du.agn.M / p.spc.eta_SA - p.spc.kappa * du.agn.A)
+    return -(du.M / p.spc.eta_SA - p.spc.kappa * du.A)
 end
 
 function Sdot(
@@ -150,8 +150,8 @@ function Sdot(
     )::Float64 
 
     return sig(
-        p.spc.kappa * du.agn.A, # growth depends on maintenance coverage
-        du.agn.M, # switch occurs based on maintenance costs
+        p.spc.kappa * du.A, # growth depends on maintenance coverage
+        du.M, # switch occurs based on maintenance costs
         Sdot_negative(du, u, p, t), # left of the threshold == maintenance costs cannot be covered == negative growth
         Sdot_positive(du, u, p, t) # right of the threshold == maintenance costs can be covered == positive growth
     )
@@ -167,38 +167,38 @@ Somatic growth, including application of shrinking equation.
     t::Real
     )::Nothing
 
-    du.agn.S = Sdot(du, u, p, t)
+    du.S = Sdot(du, u, p, t)
 
     return nothing
 end
 
 """
-    S_0dot!(
+    S_max_histdot!(
         du::ComponentArray,
         u::ComponentArray,
         p::AbstractParamCollection,
         t::Real
         )::Nothing
 
-Reference structure `S_0`, which is used as a measure of energetic state.
+Reference structure `S_max_hist`, which is used as a measure of energetic state.
 
 This is the amount of structure an individual of the given age has under ideal conditions, 
 i.e. `f = 1` and `y_z = 1`, with the exception of `y_G`. 
-Values of `y_G != 1` are included in the calculation of `S_0`, so that a slowing down of growth 
+Values of `y_G != 1` are included in the calculation of `S_max_hist`, so that a slowing down of growth 
 """
-@inline function S_0dot!(
+@inline function S_max_histdot!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
     t::Real
     )::Nothing
 
-    #du.agn.S_0 = p.eta_AS * u.agn.y_G * (DEBBase.sig(u.X_emb, 0., p.agn.Idot_max_rel, p.agn.Idot_max_rel_emb; beta = 1e20) * Complex(u.agn.S ^(2/3)).re - p.spc.k_M * u.S_0)
+    #du.S_max_hist = p.eta_AS * u.y_G * (DEBBase.sig(u.X_emb, 0., p.agn.Idot_max_rel, p.agn.Idot_max_rel_emb; beta = 1e20) * Complex(u.S ^(2/3)).re - p.spc.k_M * u.S_max_hist)
 
-    u.agn.S_0 = sig(
+    u.S_max_hist = sig(
         u.S,
-        u.S_0,
-        u.S_0,
+        u.S_max_hist,
+        u.S_max_hist,
         u.S;
     )
 
@@ -225,10 +225,10 @@ Such rules are however likely species-specific and should be evaluated in the li
     t::Real
     )::Nothing 
 
-    du.agn.H = sig(
-        u.agn.H, # maturation depends on maturity
+    du.H = sig(
+        u.H, # maturation depends on maturity
         p.agn.H_p, # switch occurs at maturity at puberty H_p
-        clipneg(((1 - p.spc.kappa) * du.agn.A) - du.agn.J), # maturation for embryos and juveniles
+        clipneg(((1 - p.spc.kappa) * du.A) - du.J), # maturation for embryos and juveniles
         0., # maturation for adults
     )
 
@@ -248,11 +248,11 @@ This way, we obtain H_b as an implied trait and can use it later (for example in
     t::Real
     )::Nothing
 
-    du.agn.H_b = sig(
-        u.agn.X_emb, # estimate depends on embryonic state
+    du.H_b = sig(
+        u.X_emb, # estimate depends on embryonic state
         0., # switch occurs when vitellus is gone
         0., # post-embryonic: H_b stays fixed
-        du.agn.H # embryonic: H_b tracks H
+        du.H # embryonic: H_b tracks H
     )
 
     return nothing
@@ -268,11 +268,11 @@ Reproduction flux.
     t::Real
     )::Nothing 
 
-    du.agn.R = sig(
-        u.agn.H, # reproduction depends on maturity
+    du.R = sig(
+        u.H, # reproduction depends on maturity
         p.agn.H_p, # switch occurs at maturity at puberty H_p
         0., # reproduction for embryos and juveniles
-        clipneg(u.agn.y_R * p.spc.eta_AR * ((1 - p.spc.kappa) * du.agn.A - du.agn.J)) # reproduction for adults
+        clipneg(u.y_R * p.spc.eta_AR * ((1 - p.spc.kappa) * du.A - du.J)) # reproduction for adults
     )
 
     return nothing
@@ -326,7 +326,7 @@ Currently simply returns zeros because time-variable exposure is not yet impleme
     t::Real
     )::Nothing 
 
-    du.glb.C_W = zeros(length(u.glb.C_W)) # constant exposure : derivative is 0
+    du.C_W = zeros(length(u.C_W)) # constant exposure : derivative is 0
 
     return nothing
 end
@@ -373,32 +373,13 @@ If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-speci
     t::Real
     )::Nothing 
 
-    for z in eachindex(u.glb.C_W)
-        @inbounds du.agn.D_G[z] = sig(u.agn.X_emb, 0., p.spc.k_D_G[z] * (u.glb.C_W[z] - u.agn.D_G[z]), 0.)
-        @inbounds du.agn.D_M[z] = sig(u.agn.X_emb, 0., p.spc.k_D_M[z] * (u.glb.C_W[z] - u.agn.D_M[z]), 0.)
-        @inbounds du.agn.D_A[z] = sig(u.agn.X_emb, 0., p.spc.k_D_A[z] * (u.glb.C_W[z] - u.agn.D_A[z]), 0.)
-        @inbounds du.agn.D_R[z] = sig(u.agn.X_emb, 0., p.spc.k_D_R[z] * (u.glb.C_W[z] - u.agn.D_R[z]), 0.)
-        @inbounds du.agn.D_h[z] = sig(u.agn.X_emb, 0., p.spc.k_D_h[z] * (u.glb.C_W[z] - u.agn.D_h[z]), 0.)
-        
-        #@inbounds du.D_G[z] = sig(u.X_emb, 0., p.spc.k_D_G[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_G[z]) - u.D_G[z] * (du.S / u.S), 0.)
-        #@inbounds du.D_M[z] = sig(u.X_emb, 0., p.spc.k_D_M[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_M[z]) - u.D_M[z] * (du.S / u.S), 0.)
-        #@inbounds du.D_A[z] = sig(u.X_emb, 0., p.spc.k_D_A[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_A[z]) - u.D_A[z] * (du.S / u.S), 0.)
-        #@inbounds du.D_R[z] = sig(u.X_emb, 0., p.spc.k_D_R[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_R[z]) - u.D_R[z] * (du.S / u.S), 0.)
-        #
-        #@inbounds du.D_h[z] = sig(u.X_emb, 0., p.spc.k_D_h[z] * (calc_SL_max(p.spc) / (Complex(u.S)^(1/3)).re) * (u.C_W[z] - u.D_h[z]) - u.D_h[z] * (du.S / u.S), 0.)
+    for z in eachindex(u.C_W)
+        @inbounds du.D_G[z] = sig(u.X_emb, 0., p.spc.k_D_G[z] * (u.C_W[z] - u.D_G[z]), 0.)
+        @inbounds du.D_M[z] = sig(u.X_emb, 0., p.spc.k_D_M[z] * (u.C_W[z] - u.D_M[z]), 0.)
+        @inbounds du.D_A[z] = sig(u.X_emb, 0., p.spc.k_D_A[z] * (u.C_W[z] - u.D_A[z]), 0.)
+        @inbounds du.D_R[z] = sig(u.X_emb, 0., p.spc.k_D_R[z] * (u.C_W[z] - u.D_R[z]), 0.)
+        @inbounds du.D_h[z] = sig(u.X_emb, 0., p.spc.k_D_h[z] * (u.C_W[z] - u.D_h[z]), 0.)
     end
-
-    return nothing
-end
-
-@inline function age!(
-    du::ComponentVector,
-    u::ComponentVector,
-    p::AbstractParamCollection,
-    t::Real
-    )::Nothing 
-
-    du.agn.age = 1.
 
     return nothing
 end
@@ -413,12 +394,12 @@ Response to chemical stressors, assuming independent action for mixtures.
     t::Real
     )::Nothing 
 
-    @inbounds u.agn.y_G = prod([p.spc.drc_functs_G[z](u.agn.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.glb.C_W)]) # combined relative responses for sublethal effects per PMoA
-    @inbounds u.agn.y_M = prod([p.spc.drc_functs_M[z](u.agn.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.glb.C_W)])
-    @inbounds u.agn.y_A = prod([p.spc.drc_functs_A[z](u.agn.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.glb.C_W)])
-    @inbounds u.agn.y_R = prod([p.spc.drc_functs_R[z](u.agn.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.glb.C_W)])
+    @inbounds u.y_G = prod([p.spc.drc_functs_G[z](u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.C_W)]) # combined relative responses for sublethal effects per PMoA
+    @inbounds u.y_M = prod([p.spc.drc_functs_M[z](u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.C_W)])
+    @inbounds u.y_A = prod([p.spc.drc_functs_A[z](u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.C_W)])
+    @inbounds u.y_R = prod([p.spc.drc_functs_R[z](u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.C_W)])
 
-    @inbounds u.agn.h_z = sum([p.spc.drc_functs_h[z](u.agn.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.glb.C_W)]) # hazard rate
+    @inbounds u.h_z = sum([p.spc.drc_functs_h[z](u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.C_W)]) # hazard rate
 
     return nothing
 end
@@ -434,13 +415,18 @@ Hazard rate under starvation
     t::Real
     )::Nothing 
 
-    u.agn.h_S = LL2h(u.agn.S / u.agn.S_0, (p.spc.e_S, -p.spc.b_S))
+    u.h_S = LL2h(u.S / u.S_max_hist, (p.spc.e_S, -p.spc.b_S))
 
     return nothing
 end
 
 """
+    Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
+
 Mautrity-driven metabolic acceleration from birth to maturity threshold `H_j` (metamorphosis). 
+This form of metabolic acceleration assumes that metabolic rate constants change as maturation progresses 
+(e.g. due to changes in gene expression). 
+
 We assume that some baseline parameter `p` has value `p_b` at birth and `p_j` at metamorphosis.
 Between birth and metamorphosis, the current value of `p` is the maturity-weighted mean of `p_b` and `p_j`.
 """
@@ -465,55 +451,8 @@ end
 
 
 """
-    reproduce_opportunistic!(agent::AbstractAgent, abm::AbstractABM)::Nothing
-
-Reproduction according to an opportunistic reproduction strategy. 
-Offspring is created whenever there is enough energy in the reproduction buffer.
-"""
-function reproduce_opportunistic!(agent::AbstractAgent, abm::AbstractABM)::Nothing
-    
-    let num_offspring = trunc(agent.u.agn.R / agent.p.agn.X_emb_int) # calculate the number of offspring produced
-        for _ in 1:num_offspring # for the given number of offspring agents
-            offspring = abm.p.glb.AgentType(abm) # initialize a new agent
-            offspring.u.agn.cohort = agent.u.agn.cohort + 1 # the offspring agent is part of a new cohort
-            push!(abm.agents, offspring) # add offspring to agents vector
-            agent.u.agn.R -= agent.p.agn.X_emb_int # remove energy from reproduction buffer
-        end
-        agent.u.agn.cum_repro += num_offspring
-    end
-
-    return nothing
-end
-
-
-"""
-    stochastic_death!(agent::AbstractAgent, abm::AbstractABM, h_x::Float64)::Nothing
-
-Apply stochastic death model to agent, with respect to hazard rate `h_x`. 
-
-Records the cause of death encoded in a number, given by keyword argument `causeofdeath`.
-"""
-function stochastic_death!(agent::AbstractAgent, abm::AbstractABM, h_x::Float64; causeofdeath = 0.)::Nothing
-    if rand() >= exp(-h_x / abm.dt)
-        agent.u.agn.dead = 1.
-        agent.u.agn.causeofdeath = causeofdeath
-    end
-
-    return nothing
-end
-
-function die!(agent::AbstractAgent, abm::AbstractABM)::Nothing
-    stochastic_death!(agent, abm, agent.u.agn.h_S; causeofdeath = 1.) # starvation mortality from loss of structure
-    return nothing
-end
-
-function N_tot!(abm::AbstractABM)::Nothing
-    abm.u.N_tot = length(abm.agents)
-    return nothing
-end
-
-"""
     DEBODE!(du, u, p, t)
+
 Definition of base model as a system of ordinary differential equations. 
 This model definition is suitable for simulating the life-history of a single organism in conjecture with DifferentialEquations.jl.
 """
@@ -531,8 +470,8 @@ function DEBODE!(du, u, p, t)::Nothing
     Qdot!(du, u, p, t)
 
     #### major state variables
-    Sdot!(du, u, p, t) # structure
-    S_0dot!(du, u, p, t) # reference structure
+    Sdot!(du, u, p, t) # structures
+    S_max_histdot!(du, u, p, t) # reference structure
     Hdot!(du, u, p, t) # maturity 
     H_bdot!(du, u, p, t) # estimate of maturity at birth
     Rdot!(du, u, p, t) # reproduction buffer

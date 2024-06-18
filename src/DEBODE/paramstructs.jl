@@ -1,61 +1,44 @@
-abstract type AbstractSpeciesParams <: AbstractParams end
-abstract type AbstractABM end
-abstract type AbstractAgent end
-
-#=
-## General structures
-=#
-
 """
 `GlobalParams` contain the global parameters (simulated timespan `t_max`, nutrient influx rate `Xdot_in`, etc.)
 """
-@with_kw mutable struct GlobalParams <: AbstractParams
-    N0::Int64 = 1 #  initial number of individuals [#]
-    t_max::Float64 = 21. # maximum simulation time [t]
-    Xdot_in::Float64 = 1200. # resource influx rate [m/t]
-    k_V::Float64 = 0.1 # chemostatic dilution rate [t^-1]
-    V_patch::Float64 = 0.05 # volume of a patch (or the entire similated environment) [V]
-    C_W::Vector{Float64} = [0.] # external chemical concentrations [m/t], [n/t], ...
-    AgentType::DataType = DEBAgent # the type of agent simulated
-    recordagentvars::Bool = true # record agent-level output?
-    saveat::Float64 = 1. # when to save output [t]
-    odefuncs::Vector{Function} = Function[C_Wdot_const!, X_pdot_chemstat!] # ODE-based global step functions
-    rulefuncs::Vector{Function} = Function[N_tot!] # rule-based global step functions
+@with_kw mutable struct GlobalParams <: AbstractGlobalParams
+    N0::Int64 = 1 #  initial number of individuals
+    t_max::Float64 = 21. # maximum simulation time (d)
+    Xdot_in::Float64 = 1200. # set to be a little above the absolute maximum ingestion rate according to default SpeciesParams
+    V_patch::Float64 = 0.05 # volume of a patch (L) (or the entire similated environment)
+    C_W::Vector{Float64} = [0.] # external chemical concentrations
 end
 
 """
-`SpeciesParams` contain population means of DEB and TKTD parameters. Default values are for Daphnia magna and Azoxystrobin in μg C. <br>
+`SpeciesParams` contain population means of DEB and TKTD parameters. 
+Default values are roughly reproduce life-history of Daphnia magna (model currency mass carbon in μgC) exposued to Azoxystrobin (mg/L). <br>
 DEBBase.jl uses a hierarchical modelling approach where the `SpeciesParams` are  parameters which are common across all agents of a species, 
-and `AgentParams` contain parameters which are specific for a species. <br>
+and `IndParams` contain parameters which are specific for an individual. <br>
 Variability is given by the zoom factor `Z::Distribution`, which is always applied to the surface-area specific ingestion rates 
 and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`. <br>
 `Z` is `Dirac(1)` by default, i.e. there is no agent variability in the default parameters. <br>
 """
 @with_kw mutable struct SpeciesParams <: AbstractSpeciesParams
-    Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. this can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
-    Z_male::Float64 = 1. # zoom factor for males
-    sex_ratio::Float64 = 1. # initial sex ratio (females vs males)
+    Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. This can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
     propagate_zoom::@NamedTuple{X_emb_int::Bool, H_p::Bool, K_X::Bool} = (X_emb_int = true, H_p = true, K_X = true) # Parameters to which Z will be propagated. Z is *always* applied to `Idot_max_rel` (with appropriate scaling).
-    X_emb_int::Float64 = 19.42 # initial vitellus [m]
-    K_X::Float64 = 1. # half-saturation constant for food uptake [m/V]
-    Idot_max_rel::Float64 = 22.9 # maximum size-specific ingestion rate [m m^-2/3 t^-1]
-    Idot_max_rel_emb::Float64 = 22.9 # size-specific embryonic ingestion rate [m m^-2/3 t^-1]
-    kappa::Float64 = 0.539 # somatic allocation fraction [-]
-    eta_IA::Float64 = 0.33 # assimilation efficiency [-]
-    eta_AS::Float64 = 0.8 # growth efficiency [-]
-    eta_SA::Float64 = 0.8 # shrinking efficiency [-]
-    eta_AR::Float64 = 0.95 # reproduction efficiency [-]
-    k_M::Float64 = 0.59 # somatic maintenance rate constant [t^-1]
-    k_J::Float64 = 0.504 # maturity maintenance rate constant [t^-1]
-    H_p::Float64 = 100. # maturity at puberty [m]
-    e_S::Float64 = 0.5 # sensitivity parameter for starvation mortality (median effective S_0) [m]
-    b_S::Float64 = 5. # slope parameter for starvation mortality [-]
+    X_emb_int::Float64 = 19.42 # initial vitellus
+    K_X::Float64 = 1. # half-saturation constant for food uptake
+    Idot_max_rel::Float64 = 22.9 # maximum size-specific ingestion rate
+    Idot_max_rel_emb::Float64 = 22.9 # size-specific embryonic ingestion rate
+    kappa::Float64 = 0.539 # Somatic allocation fraction
+    eta_IA::Float64 = 0.33 # Assimilation efficiency
+    eta_AS::Float64 = 0.8 # Growth efficiency
+    eta_SA::Float64 = 0.8 # Shrinking efficiency
+    eta_AR::Float64 = 0.95 # Reproduction efficiency
+    k_M::Float64 = 0.59 # Somatic maintenance rate constant
+    k_J::Float64 = 0.504 # Maturity maintenance rate constant
+    H_p::Float64 = 100. # Maturity at puberty
     
-    k_D_G::Vector{Float64} = [0.]  # Dominant rate constants   [t^-1] | PMoA growth efficiency
-    k_D_M::Vector{Float64} = [0.]  # Dominant rate constants   [t^-1] | PMoA maintenance costs
-    k_D_A::Vector{Float64} = [0.]  # Dominant rate constants   [t^-1] | PMoA assimilation efficiency
-    k_D_R::Vector{Float64} = [0.38] # Dominant rate constants  [t^-1] | PMoA reproduction efficiency
-    k_D_h::Vector{Float64} = [0.]   # Dominant rate constants  [t^-1] | PMoA hazard rate
+    k_D_G::Vector{Float64} = [0.] # Dominant rate constants | PMoA growth efficiency
+    k_D_M::Vector{Float64} = [0.] # Dominant rate constants | PMoA maintenance costs
+    k_D_A::Vector{Float64} = [0.] # Dominant rate constants | PMoA assimilation efficiency
+    k_D_R::Vector{Float64} = [0.38] # Dominant rate constants | PMoA reproduction efficiency
+    k_D_h::Vector{Float64} = [0.] # Dominant rate constants | PMoA hazard rate
     
     drc_functs_G::Vector{Function} = [LL2] # Dose-response functions | PMoA growth efficiency
     drc_functs_M::Vector{Function} = [LL2M] # Dose-response functions | PMoA maintenance costs
@@ -87,53 +70,12 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     d_R::Union{Nothing,Vector{Function}} = nothing
     d_h::Union{Nothing,Vector{Function}} = nothing
 
-    odefuncs::Vector{Function} = Function[
-            y_z!, 
-            h_S!,
-            Idot!, 
-            Adot!, 
-            Mdot!, 
-            Jdot!, 
-            Sdot!, 
-            Hdot!,
-            H_bdot!,
-            Rdot!,
-            Ddot!,
-            age!
-        ]
-    rulefuncs::Vector{Function} = Function[
-        reproduce_opportunistic!,
-        die!
-    ]
+    aux::Any = nothing # placeholder for auxiliaray parameters - can be useful for development purposes
 end
-
-"""
-    AgentParams(spc::AbstractParams)
-
-AgentParams are subject to agent variability. 
-This is in contrast to SpeciesParams, which define parameters on the species-level, i.e. the population means.
-"""
-@with_kw mutable struct AgentParams <: AbstractParams
-    Z::Float64
-    Idot_max_rel::Float64
-    Idot_max_rel_emb::Float64
-    X_emb_int::Float64
-    H_p::Float64
-    K_X::Float64
-    
-    """
-    Initialize AgentParams from SpeciesParams `spc`.
-    """
-    function AgentParams(spc::AbstractParams)
-        agn = new()
-        agent_variability!(agn, spc)
-        return agn
-    end
-end
-
 
 """
     agent_variability!(p::Ref{AbstractParams})
+
 Induce agent variability in spc parameters via zoom factor `Z`. 
 `Z` is sampled from the corresponding distribution given in `p` and assumed to represent a ratio between maximum structurel *masses* (not lengths), 
 so that the surface area-specific ingestion rate `Idot_max_rel` scales with `Z^(1/3)` and parameters which represent masses or energy pools scales with `Z`.
@@ -153,6 +95,29 @@ function agent_variability!(agn::AGN, spc::SPC) where {AGN <: AbstractParams, SP
 end
 
 """
+    IndParams(spc::AbstractParams)
+IndParams are subject to agent variability. 
+This is in contrast to SpeciesParams, which define parameters on the species-level.
+"""
+@with_kw mutable struct IndParams <: AbstractParams
+    Z::Float64
+    Idot_max_rel::Float64
+    Idot_max_rel_emb::Float64
+    X_emb_int::Float64
+    H_p::Float64
+    K_X::Float64
+    
+    """
+    Initialize IndParams from SpeciesParams `spc`.
+    """
+    function IndParams(spc::AbstractParams)
+        agn = new()
+        agent_variability!(agn, spc)
+        return agn
+    end
+end
+
+"""
 A `DEBParamCollection` contains global parameters `glb` and spc parameters `spc` (including TKTD-parameters). <br>
 Initialize the default parameter collection with `DEBParamCollection()`.
 """
@@ -160,4 +125,27 @@ Initialize the default parameter collection with `DEBParamCollection()`.
     glb::AbstractParams = GlobalParams()
     spc::AbstractParams = SpeciesParams()
     agn::Union{Nothing,AbstractParams} = nothing
+
+    @assert length(spc.k_D_G) >= length(glb.C_W) "Length of k_D_G is not at least length of C_W"
+    @assert length(spc.k_D_M) >= length(glb.C_W) "Length of k_D_M is not at least length of C_W"
+    @assert length(spc.k_D_A) >= length(glb.C_W) "Length of k_D_A is not at least length of C_W"
+    @assert length(spc.k_D_R) >= length(glb.C_W) "Length of k_D_R is not at least length of C_W"
+    @assert length(spc.k_D_h) >= length(glb.C_W) "Length of k_D_h is not at least length of C_W"
+    @assert length(spc.drc_functs_G) >= length(glb.C_W) "Length of drc_functs_G is not at least length of C_W"
+    @assert length(spc.drc_functs_M) >= length(glb.C_W) "Length of drc_functs_M is not at least length of C_W"
+    @assert length(spc.drc_functs_A) >= length(glb.C_W) "Length of drc_functs_A is not at least length of C_W"
+    @assert length(spc.drc_functs_R) >= length(glb.C_W) "Length of drc_functs_R is not at least length of C_W"
+    @assert length(spc.drc_functs_h) >= length(glb.C_W) "Length of drc_functs_h is not at least length of C_W"
+    @assert length(spc.e_G) >= length(glb.C_W) "Length of e_G is not at least length of C_W"
+    @assert length(spc.e_M) >= length(glb.C_W) "Length of e_M is not at least length of C_W"
+    @assert length(spc.e_A) >= length(glb.C_W) "Length of e_A is not at least length of C_W"
+    @assert length(spc.e_R) >= length(glb.C_W) "Length of e_R is not at least length of C_W"
+    @assert length(spc.e_h) >= length(glb.C_W) "Length of e_h is not at least length of C_W"
+    @assert length(spc.b_G) >= length(glb.C_W) "Length of b_G is not at least length of C_W"
+    @assert length(spc.b_M) >= length(glb.C_W) "Length of b_M is not at least length of C_W"
+    @assert length(spc.b_A) >= length(glb.C_W) "Length of b_A is not at least length of C_W"
+    @assert length(spc.b_R) >= length(glb.C_W) "Length of b_R is not at least length of C_W"
+    @assert length(spc.b_h) >= length(glb.C_W) "Length of b_h is not at least length of C_W"
 end
+
+

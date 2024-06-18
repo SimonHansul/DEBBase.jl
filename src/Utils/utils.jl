@@ -11,6 +11,8 @@ vectify(x) = parse.(Float64, split(split(split(x, "[")[end], "]")[1]," "))
 
 
 """
+    which_in(x::String, possibilities::Vector{String}; none_found_return_val="") 
+
 Identify element of `possibilities` occuring in `x`. \\
 E.g., which_in("I like apples", ["apples", "bananas"]) returns "apples". \\
 If multiple possibilities occur, first detection is returned. 
@@ -109,11 +111,14 @@ function replace_na!(
 end
 
 """
-    get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::Array{Symbol,1})
+    get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::Vector{Symbol})::Tuple{Vector{String}, Vector{Int64}, Vector{Float64}}
 
-Infer treatment types (categorical), levels (ordinal) and names (type + level) from Array of exposure concentrations.
+Infer treatment types (categorical), levels (ordinal) and names (type + level).
+
+- `exposure`: Nested Vector of exposure concentrations
+- `stressor_names`: Names to be used to construct treatment names. Has to match position of values in inner Vector of `exposure`. 
 """
-function get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::Array{Symbol,1})
+function get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::Array{Symbol,1})::Tuple{Vector{String}, Vector{Int64}, Vector{Float64}}
     treatment_type = ["co"]
     treatment_level = [0]
     treatment = ["co"]
@@ -140,7 +145,7 @@ end
     lab(v::Vector{R}; kwargs...) where R <: Real
 
 Create legend labels from Vector of numeric Values. 
-Kwargs are handed down to fround. 
+Kwargs are handed down to `fround`. 
 """
 function lab(v::Vector{R}; kwargs...) where R <: Real
     return hcat(unique(fround.(v; kwargs...))...)
@@ -149,7 +154,7 @@ end
 """
     wrappend(file::String, data::DataFrame, step::Int64)
 
-Write DataFrames to disc during loop. Will overwrite existing file if step == 1 and append if step > 1.
+Write DataFrames to disc (e.g. within loop). Will overwrite existing file if `step == 1` and append if `step > 1`.
 """
 function wrappend(file::String, data::DataFrame, step::Int64)
     if (isfile(file)==false)&(step>1)
@@ -216,8 +221,9 @@ function read_W3C(file_path::AbstractString; kwargs...)::DataFrame
 end
 
 """
-Get positions of minimum values as BitVector.
+    ismin(x::Vector{R})
 
+Abbreviation for `x .== minimum(x)`
 """
 function ismin(x::Vector{R}) where R <: Real
     return x .== minimum(x)

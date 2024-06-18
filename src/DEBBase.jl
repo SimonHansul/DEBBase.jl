@@ -13,30 +13,20 @@ using StatsBase
 
 
 module Utils
+        
+    using CSV
+    using DataFrames
 
-using CSV
-using DataFrames
+    include("Utils/utils.jl")
 
-export skipinf, 
-vectify,
-which_in,
-geomrange,
-diffvec,
-fround,
-drop_na,
-drop_na!,
-replace_na!,
-get_treatment_names,
-lab,
-read_W3C,
-ismin
-
-
+    export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin
 end
 
 module ParamStructs
     include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
     include("ParamStructs/structgeneration.jl") # functions to generate new parameter structures from base params (experimental)
+
+    export AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
 end
 
 module DoseResponse
@@ -57,14 +47,16 @@ module DEBODE
     using ..ParamStructs
     using ..DoseResponse
 
-    include("DEBODE/structs.jl")
-    export AbstractABM, AbstractAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
+    include("DEBODE/paramstructs.jl")
+    export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
     include("DEBODE/IO.jl")
     export setproperty!, isolate_pmoas!, set_equal!, relative_response
 
     include("DEBODE/derivatives.jl")
     export sig, clipneg
+
+    include("DEBODE/statevars.jl")
 
     include("DEBODE/simulators.jl")
     export initialize_statevars, abstractsimulator, simulator, @replicates
@@ -79,7 +71,6 @@ end
 
 module ABC
     using DataFrames
-    using SHUtils
     using DocStringExtensions
     using StatsBase
     using KernelDensity
@@ -90,6 +81,8 @@ module ABC
     using Base.Threads
     using Dates
     using Random
+
+    using ..Utils
 
     include("ABC/structs.jl")
     export Priors, get, SMCResult, opc
@@ -104,7 +97,7 @@ module ABC
     export deftruncnorm, deflognorm
 
     include("ABC/evaluation.jl")
-    export summarize_accpeted, ppc
+    export summarize_accepted, ppc
 
     include("ABC/smc.jl")
     export SMC
