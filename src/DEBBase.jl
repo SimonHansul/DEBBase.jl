@@ -10,9 +10,8 @@ using PrecompileTools
 using StaticArrays
 using StatsBase
 
-
 module Utils
-        
+
     using CSV
     using DataFrames
 
