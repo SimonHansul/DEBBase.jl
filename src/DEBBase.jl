@@ -47,7 +47,7 @@ module DEBODE
     using ..DoseResponse: LL2, LL2M, LL2h
 
     include("DEBODE/paramstructs.jl")
-    export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
+    export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, IndParams
 
     include("DEBODE/IO.jl")
     export setproperty!, isolate_pmoas!, set_equal!, relative_response
@@ -68,6 +68,9 @@ module DEBODE
     end
 end
 
+"""
+Submodule for parameter estimation using approximate bayesian computation.
+"""
 module ABC
     using DataFrames
     using StatsBase
@@ -92,15 +95,15 @@ module ABC
     include("ABC/sampling.jl")
     export rand!, posterior_sample!
 
-    include("ABC/initialization.jl")
+    include("ABC/initialization.jl") # initialization of 
     export deftruncnorm, deflognorm
 
-    include("ABC/evaluation.jl")
-    export summarize_accepted, ppc
-
-    include("ABC/smc.jl")
+    include("ABC/smc.jl") # parameter estimation using sequential monte carlo approximate bayesian computation
     export SMC
-
+    
+    include("ABC/evaluation.jl") # evaluation of smc output
+    export summarize_accepted, ppc
+        
     include("ABC/recipes.jl")
 end
 

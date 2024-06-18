@@ -2,7 +2,7 @@
 # Base ABM implementation 
 
 Implementation of the simplest possible generic version.<br>
-Generic in terms of state variables and parameters, i.e. we don't need to make any chagnes to this code if we add or remove variables or parameters
+Generic in terms of state variables and parameters, i.e. we don't need to make any chindes to this code if we add or remove variables or parameters
 =#
 @time "Loading packages" begin
     TAG = splitpath(@__FILE__)[end] |> x -> split(x, ".")[1] |> String    

@@ -13,7 +13,6 @@ function deftruncnorm(mu, CV; l = 0, u = Inf)  # TODO: move deftruncnorm() to DE
     return Truncated(Normal(mu, CV * mu), l, u)
 end
 
-
 function deflognorm(modus, sigma)
     mu = log(modus) + sigma^2
     return LogNormal(mu, sigma)

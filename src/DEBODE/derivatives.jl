@@ -29,7 +29,7 @@ end
     )::Float64
 
     let X_V = u.X_p / p.glb.V_patch # convert food abundance to concentration
-        return X_V / (X_V + p.agn.K_X) # calculate type II functional response
+        return X_V / (X_V + p.ind.K_X) # calculate type II functional response
     end
 end
 
@@ -52,14 +52,14 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
         u.X_emb, # uptake from vitellus depends on mass of vitellus
         0., # the switch occurs when vitellus is used up 
         0., # when the vitellus is used up, there is no uptake
-        (Complex(u.S)^(2/3)).re * p.agn.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
+        (Complex(u.S)^(2/3)).re * p.ind.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
         beta = 1e20 # for switches around 0, we need very high beta values
         )
 
     du.I_p = sig( # uptake from external resource p
         u.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
-        u.f_X * p.agn.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
+        u.f_X * p.ind.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
         0.; # while there is still vitellus left, there is no uptake from the external resource
         beta = 1e20 # again we have a switch around 0, requiring very high beta
         )
@@ -193,7 +193,7 @@ Values of `y_G != 1` are included in the calculation of `S_max_hist`, so that a 
     t::Real
     )::Nothing
 
-    #du.S_max_hist = p.eta_AS * u.y_G * (DEBBase.sig(u.X_emb, 0., p.agn.Idot_max_rel, p.agn.Idot_max_rel_emb; beta = 1e20) * Complex(u.S ^(2/3)).re - p.spc.k_M * u.S_max_hist)
+    #du.S_max_hist = p.eta_AS * u.y_G * (DEBBase.sig(u.X_emb, 0., p.ind.Idot_max_rel, p.ind.Idot_max_rel_emb; beta = 1e20) * Complex(u.S ^(2/3)).re - p.spc.k_M * u.S_max_hist)
 
     u.S_max_hist = sig(
         u.S,
@@ -227,7 +227,7 @@ Such rules are however likely species-specific and should be evaluated in the li
 
     du.H = sig(
         u.H, # maturation depends on maturity
-        p.agn.H_p, # switch occurs at maturity at puberty H_p
+        p.ind.H_p, # switch occurs at maturity at puberty H_p
         clipneg(((1 - p.spc.kappa) * du.A) - du.J), # maturation for embryos and juveniles
         0., # maturation for adults
     )
@@ -270,7 +270,7 @@ Reproduction flux.
 
     du.R = sig(
         u.H, # reproduction depends on maturity
-        p.agn.H_p, # switch occurs at maturity at puberty H_p
+        p.ind.H_p, # switch occurs at maturity at puberty H_p
         0., # reproduction for embryos and juveniles
         clipneg(u.y_R * p.spc.eta_AR * ((1 - p.spc.kappa) * du.A - du.J)) # reproduction for adults
     )
@@ -296,13 +296,13 @@ function Qdot!(
     )::Nothing 
 
     # dissipation fluxes for the individual processes
-    let Qdot_A, Qdot_S, Qdot_C, Qdot_R
+    let Qdot_A, Qdot_S, Qdot_R
         
         Qdot_A = du.I * (1 - p.spc.eta_IA)
         Qdot_S = du.S >= 0 ? du.S * (1 - p.spc.eta_AS) / p.spc.eta_AS : du.S * (p.spc.eta_SA - 1)
         Qdot_R = du.R * (1 - p.spc.eta_AR) / p.spc.eta_AR
         
-        du.Q =  Qdot_A + Qdot_S + Qdot_C + Qdot_R + du.M + du.J + du.H
+        du.Q =  Qdot_A + Qdot_S + Qdot_R + du.M + du.J + du.H
     end
 
     return nothing
@@ -317,7 +317,8 @@ end
         )::Nothing 
 
 Change in external concentrations. 
-Currently simply returns zeros because time-variable exposure is not yet implemented.
+Currently simply returns zeros because time-variable exposure is not yet implemented. 
+# TODO: extend to account for time-variable exposure.
 """
 @inline function C_Wdot!(
     du::ComponentVector,
@@ -332,9 +333,9 @@ Currently simply returns zeros because time-variable exposure is not yet impleme
 end
 
 """
-Change in environmental resource abundance for simulation of a chemostat.
+Change in environmental resource abundance, simulating a chemostat.
 """
-function X_pdot_chemstat!(
+function X_pdot!(
     du::ComponentVector,
     u::ComponentVector,
     p::AbstractParamCollection,
@@ -405,49 +406,35 @@ Response to chemical stressors, assuming independent action for mixtures.
 end
 
 
-"""
-Hazard rate under starvation
-"""
-@inline function h_S!(
-    du::ComponentVector,
-    u::ComponentVector,
-    p::AbstractParamCollection,
-    t::Real
-    )::Nothing 
 
-    u.h_S = LL2h(u.S / u.S_max_hist, (p.spc.e_S, -p.spc.b_S))
-
-    return nothing
-end
-
-"""
-    Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
-
-Mautrity-driven metabolic acceleration from birth to maturity threshold `H_j` (metamorphosis). 
-This form of metabolic acceleration assumes that metabolic rate constants change as maturation progresses 
-(e.g. due to changes in gene expression). 
-
-We assume that some baseline parameter `p` has value `p_b` at birth and `p_j` at metamorphosis.
-Between birth and metamorphosis, the current value of `p` is the maturity-weighted mean of `p_b` and `p_j`.
-"""
-function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
-    w_b = (H_j - H) / (H_j - H_b) # weight for p_b
-    w_j = 1 - w_b # weight for p_j
-    p_bj = mean([p_b, p_j], Weights([w_b, w_j])) # p_bj, i.e. value between birth and maturity
-    
-    p = DEBBase.sig( # post-metamorphosis: value stays constant at p_j
-        H,
-        H_j,
-        DEBBase.sig( # embryonic: value stays constant at p_b
-            X_emb, 
-            0., 
-            p_bj, 
-            p_b),
-        p_j
-    )
-
-    return p
-end
+#"""
+#    Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
+#
+#Mautrity-driven metabolic acceleration from birth to maturity threshold `H_j` (metamorphosis). 
+#This form of metabolic acceleration assumes that metabolic rate constants change as maturation progresses 
+#(e.g. due to changes in gene expression). 
+#
+#We assume that some baseline parameter `p` has value `p_b` at birth and `p_j` at metamorphosis.
+#Between birth and metamorphosis, the current value of `p` is the maturity-weighted mean of `p_b` and `p_j`.
+#"""
+#function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
+#    w_b = (H_j - H) / (H_j - H_b) # weight for p_b
+#    w_j = 1 - w_b # weight for p_j
+#    p_bj = mean([p_b, p_j], Weights([w_b, w_j])) # p_bj, i.e. value between birth and maturity
+#    
+#    p = DEBBase.sig( # post-metamorphosis: value stays constant at p_j
+#        H,
+#        H_j,
+#        DEBBase.sig( # embryonic: value stays constant at p_b
+#            X_emb, 
+#            0., 
+#            p_bj, 
+#            p_b),
+#        p_j
+#    )
+#
+#    return p
+#end
 
 
 """
@@ -460,7 +447,6 @@ function DEBODE!(du, u, p, t)::Nothing
 
     #### physiological responses
     y_z!(du, u, p, t) # response to chemical stressors
-    h_S!(du, u, p, t) # starvation mortalitY
 
     #### auxiliary state variables (record cumulative values)
     Idot!(du, u, p, t)
@@ -476,7 +462,6 @@ function DEBODE!(du, u, p, t)::Nothing
     H_bdot!(du, u, p, t) # estimate of maturity at birth
     Rdot!(du, u, p, t) # reproduction buffer
     X_pdot!(du, u, p, t) # resource abundance
-    X_embdot!(du, u, p, t) # vitellus
     Ddot!(du, u, p, t) # damage
     C_Wdot!(du, u, p, t) # external stressor concentration 
 
