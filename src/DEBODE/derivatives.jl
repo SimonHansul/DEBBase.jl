@@ -460,66 +460,6 @@ function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float6
     return p
 end
 
-
-"""
-    reproduce_opportunistic!(agent::AbstractAgent, abm::AbstractABM)::Nothing
-
-Reproduction according to an opportunistic reproduction strategy. 
-Offspring is created whenever there is enough energy in the reproduction buffer.
-"""
-function reproduce_opportunistic!(agent::AbstractAgent, abm::AbstractABM)::Nothing
-    
-    let num_offspring = trunc(agent.u.agn.R / agent.p.agn.X_emb_int) # calculate the number of offspring produced
-        for _ in 1:num_offspring # for the given number of offspring agents
-            offspring = abm.p.glb.AgentType(abm) # initialize a new agent
-            offspring.u.agn.cohort = agent.u.agn.cohort + 1 # the offspring agent is part of a new cohort
-            push!(abm.agents, offspring) # add offspring to agents vector
-            agent.u.agn.R -= agent.p.agn.X_emb_int # remove energy from reproduction buffer
-        end
-        agent.u.agn.cum_repro += num_offspring
-    end
-
-    return nothing
-end
-
-"""
-    ingestion!(agent::AbstractAgent, abm::AbstractABMagent)::Nothing
-
-Update resource abundance in model `abm` based on ingestion flux of `agent`.
-"""
-function ingestion!(agent::AbstractAgent, abm::AbstractABM)::Nothing
-    
-    abm.u.X_p = max(0, abm.u.X_p - agent.du.agn.I_p * abm.dt)
-    
-    return nothing
-end
-
-"""
-    stochastic_death!(agent::AbstractAgent, abm::AbstractABM, h_x::Float64)::Nothing
-
-Apply stochastic death model to agent, with respect to hazard rate `h_x`. 
-
-Records the cause of death encoded in a number, given by keyword argument `causeofdeath`.
-"""
-function stochastic_death!(agent::AbstractAgent, abm::AbstractABM, h_x::Float64; causeofdeath = 0.)::Nothing
-    if rand() >= exp(-h_x / abm.dt)
-        agent.u.agn.dead = 1.
-        agent.u.agn.causeofdeath = causeofdeath
-    end
-
-    return nothing
-end
-
-function die!(agent::AbstractAgent, abm::AbstractABM)::Nothing
-    stochastic_death!(agent, abm, agent.u.agn.h_S; causeofdeath = 1.) # starvation mortality from loss of structure
-    return nothing
-end
-
-function N_tot!(abm::AbstractABM)::Nothing
-    abm.u.N_tot = length(abm.agents)
-    return nothing
-end
-
 """
     DEBODE!(du, u, p, t)
 
