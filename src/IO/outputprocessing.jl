@@ -1,4 +1,24 @@
 
+
+"""
+    sol_to_mat(sol::O)::Matrix{Float64}
+Convert ODE solution object to matrix.
+"""
+function sol_to_mat(sol::O)::Matrix{Float64} where O <: ODESolution
+    return hcat(sol.t, hcat(sol.u...)')
+end
+
+"""
+Convert ODE solution object to output data frame.
+"""
+function sol_to_df(sol::O)::DataFrame where O <: ODESolution
+    simout = DataFrame(
+        sol_to_mat(sol), # ODE output converted to matrix
+        extract_colnames(sol) # column names inferred from component array keys
+    )
+    return simout
+end
+
 """
 Calculate relative response, given scalar values.
 """
