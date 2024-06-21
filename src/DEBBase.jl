@@ -32,6 +32,24 @@ module DoseResponse
     include("DoseResponse/doseresponse.jl")
 end
 
+
+module IO
+
+    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+
+    using DataFrames
+    using OrdinaryDiffEq
+    using ComponentArrays
+
+    include("IO/ioutils.jl")
+    include("IO/paramhandling.jl")
+    include("IO/inputprocessing.jl")
+    include("IO/outputprocessing.jl")
+    
+    export isolate_pmoas!, set_equal!, relative_response, idcol!
+end
+
+
 module DEBODE
 
     using Parameters
@@ -45,7 +63,7 @@ module DEBODE
 
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
     using ..DoseResponse: LL2, LL2M, LL2h
-    using ..Utils: sol_to_df, sol_to_mat
+    using ..IO: sol_to_df, sol_to_mat
 
     include("DEBODE/paramstructs.jl")
     export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, IndParams
@@ -103,21 +121,6 @@ module ABC
     export summarize_accepted, ppc
       
     include("ABC/recipes.jl")
-end
-
-module IO
-
-    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
-
-    using DataFrames
-    using OrdinaryDiffEq
-
-    include("IO/ioutils.jl")
-    include("IO/paramhandling.jl")
-    include("IO/inputprocessing.jl")
-    include("IO/outputprocessing.jl")
-    
-    export isolate_pmoas!, set_equal!, relative_response, idcol!
 end
 
 """
