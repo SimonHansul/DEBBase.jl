@@ -1,18 +1,16 @@
-if occursin("terminal", abspath(PROGRAM_FILE))
+begin
     @info("Loading packages")
     using Pkg; Pkg.activate("test")
+    using Test
     using Plots, StatsPlots, Plots.Measures
-    using SHUtils
     using DataFrames, DataFramesMeta
     using ProgressMeter
     default(leg = false, lw = 1.5)
-    using DEBFigures
     using OrdinaryDiffEq
-
     using Revise
-    using DEBBase
+    @time using DEBBase.DEBODE, DEBBase.Utils, DEBBase.Figures
+    TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 end
-TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 
 pmoa = "M"
 p = DEBParamCollection()
@@ -32,9 +30,9 @@ Simulate single stressors with different PMoAs
 # FIXME: negative damage...
 # does not seem related to S at all
 #
-using DEBBase
+
 begin   
-    out = DataFrame()
+    yhat = DataFrame()
     pmoas = ["G", "M", "A", "R"]
     for pmoa in pmoas
         for C_W in round.(10 .^ range(log10(0.1), log10(1.), length = 5), sigdigits = 2)
@@ -56,15 +54,27 @@ begin
                 b_A = [2.],
                 b_R = [2.],
                 b_h = [2.])
-            p = DEBParamCollection(glb = glb, spc = spc)
-            isolate_pmoas!(p.spc, [pmoa])
-            out_zj = simulator(p)
-            out_zj[!,:C_W] .= C_W
-            out_zj[!,:pmoa] .= pmoa
-            append!(out, out_zj)
-        end
+            theta = DEBParamCollection(glb = glb, spc = spc)
+            isolate_pmoas!(theta.spc, [pmoa])
+            yhat_zj = simulator(theta)
+            yhat_zj[!,:C_W] .= C_W
+            yhat_zj[!,:pmoa] .= pmoa
+            append!(yhat, yhat_zj)
+
+        end # for C_W in ...
+
+        
+    end # for pmoa in ...
+    
+    yhat = relative_response(yhat, [:S, :R], :C_W; groupby_vars = [:t, :pmoa])
+    
+    rankcor = combine(groupby(yhat, :pmoa)) do yhat_j
+        r = combine(groupby(yhat_j, :C_W_1), :y_R => last) |>
+        x -> corspearman(x.C_W_1, x.y_R_last)
+        return DataFrame(r = r)
     end
-    out = DEBBase.relative_response(out, [:S, :R], :C_W; groupby_vars = [:t, :pmoa])
+
+    @test unique(rankcor.r) == [-1]
 
     plt = plot(
         layout = (2,4), title = hcat(pmoas...), 
@@ -77,8 +87,9 @@ begin
         )
 
     for (j,pmoa) in enumerate(pmoas)
-        @df @subset(out, :pmoa .== pmoa) groupedlineplot!(plt, :t, :y_S, :C_W, subplot = j, label = hcat(unique(:C_W)...))
-        @df @subset(out, :pmoa .== pmoa) groupedlineplot!(plt, :t, :y_R, :C_W, subplot = 4+j, label = hcat(unique(:C_W)...))
+        
+        @df @subset(yhat, :pmoa .== pmoa) groupedlineplot!(plt, :t, :y_S, :C_W, subplot = j, label = hcat(unique(:C_W)...))
+        @df @subset(yhat, :pmoa .== pmoa) groupedlineplot!(plt, :t, :y_R, :C_W, subplot = 4+j, label = hcat(unique(:C_W)...))
     end
 
     display(plt)

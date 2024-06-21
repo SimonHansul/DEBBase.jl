@@ -1,14 +1,16 @@
 module DEBBase
 
 using Reexport
-@reexport using DEBParamStructs
-@reexport using DoseResponse
-using ComponentArrays, StaticArrays
-using Parameters, OrdinaryDiffEq
-using Distributions, StatsBase, Random
+using Parameters
+using ComponentArrays
+using OrdinaryDiffEq
+using Distributions
 using DataFrames
 using PrecompileTools
+using StaticArrays
+using StatsBase
 
+<<<<<<< HEAD
 abstract type AbstractSpeciesParams <: AbstractParams end
 abstract type AbstractABM end
 abstract type AbstractAgent end
@@ -39,6 +41,119 @@ include("Macros.jl")
 @compile_workload begin
     # precompile the default simulator
     #yhat = simulator(DEBParamCollection())
+=======
+
+module Utils
+        
+    using CSV
+    using DataFrames
+
+    include("Utils/utils.jl")
+
+    export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin
+>>>>>>> 68ffa3666dd1b56a58a769b08e648a1011cd23be
 end
+
+module ParamStructs
+    include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
+    include("ParamStructs/structgeneration.jl") # functions to generate new parameter structures from base params (experimental)
+
+    export AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+end
+
+module DoseResponse
+    include("DoseResponse/doseresponse.jl")
+end
+
+module DEBODE
+
+    using Parameters
+    using ComponentArrays
+    using OrdinaryDiffEq
+    using Distributions
+    using DataFrames
+    using PrecompileTools
+    using StaticArrays
+    using StatsBase
+
+    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+    using ..DoseResponse: LL2, LL2M, LL2h
+
+    include("DEBODE/paramstructs.jl")
+    export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, IndParams
+
+    include("DEBODE/IO.jl")
+    export setproperty!, isolate_pmoas!, set_equal!, relative_response
+
+    include("DEBODE/derivatives.jl")
+    export sig, clipneg
+
+    include("DEBODE/statevars.jl")
+
+    include("DEBODE/simulators.jl")
+    export initialize_statevars, abstractsimulator, simulator, @replicates
+
+    include("DEBODE/traits.jl")
+
+    @compile_workload begin
+        # precompile the default simulator
+        yhat = simulator(DEBParamCollection())
+    end
+end
+
+"""
+Submodule for parameter estimation using approximate bayesian computation.
+"""
+module ABC
+    using DataFrames
+    using StatsBase
+    using KernelDensity
+    using Distributions
+    using Parameters
+    using RecipesBase
+    import Base:rand
+    using Base.Threads
+    using Dates
+    using Random
+
+    #using ..Utils
+    using ..ParamStructs: AbstractParams
+
+    include("ABC/structs.jl")
+    export Priors, SMCResult, ppc
+
+    include("ABC/paramhandling.jl")
+    export assign!, getparam
+
+    include("ABC/sampling.jl")
+    export rand!, posterior_sample!
+
+    include("ABC/initialization.jl") # initialization of 
+    export deftruncnorm, deflognorm
+
+    include("ABC/smc.jl") # parameter estimation using sequential monte carlo approximate bayesian computation
+    export SMC
+    
+    include("ABC/evaluation.jl") # evaluation of smc output
+    export summarize_accepted, ppc
+      
+    include("ABC/recipes.jl")
+end
+
+"""
+Recipes and convenience functions for plotting model output.
+"""
+module Figures
+    using StatsBase
+    using Reexport
+    using RecipesBase
+
+    include("Figures/figutils.jl")
+    export  gridylabel, gridxlabel, gridyattr, gridxattr
+    include("Figures/recipes.jl")
+
+    export rugplot, lineplot, groupedlineplot
+end
+
 
 end # module DEBBase

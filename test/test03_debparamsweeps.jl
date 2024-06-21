@@ -2,19 +2,18 @@
     using Pkg; Pkg.activate("test")
     using Plots, StatsPlots, Plots.Measures
     default(titlefontsize = 10, lw = 1.5, leg = false)
-    using SHUtils
     using DataFrames
     using StatsBase
     
     using Revise 
-    using DEBBase
+    using DEBBase.DEBODE
 
     TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 end
 
 begin 
     p = DEBParamCollection()
-    yhat = DEBBase.simulator(p)
+    yhat = simulator(p)
 
     plt = @df yhat plot(
         plot(:t, :S, ylabel = "S"), 
@@ -43,14 +42,14 @@ end
         size = (1200,350), 
         xlabel = "Time (d)"
         )
-
-    YHAT = DataFrame()
+    
+    yhat = DataFrame()
     # iterate over nutrient input concentrations
     let Xdot_in = 4800.
         for _ in 1:5
             Xdot_in /= 2
             # generate the predidction
-            yhat = DEBBase.simulator(
+            yhat = simulator(
                 DEBParamCollection(
                     glb = GlobalParams(Xdot_in = Xdot_in, t_max = 56.), 
                     spc = SpeciesParams(K_X = 12e3))
@@ -64,13 +63,13 @@ end
                 )
 
             yhat[!,:Xdot_in] .= Xdot_in 
-            append!(YHAT, yhat)
+            append!(yhat, yhat)
         end
-        hline!(plt, [DEBBase.calc_S_max(SpeciesParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
+        hline!(plt, [DEBODE.calc_S_max(SpeciesParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
         display(plt)
     end
 
-    rankcor = combine(groupby(YHAT,:Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
+    rankcor = combine(groupby(yhat,:Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
 
     @test rankcor == 1 # maximm size should be strictly monotonically increasing with Xdot_in
 end

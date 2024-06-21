@@ -23,17 +23,8 @@ end
 
 Extract the column names of an output dataframe from an ODE solution object.
 """
-function extract_colnames(sol::O)::Vector{Symbol} where {O <:ODESolution}
-    let u = sol.u[1], colnames = []
+extract_colnames(sol::ODESolution)::Vector{Symbol} = vcat([:t], extract_colnames(sol.u[1]))
 
-        for u_i in (u.glb, u.agn)
-            push!(colnames, extract_colnames(u_i))
-        end
-
-        colnames = vcat([:t], colnames...)
-        return colnames
-    end
-end
 
 """
     sol_to_mat(sol::O)::Matrix{Float64}

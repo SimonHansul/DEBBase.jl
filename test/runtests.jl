@@ -21,10 +21,15 @@ x -> filter(f -> f != "runtests.jl", x)
 
 include(tests[2])
 
-y = DEBBase.simulator(DEBParamCollection())
+y = simulator(DEBParamCollection())
 
 
 for test in tests
     @info("Running $test")
     include(test)
 end
+
+
+
+using Revise
+using DEBBase
