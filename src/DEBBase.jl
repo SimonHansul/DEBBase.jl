@@ -21,6 +21,7 @@ module Utils
 end
 
 module ParamStructs
+    
     include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
     include("ParamStructs/structgeneration.jl") # functions to generate new parameter structures from base params (experimental)
 
@@ -47,9 +48,6 @@ module DEBODE
 
     include("DEBODE/paramstructs.jl")
     export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, IndParams
-
-    include("DEBODE/IO.jl")
-    export setproperty!, isolate_pmoas!, set_equal!, relative_response
 
     include("DEBODE/derivatives.jl")
     export sig, clipneg
@@ -106,6 +104,21 @@ module ABC
     include("ABC/recipes.jl")
 end
 
+module IO
+
+    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+
+    using DataFrames
+    using OrdinaryDiffEq
+
+    include("IO/ioutils.jl")
+    include("IO/paramhandling.jl")
+    include("IO/inputprocessing.jl")
+    include("IO/outputprocessing.jl")
+    
+    export isolate_pmoas!, set_equal!, relative_response, idcol!
+end
+
 """
 Recipes and convenience functions for plotting model output.
 """
@@ -120,6 +133,7 @@ module Figures
 
     export rugplot, lineplot, groupedlineplot
 end
+
 
 
 end # module DEBBase
