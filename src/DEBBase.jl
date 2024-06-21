@@ -10,38 +10,6 @@ using PrecompileTools
 using StaticArrays
 using StatsBase
 
-<<<<<<< HEAD
-abstract type AbstractSpeciesParams <: AbstractParams end
-abstract type AbstractABM end
-abstract type AbstractAgent end
-
-include("Solvers.jl")
-
-include("Params.jl")
-export childstruct!, AbstractABM, AbstractSpeciesParams, ABM, DEBAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
-
-include("DEBABM.jl")
-
-include("StateVars.jl")
-export init_substates_agent, init_substates_global, initialize_statevars, initialize_statevars!, initialize_agents!
-
-include("IO.jl")
-export setproperty!, isolate_pmoas!, set_equal!, relative_response
-
-include("ModelFunctions.jl")
-export sig, clipneg
-
-include("DEBODE.jl")
-export abstractsimulator, returntypes, simulator, @replicates
-
-include("ImpliedTraits.jl")
-include("Macros.jl")
-
-
-@compile_workload begin
-    # precompile the default simulator
-    #yhat = simulator(DEBParamCollection())
-=======
 
 module Utils
         
@@ -51,10 +19,10 @@ module Utils
     include("Utils/utils.jl")
 
     export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin
->>>>>>> 68ffa3666dd1b56a58a769b08e648a1011cd23be
 end
 
 module ParamStructs
+    
     include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
     include("ParamStructs/structgeneration.jl") # functions to generate new parameter structures from base params (experimental)
 
@@ -81,9 +49,6 @@ module DEBODE
 
     include("DEBODE/paramstructs.jl")
     export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, IndParams
-
-    include("DEBODE/IO.jl")
-    export setproperty!, isolate_pmoas!, set_equal!, relative_response
 
     include("DEBODE/derivatives.jl")
     export sig, clipneg
@@ -140,6 +105,21 @@ module ABC
     include("ABC/recipes.jl")
 end
 
+module IO
+
+    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+
+    using DataFrames
+    using OrdinaryDiffEq
+
+    include("IO/ioutils.jl")
+    include("IO/paramhandling.jl")
+    include("IO/inputprocessing.jl")
+    include("IO/outputprocessing.jl")
+    
+    export isolate_pmoas!, set_equal!, relative_response, idcol!
+end
+
 """
 Recipes and convenience functions for plotting model output.
 """
@@ -154,6 +134,7 @@ module Figures
 
     export rugplot, lineplot, groupedlineplot
 end
+
 
 
 end # module DEBBase

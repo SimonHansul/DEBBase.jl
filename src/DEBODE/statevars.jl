@@ -35,7 +35,6 @@ function initialize_statevars(theta::AbstractParamCollection)::ComponentArray
         y_M = 1., # relative response | maintenance costs 
         y_A = 1., # relative response | assimilation efficiency
         y_R = 1., # relative response | reproduction efficiency
-        h_z = 0., # hazard rate | chemical stressors
-        h_S = 0.  # hazard rate | starvation
+        h_z = 0. # hazard rate | chemical stressors
     )
 end

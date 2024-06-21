@@ -436,10 +436,6 @@ end
 #    return p
 #end
 
-<<<<<<< HEAD:src/ModelFunctions.jl
-    return nothing
-end
-
 """
 Mautrity-driven metabolic acceleration from birth to maturity threshold `H_j` (metamorphosis). 
 We assume that some baseline parameter `p` has value `p_b` at birth and `p_j` at metamorphosis.
@@ -523,23 +519,17 @@ function N_tot!(abm::AbstractABM)::Nothing
     abm.u.N_tot = length(abm.agents)
     return nothing
 end
-=======
->>>>>>> 68ffa3666dd1b56a58a769b08e648a1011cd23be:src/DEBODE/derivatives.jl
 
 """
     DEBODE!(du, u, p, t)
 
 Definition of base model as a system of ordinary differential equations. 
-This model definition is suitable for simulating the life-history of a single organism in conjecture with DifferentialEquations.jl.
+This model definition is suitable for simulating the life-history of a single organism in conjecture with OrdinaryDiffEq/DifferentialEquations.jl.
 """
 function DEBODE!(du, u, p, t)::Nothing
 
     #### physiological responses
     y_z!(du, u, p, t) # response to chemical stressors
-<<<<<<< HEAD:src/ModelFunctions.jl
-    h_S!(du, u, p, t) # starvation mortality
-=======
->>>>>>> 68ffa3666dd1b56a58a769b08e648a1011cd23be:src/DEBODE/derivatives.jl
 
     #### auxiliary state variables (record cumulative values)
     Idot!(du, u, p, t)
