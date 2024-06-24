@@ -14,10 +14,23 @@ module Utils
 
     using CSV
     using DataFrames
+    using OrdinaryDiffEq
+    using ComponentArrays
+    using StatsBase
 
+    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+    
     include("Utils/utils.jl")
-
     export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin, sol_to_df, sol_to_mat
+
+
+    include("IO/ioutils.jl")
+    include("IO/paramhandling.jl")
+    include("IO/inputprocessing.jl")
+    include("IO/outputprocessing.jl")
+    
+    export isolate_pmoas!, set_equal!, relative_response, idcol!
+
 end
 
 module ParamStructs
@@ -32,25 +45,6 @@ module DoseResponse
     include("DoseResponse/doseresponse.jl")
     export LL2, LL2h, LL2M
 end
-
-
-module IO
-
-    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
-
-    using DataFrames
-    using OrdinaryDiffEq
-    using ComponentArrays
-    using StatsBase
-
-    include("IO/ioutils.jl")
-    include("IO/paramhandling.jl")
-    include("IO/inputprocessing.jl")
-    include("IO/outputprocessing.jl")
-    
-    export isolate_pmoas!, set_equal!, relative_response, idcol!
-end
-
 
 module DEBODE
 
