@@ -17,10 +17,11 @@ module Utils
 
     include("Utils/utils.jl")
 
-    export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin
+    export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin, sol_to_df, sol_to_mat
 end
 
 module ParamStructs
+    
     include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
     include("ParamStructs/structgeneration.jl") # functions to generate new parameter structures from base params (experimental)
 
@@ -31,6 +32,24 @@ module DoseResponse
     include("DoseResponse/doseresponse.jl")
     export LL2, LL2h, LL2M
 end
+
+
+module IO
+
+    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+
+    using DataFrames
+    using OrdinaryDiffEq
+    using ComponentArrays
+
+    include("IO/ioutils.jl")
+    include("IO/paramhandling.jl")
+    include("IO/inputprocessing.jl")
+    include("IO/outputprocessing.jl")
+    
+    export isolate_pmoas!, set_equal!, relative_response, idcol!
+end
+
 
 module DEBODE
 
@@ -45,12 +64,10 @@ module DEBODE
 
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
     using ..DoseResponse: LL2, LL2M, LL2h
+    using ..IO: sol_to_df, sol_to_mat
 
     include("DEBODE/paramstructs.jl")
     export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, IndParams
-
-    include("DEBODE/IO.jl")
-    export setproperty!, isolate_pmoas!, set_equal!, relative_response
 
     include("DEBODE/derivatives.jl")
     export sig, clipneg
@@ -121,6 +138,7 @@ module Figures
 
     export rugplot, lineplot, groupedlineplot
 end
+
 
 
 end # module DEBBase

@@ -436,12 +436,35 @@ end
 #    return p
 #end
 
+"""
+Mautrity-driven metabolic acceleration from birth to maturity threshold `H_j` (metamorphosis). 
+We assume that some baseline parameter `p` has value `p_b` at birth and `p_j` at metamorphosis.
+Between birth and metamorphosis, the current value of `p` is the maturity-weighted mean of `p_b` and `p_j`.
+"""
+function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
+    w_b = (H_j - H) / (H_j - H_b) # weight for p_b
+    w_j = 1 - w_b # weight for p_j
+    p_bj = mean([p_b, p_j], Weights([w_b, w_j])) # p_bj, i.e. value between birth and maturity
+    
+    p = DEBBase.sig( # post-metamorphosis: value stays constant at p_j
+        H,
+        H_j,
+        DEBBase.sig( # embryonic: value stays constant at p_b
+            X_emb, 
+            0., 
+            p_bj, 
+            p_b),
+        p_j
+    )
+
+    return p
+end
 
 """
     DEBODE!(du, u, p, t)
 
 Definition of base model as a system of ordinary differential equations. 
-This model definition is suitable for simulating the life-history of a single organism in conjecture with DifferentialEquations.jl.
+This model definition is suitable for simulating the life-history of a single organism in conjecture with OrdinaryDiffEq/DifferentialEquations.jl.
 """
 function DEBODE!(du, u, p, t)::Nothing
 

@@ -9,10 +9,7 @@ Parse String to Vector of Floats.
 """
 vectify(x) = parse.(Float64, split(split(split(x, "[")[end], "]")[1]," "))
 
-
 """
-    which_in(x::String, possibilities::Vector{String}; none_found_return_val="") 
-
 Identify element of `possibilities` occuring in `x`. \\
 E.g., which_in("I like apples", ["apples", "bananas"]) returns "apples". \\
 If multiple possibilities occur, first detection is returned. 
@@ -111,14 +108,11 @@ function replace_na!(
 end
 
 """
-    get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::Vector{Symbol})::Tuple{Vector{String}, Vector{Int64}, Vector{Float64}}
+    get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::Array{Symbol,1})
 
-Infer treatment types (categorical), levels (ordinal) and names (type + level).
-
-- `exposure`: Nested Vector of exposure concentrations
-- `stressor_names`: Names to be used to construct treatment names. Has to match position of values in inner Vector of `exposure`. 
+Infer treatment types (categorical), levels (ordinal) and names (type + level) from Array of exposure concentrations.
 """
-function get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::Array{Symbol,1})::Tuple{Vector{String}, Vector{Int64}, Vector{Float64}}
+function get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::Array{Symbol,1})
     treatment_type = ["co"]
     treatment_level = [0]
     treatment = ["co"]
@@ -145,7 +139,7 @@ end
     lab(v::Vector{R}; kwargs...) where R <: Real
 
 Create legend labels from Vector of numeric Values. 
-Kwargs are handed down to `fround`. 
+Kwargs are handed down to fround. 
 """
 function lab(v::Vector{R}; kwargs...) where R <: Real
     return hcat(unique(fround.(v; kwargs...))...)
@@ -154,7 +148,7 @@ end
 """
     wrappend(file::String, data::DataFrame, step::Int64)
 
-Write DataFrames to disc (e.g. within loop). Will overwrite existing file if `step == 1` and append if `step > 1`.
+Write DataFrames to disc during loop. Will overwrite existing file if step == 1 and append if step > 1.
 """
 function wrappend(file::String, data::DataFrame, step::Int64)
     if (isfile(file)==false)&(step>1)
@@ -206,26 +200,13 @@ function read_W3C(file_path::AbstractString; kwargs...)::DataFrame
     core_data_str = join(core_data, "\n")
     core_data_table = CSV.File(IOBuffer(core_data_str); kwargs...) |> DataFrame
 
-    #=
-    meta = [split(replace(x, "#" =>""), ",") for x in meta] 
-
-    for entry in meta
-        key = entry[1]
-        value = entry[2]
-        #FIXME: metadata can currently not be accessed using metadata(core_data_table). how can we get this to work?
-        metadata!(core_data_table, key, value)
-    end
-    =#
-    
     return core_data_table
 end
 
 """
-    ismin(x::Vector{R})
+Get positions of minimum values as BitVector.
 
-Abbreviation for `x .== minimum(x)`
 """
 function ismin(x::Vector{R}) where R <: Real
     return x .== minimum(x)
 end
-
