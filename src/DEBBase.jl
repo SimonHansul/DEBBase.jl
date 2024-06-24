@@ -10,6 +10,15 @@ using PrecompileTools
 using StaticArrays
 using StatsBase
 
+
+module ParamStructs
+    
+    include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
+    include("ParamStructs/structgeneration.jl") # functions to generate new parameter structures from base params (experimental)
+
+    export AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+end
+
 module Utils
 
     using CSV
@@ -23,22 +32,13 @@ module Utils
     include("Utils/utils.jl")
     export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin, sol_to_df, sol_to_mat
 
-
-    include("IO/ioutils.jl")
-    include("IO/paramhandling.jl")
-    include("IO/inputprocessing.jl")
-    include("IO/outputprocessing.jl")
+    include("Utils/ioutils.jl")
+    include("Utils/paramhandling.jl")
+    include("Utils/inputprocessing.jl")
+    include("Utils/outputprocessing.jl")
     
     export isolate_pmoas!, set_equal!, relative_response, idcol!
 
-end
-
-module ParamStructs
-    
-    include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
-    include("ParamStructs/structgeneration.jl") # functions to generate new parameter structures from base params (experimental)
-
-    export AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
 end
 
 module DoseResponse
@@ -59,7 +59,7 @@ module DEBODE
 
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
     using ..DoseResponse: LL2, LL2M, LL2h
-    using ..IO: sol_to_df, sol_to_mat
+    using ..Utils: sol_to_df, sol_to_mat
 
     include("DEBODE/paramstructs.jl")
     export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, ODEAgentParams
