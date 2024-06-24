@@ -41,6 +41,7 @@ module IO
     using DataFrames
     using OrdinaryDiffEq
     using ComponentArrays
+    using StatsBase
 
     include("IO/ioutils.jl")
     include("IO/paramhandling.jl")
@@ -67,7 +68,7 @@ module DEBODE
     using ..IO: sol_to_df, sol_to_mat
 
     include("DEBODE/paramstructs.jl")
-    export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, IndParams
+    export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, ODEAgentParams
 
     include("DEBODE/derivatives.jl")
     export sig, clipneg

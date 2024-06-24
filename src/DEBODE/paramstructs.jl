@@ -14,7 +14,7 @@ end
 `SpeciesParams` contain population means of DEB and TKTD parameters. 
 Default values are roughly reproduce life-history of Daphnia minda (model currency mass carbon in μgC) exposued to Azoxystrobin (mg/L). <br>
 DEBBase.jl uses a hierarchical modelling approach where the `SpeciesParams` are  parameters which are common across all agents of a species, 
-and `IndParams` contain parameters which are specific for an individual. <br>
+and `ODEAgentParams` contain parameters which are specific for an individual. <br>
 Variability is given by the zoom factor `Z::Distribution`, which is always applied to the surface-area specific ingestion rates 
 and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`. <br>
 `Z` is `Dirac(1)` by default, i.e. there is no agent variability in the default parameters. <br>
@@ -84,11 +84,11 @@ function individual_variability!(agn::AbstractParams, spc::AbstractParams)
 end
 
 """
-    IndParams(spc::AbstractParams)
-IndParams are subject to agent variability. 
+    ODEAgentParams(spc::AbstractParams)
+ODEAgentParams are subject to agent variability. 
 This is in contrast to SpeciesParams, which define parameters on the species-level.
 """
-@with_kw mutable struct IndParams <: AbstractParams
+@with_kw mutable struct ODEAgentParams <: AbstractParams
     Z::Float64
     Idot_max_rel::Float64
     Idot_max_rel_emb::Float64
@@ -97,9 +97,9 @@ This is in contrast to SpeciesParams, which define parameters on the species-lev
     K_X::Float64
     
     """
-    Initialize IndParams from SpeciesParams `spc`.
+    Initialize ODEAgentParams from SpeciesParams `spc`.
     """
-    function IndParams(spc::AbstractParams)
+    function ODEAgentParams(spc::AbstractParams)
         agn = new()
         individual_variability!(agn, spc)
         return agn

@@ -5,7 +5,7 @@ simulator(
     alg = Tsit5(),
     saveat = 1,
     reltol = 1e-6,
-    AgentParamType::DataType = IndParams,
+    AgentParamType::DataType = ODEAgentParams,
     kwargs...)::DataFrame
 
 Run an ODE-based model. 
@@ -20,7 +20,7 @@ Run an ODE-based model.
 - `alg = Tsit5()`: Algorithm to be used by `solve` function 
 - `saveat = 1`: When or how often to save ODE solutions to output
 - `reltol = 1e-6`: Relative tolerance of ODE solutions
-- `AgentParamType::DataType = IndParams`: The data type that stores those parameters that are affected by individual variability. There has to be a corresponding constructor so that `theta.agn = AgentParamType(theta.spc)` works. 
+- `AgentParamType::DataType = ODEAgentParams`: The data type that stores those parameters that are affected by individual variability. There has to be a corresponding constructor so that `theta.agn = AgentParamType(theta.spc)` works. 
 - `kwargs...`: Additional keyword argument are passed on to `OrdinaryDiffEq.solve`
 
 **Example**: 
@@ -36,7 +36,7 @@ function simulator(
     alg = Tsit5(),
     saveat = 1,
     reltol = 1e-6,
-    AgentParamType::DataType = IndParams,
+    AgentParamType::DataType = ODEAgentParams,
     kwargs...
     )::DataFrame
 
