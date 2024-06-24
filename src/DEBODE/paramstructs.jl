@@ -69,16 +69,16 @@ Induce agent variability in spc parameters via zoom factor `Z`.
 `Z` is sampled from the corresponding distribution given in `p` and assumed to represent a ratio between maximum structurel *masses* (not lengths), 
 so that the surface area-specific ingestion rate `Idot_max_rel` scales with `Z^(1/3)` and parameters which represent masses or energy pools scales with `Z`.
 """
-function individual_variability!(ind::AbstractParams, spc::AbstractParams)
-    ind.Z = rand(spc.Z) # sample zoom factor Z for agent from distribution
-    ind.Idot_max_rel = spc.Idot_max_rel * ind.Z^(1/3) # Z is always applied to Idot_max_rel
-    ind.Idot_max_rel_emb = spc.Idot_max_rel_emb * ind.Z^(1/3) #, including the value for embryos
+function individual_variability!(agn::AbstractParams, spc::AbstractParams)
+    agn.Z = rand(spc.Z) # sample zoom factor Z for agent from distribution
+    agn.Idot_max_rel = spc.Idot_max_rel * agn.Z^(1/3) # Z is always applied to Idot_max_rel
+    agn.Idot_max_rel_emb = spc.Idot_max_rel_emb * agn.Z^(1/3) #, including the value for embryos
 
     for param in fieldnames(typeof(spc.propagate_zoom)) # iterate over other parameters which may be affected by Z
         if getproperty(spc.propagate_zoom, param) # check whether propagation of Z should occur for this parameter
-            setproperty!(ind, param, getproperty(spc, param) * ind.Z) # assign the agent value by adjusting the hyperparameter
+            setproperty!(agn, param, getproperty(spc, param) * agn.Z) # assign the agent value by adjusting the hyperparameter
         else # if Z should not be propagated to this parameter, 
-            setproperty!(ind, param, getproperty(spc, param)) # set the agent-specific value equal to the population mean
+            setproperty!(agn, param, getproperty(spc, param)) # set the agent-specific value equal to the population mean
         end
     end 
 end
@@ -100,9 +100,9 @@ This is in contrast to SpeciesParams, which define parameters on the species-lev
     Initialize IndParams from SpeciesParams `spc`.
     """
     function IndParams(spc::AbstractParams)
-        ind = new()
-        individual_variability!(ind, spc)
-        return ind
+        agn = new()
+        individual_variability!(agn, spc)
+        return agn
     end
 end
 
@@ -113,7 +113,7 @@ Initialize the default parameter collection with `DEBParamCollection()`.
 @with_kw mutable struct DEBParamCollection <: AbstractParamCollection
     glb::AbstractParams = GlobalParams()
     spc::AbstractParams = SpeciesParams()
-    ind::Union{Nothing,AbstractParams} = nothing
+    agn::Union{Nothing,AbstractParams} = nothing
 
     @assert length(spc.k_D_G) >= length(glb.C_W) "Length of k_D_G is not at least length of C_W"
     @assert length(spc.k_D_M) >= length(glb.C_W) "Length of k_D_M is not at least length of C_W"

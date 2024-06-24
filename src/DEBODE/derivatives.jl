@@ -29,7 +29,7 @@ end
     )::Float64
 
     let X_V = u.X_p / p.glb.V_patch # convert food abundance to concentration
-        return X_V / (X_V + p.ind.K_X) # calculate type II functional response
+        return X_V / (X_V + p.agn.K_X) # calculate type II functional response
     end
 end
 
@@ -52,14 +52,14 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
         u.X_emb, # uptake from vitellus depends on mass of vitellus
         0., # the switch occurs when vitellus is used up 
         0., # when the vitellus is used up, there is no uptake
-        (Complex(u.S)^(2/3)).re * p.ind.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
+        (Complex(u.S)^(2/3)).re * p.agn.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
         beta = 1e20 # for switches around 0, we need very high beta values
         )
 
     du.I_p = sig( # uptake from external resource p
         u.X_emb, # ingestion from external resource depends on mass of vitellus
         0., # the switch occurs when the vitellus is used up  
-        u.f_X * p.ind.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
+        u.f_X * p.agn.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
         0.; # while there is still vitellus left, there is no uptake from the external resource
         beta = 1e20 # again we have a switch around 0, requiring very high beta
         )
@@ -193,7 +193,7 @@ Values of `y_G != 1` are included in the calculation of `S_max_hist`, so that a 
     t::Real
     )::Nothing
 
-    #du.S_max_hist = p.eta_AS * u.y_G * (DEBBase.sig(u.X_emb, 0., p.ind.Idot_max_rel, p.ind.Idot_max_rel_emb; beta = 1e20) * Complex(u.S ^(2/3)).re - p.spc.k_M * u.S_max_hist)
+    #du.S_max_hist = p.eta_AS * u.y_G * (DEBBase.sig(u.X_emb, 0., p.agn.Idot_max_rel, p.agn.Idot_max_rel_emb; beta = 1e20) * Complex(u.S ^(2/3)).re - p.spc.k_M * u.S_max_hist)
 
     u.S_max_hist = sig(
         u.S,
@@ -227,7 +227,7 @@ Such rules are however likely species-specific and should be evaluated in the li
 
     du.H = sig(
         u.H, # maturation depends on maturity
-        p.ind.H_p, # switch occurs at maturity at puberty H_p
+        p.agn.H_p, # switch occurs at maturity at puberty H_p
         clipneg(((1 - p.spc.kappa) * du.A) - du.J), # maturation for embryos and juveniles
         0., # maturation for adults
     )
@@ -270,7 +270,7 @@ Reproduction flux.
 
     du.R = sig(
         u.H, # reproduction depends on maturity
-        p.ind.H_p, # switch occurs at maturity at puberty H_p
+        p.agn.H_p, # switch occurs at maturity at puberty H_p
         0., # reproduction for embryos and juveniles
         clipneg(u.y_R * p.spc.eta_AR * ((1 - p.spc.kappa) * du.A - du.J)) # reproduction for adults
     )

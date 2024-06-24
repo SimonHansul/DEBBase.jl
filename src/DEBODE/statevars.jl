@@ -10,9 +10,9 @@ function initialize_statevars(theta::AbstractParamCollection)::ComponentArray
         X_p = theta.glb.Xdot_in, # initial resource abundance equal to influx rate
         C_W = theta.glb.C_W, # external stressor concentrations
 
-        X_emb = theta.ind.X_emb_int, # initial mass of vitellus
-        S = theta.ind.X_emb_int * X_EMB_INT_REL, # initial structure is a small fraction of initial reserve // mass of vitellus
-        S_max_hist = theta.ind.X_emb_int * X_EMB_INT_REL, # initial reference structure
+        X_emb = theta.agn.X_emb_int, # initial mass of vitellus
+        S = theta.agn.X_emb_int * X_EMB_INT_REL, # initial structure is a small fraction of initial reserve // mass of vitellus
+        S_max_hist = theta.agn.X_emb_int * X_EMB_INT_REL, # initial reference structure
         H = 0, # maturity
         H_b = 0, # maturity at birth (will be derived from model output)
         R = 0, # reproduction buffer
