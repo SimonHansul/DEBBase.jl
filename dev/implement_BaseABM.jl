@@ -58,7 +58,7 @@ begin
     plot(pa, pX, pN, xlabel = "time [d]")
 end   
 
-# du.glb.X_p in Idot!:  0x77cfa1ee1f628dc6
+# du.glb.X_p in dI!:  0x77cfa1ee1f628dc6
 # du.glb.X_p in X_pdot_chemstat!: 0x9121e7fc286e9fbf
 
 

@@ -39,7 +39,7 @@ Embryos (X_emb <= 0) take up resources from the vitellus X_emb.
 Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
 
 """
-@inline function Idot!(
+@inline function dI!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
@@ -75,7 +75,7 @@ end
 """
 Assimilation flux
 """
-@inline function Adot!(
+@inline function dA!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
@@ -89,7 +89,7 @@ end
 """
 Somatic maintenance flux
 """
-@inline function Mdot!(
+@inline function dM!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
@@ -104,7 +104,7 @@ end
 Maturity maintenance flux
 
 """
-@inline function Jdot!(
+@inline function dJ!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
@@ -160,7 +160,7 @@ end
 """
 Somatic growth, including application of shrinking equation.
 """
-@inline function Sdot!(
+@inline function dS!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
@@ -173,7 +173,7 @@ Somatic growth, including application of shrinking equation.
 end
 
 """
-    S_max_histdot!(
+    dS_max_hist!(
         du::ComponentArray,
         u::ComponentArray,
         p::AbstractParamCollection,
@@ -186,7 +186,7 @@ This is the amount of structure an individual of the given age has under ideal c
 i.e. `f = 1` and `y_z = 1`, with the exception of `y_G`. 
 Values of `y_G != 1` are included in the calculation of `S_max_hist`, so that a slowing down of growth 
 """
-@inline function S_max_histdot!(
+@inline function dS_max_hist!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
@@ -218,7 +218,7 @@ mortality or embryonic hazard.
 
 Such rules are however likely species-specific and should be evaluated in the light of a more precise problem definition.
 """
-@inline function Hdot!(
+@inline function dH!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
@@ -241,7 +241,7 @@ The current estimate of maturity at birth is equal to current maturity for embry
 and will be fixed to the current value upon completion of embryonic development.
 This way, we obtain H_b as an implied trait and can use it later (for example in `abj()`).
 """
-@inline function H_bdot!(
+@inline function dH_b!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
@@ -261,7 +261,7 @@ end
 """
 Reproduction flux.
 """
-@inline function Rdot!(
+@inline function dR!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
@@ -279,7 +279,7 @@ Reproduction flux.
 end
 
 """
-    Qdot!(
+    dQ!(
         du::ComponentArray,
         u::ComponentArray,
         p::AbstractParamCollection,
@@ -288,7 +288,7 @@ end
 
 Calculation of the total dissipation flux, equal to the sum of maintenance costs and overheads paid for assimilation, mobilization, maturation, growth and reproduction.
 """
-function Qdot!(
+function dQ!(
     du::ComponentArray,
     u::ComponentArray,
     p::AbstractParamCollection,
@@ -309,7 +309,7 @@ function Qdot!(
 end
 
 """
-    C_Wdot!(
+    dC_W!(
         du::ComponentVector,
         u::ComponentVector,
         p::AbstractParamCollection,
@@ -320,7 +320,7 @@ Change in external concentrations.
 Currently simply returns zeros because time-variable exposure is not yet implemented. 
 # TODO: extend to account for time-variable exposure.
 """
-@inline function C_Wdot!(
+@inline function dC_W!(
     du::ComponentVector,
     u::ComponentVector,
     p::AbstractParamCollection,
@@ -335,7 +335,7 @@ end
 """
 Change in environmental resource abundance, simulating a chemostat.
 """
-function X_pdot!(
+function dX_p!(
     du::ComponentVector,
     u::ComponentVector,
     p::AbstractParamCollection,
@@ -347,27 +347,12 @@ function X_pdot!(
     return nothing
 end
 
-"""
-Constant concentration of external chemical stressor:
-"""
-function C_Wdot_const!(
-    du::ComponentVector,
-    u::ComponentVector,
-    p::AbstractParamCollection,
-    t::Real
-    )::Nothing
-
-    du.C_W = zeros(length(u.C_W))
-
-    return nothing
-end
-
 
 """
 TK for spc-TKTD model, including effect of surface area to volume ratio and dilution by growth. 
 If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-specific. 
 """
-@inline function Ddot!(
+@inline function dD!(
     du::ComponentVector,
     u::ComponentVector,
     p::AbstractParamCollection,
@@ -472,21 +457,21 @@ function DEBODE!(du, u, p, t)::Nothing
     y_z!(du, u, p, t) # response to chemical stressors
 
     #### auxiliary state variables (record cumulative values)
-    Idot!(du, u, p, t)
-    Adot!(du, u, p, t) 
-    Mdot!(du, u, p, t) 
-    Jdot!(du, u, p, t)
-    Qdot!(du, u, p, t)
+    dI!(du, u, p, t)
+    dA!(du, u, p, t) 
+    dM!(du, u, p, t) 
+    dJ!(du, u, p, t)
+    dQ!(du, u, p, t)
 
     #### major state variables
-    Sdot!(du, u, p, t) # structures
-    S_max_histdot!(du, u, p, t) # reference structure
-    Hdot!(du, u, p, t) # maturity 
-    H_bdot!(du, u, p, t) # estimate of maturity at birth
-    Rdot!(du, u, p, t) # reproduction buffer
-    X_pdot!(du, u, p, t) # resource abundance
-    Ddot!(du, u, p, t) # damage
-    C_Wdot!(du, u, p, t) # external stressor concentration 
+    dS!(du, u, p, t) # structures
+    dS_max_hist!(du, u, p, t) # reference structure
+    dH!(du, u, p, t) # maturity 
+    dH_b!(du, u, p, t) # estimate of maturity at birth
+    dR!(du, u, p, t) # reproduction buffer
+    dX_p!(du, u, p, t) # resource abundance
+    dD!(du, u, p, t) # damage
+    dC_W!(du, u, p, t) # external stressor concentration 
 
     return nothing
 end
