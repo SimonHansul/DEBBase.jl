@@ -96,7 +96,7 @@ module ABC
     using Dates
     using Random
 
-    #using ..Utils
+    using ..Utils: fround
     using ..ParamStructs: AbstractParams
 
     include("ABC/structs.jl")
