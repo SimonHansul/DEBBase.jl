@@ -29,6 +29,7 @@ end
 
 module DoseResponse
     include("DoseResponse/doseresponse.jl")
+    export LL2, LL2h, LL2M
 end
 
 module DEBODE
