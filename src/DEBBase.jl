@@ -33,11 +33,12 @@ module Utils
     export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin, sol_to_df, sol_to_mat
 
     include("Utils/ioutils.jl")
-    include("Utils/paramhandling.jl")
+
     include("Utils/inputprocessing.jl")
+    export into!, into, isolate_pmoas!, isolate_pmoas, set_equal!
+
     include("Utils/outputprocessing.jl")
-    
-    export isolate_pmoas!, set_equal!, relative_response, idcol!
+    export relative_response, idcol!
 
 end
 

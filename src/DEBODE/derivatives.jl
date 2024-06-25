@@ -34,10 +34,16 @@ end
 end
 
 """
+    dI!(
+        du::ComponentArray,
+        u::ComponentArray,
+        p::AbstractParamCollection,
+        t::Real
+        )::Nothing
+        
 Calculate ingestion rate. 
 Embryos (X_emb <= 0) take up resources from the vitellus X_emb. 
 Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
-
 """
 @inline function dI!(
     du::ComponentArray,
