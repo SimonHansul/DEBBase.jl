@@ -33,14 +33,17 @@ Put values from `source` into `sink`.
 - `sink::AbstractParams`: All values from `sink` will be assigned to corresponding fields of `sink`.
 """
 function into!(sink::AbstractParams, source::AbstractParams)::Nothing
-    
+    skippedfields = Symbol[]
+
     for field in fieldnames(typeof(source))
         if field in fieldnames(typeof(sink))
             setproperty!(sink, field, getproperty(source, field))
         else
-            @warn("$field is not a field of $(typeof(sink)), skipping.")
+            push!(skippedfields, field)
         end
     end
+
+    @warn("The following are not fields of $(typeof(sink)) and were skipped: \n $skippedfields")
 
     return nothing
 end
