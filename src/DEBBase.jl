@@ -125,12 +125,14 @@ end
 Recipes and convenience functions for plotting model output.
 """
 module Figures
+
     using StatsBase
     using Reexport
     using RecipesBase
 
     include("Figures/figutils.jl")
     export  gridylabel, gridxlabel, gridyattr, gridxattr
+
     include("Figures/recipes.jl")
 
     export rugplot, lineplot, groupedlineplot

@@ -35,7 +35,11 @@ Put values from `source` into `sink`.
 function into!(sink::AbstractParams, source::AbstractParams)::Nothing
     
     for field in fieldnames(typeof(source))
-        setproperty!(sink, field, getproperty(source, field))
+        if field in fieldnames(typeof(sink))
+            setproperty!(sink, field, getproperty(source, field))
+        else
+            @warn("$field is not a field of $(typeof(sink)), skipping.")
+        end
     end
 
     return nothing
