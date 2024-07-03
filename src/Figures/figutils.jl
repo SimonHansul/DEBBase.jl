@@ -1,7 +1,7 @@
 """
 Create shared y-labels for plot with grid layout, placing labels only on the left-most subplots.
 """
-function gridylabel(label::String, numrows::Int64, numcols::Int64)::Matrix{String}
+function gridylabel(label::AbstractString, numrows::Int64, numcols::Int64)::Matrix{String}
     labelstring = [label] # the label as vector
     numemptystrings = numcols-1 # the number of empty strings needed per row
     emptystrings = repeat([""], numemptystrings) # vector of empty strings
@@ -10,7 +10,7 @@ function gridylabel(label::String, numrows::Int64, numcols::Int64)::Matrix{Strin
     return labels
 end
 
-function gridxlabel(label::String, numrows::Int64, numcols::Int64)::Matrix{String}
+function gridxlabel(label::AbstractString, numrows::Int64, numcols::Int64)::Matrix{String}
     labelstring = [label] # the label as vector
     numemptyrows = numrows-1 # the number of rows with empty strings
     emptystrings = repeat([""], numemptyrows * numcols) # vector of empty strings
