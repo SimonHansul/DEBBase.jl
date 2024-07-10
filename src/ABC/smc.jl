@@ -2,7 +2,7 @@
 """
 initialize(
     n_pop::Int64, 
-    defaultparams::AbstractParams, 
+    defaultparams::Union{AbstractParams,AbstractParamCollection}, 
     priors::Priors,
     simulator,
     distance,
@@ -13,7 +13,7 @@ Initialization of a population if the priors are purely parameteric priors.
 """
 function initialize(
     n_pop::Int64, 
-    defaultparams::AbstractParams, 
+    defaultparams::Union{AbstractParams,AbstractParamCollection}, 
     priors::Priors,
     simulator,
     distance,
@@ -50,7 +50,7 @@ For the parameters which also appear in the dataframe of accepted values
 """
 function initialize(
     n_pop::Int64, 
-    defaultparams::AbstractParams, 
+    defaultparams::Union{AbstractParams,AbstractParamCollection}, 
     priors::Tuple{Priors,DataFrame},
     simulator,
     distance,
@@ -263,7 +263,7 @@ end
 
 function evaluate(
     particles::Vector{Vector{Float64}},
-    defaultparams::AbstractParams,
+    defaultparams::Union{AbstractParams,AbstractParamCollection},
     simulator,
     distance,
     priors::Priors,
@@ -286,7 +286,7 @@ end
 
 function evaluate(
     particles::Vector{Vector{Float64}},
-    defaultparams::AbstractParams,
+    defaultparams::Union{AbstractParams,AbstractParamCollection},
     simulator,
     distance,
     priors::Tuple{Priors,DataFrame},
@@ -320,7 +320,7 @@ get_par_names(priors::Tuple{Priors,DataFrame}) = unique(vcat([Symbol.(get_par_na
 """
     SMC(
         priors::Priors,
-        defaultparams::AbstractParams,
+        defaultparams::Union{AbstractParams,AbstractParamCollection},
         simulator,
         distance,
         data::Union{AbstractDataFrame,Vector{AbstractDataFrame},Vector{Union{AbstractDataFrame,NamedTuple}}};
