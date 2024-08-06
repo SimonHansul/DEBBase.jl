@@ -16,7 +16,45 @@ mutable struct Priors
 
         return new(params, priors)
     end
+
+    function Priors(arg::Vector{Pair{Symbol,D}}) where D <: Distribution
+        params = Symbol[]
+        priors = Distribution[]
+
+        for pair in arg
+            push!(params, pair.first)
+            push!(priors, pair.second)
+        end
+
+        return new(params, priors)
+    end
 end
+
+function get_par_names(numgroups::Int64, groupnames::Nothing, hyperpriors::Vector{Pair{Symbol,D}}, priors::Vector{Pair{Symbol,D}}) where D <: Distribution
+
+end
+
+@with_kw mutable struct HierchPriors
+    hyperparams::Vector{Symbol}
+    hyperpriors::Vector{Distribution}
+    numgroups::Int64
+    groupnames::Union{Nothing,Vector{Symbol}} = nothing
+    params::Vector{Symbol}
+    priors::Vector{Distribution}
+
+    function HierchPriors(
+        numgroups, groupnames; 
+        hyperpriors::Vector{Pair{Symbol,D}}, 
+        priors::Vector{Pair{Symbol,D}} 
+        )
+
+        parnames = get_par_names(numgroups, groupnames, hyperpriors, priors)
+
+
+        
+    end
+end
+
 
 
 @with_kw mutable struct SMCResult
