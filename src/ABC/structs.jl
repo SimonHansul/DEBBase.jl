@@ -59,7 +59,7 @@ end
 
 @with_kw mutable struct SMCResult
     accepted::AbstractDataFrame
-    defaultparams::AbstractParams
+    defaultparams::Any
     priors::Union{Priors,Tuple{Priors,DataFrame}}
     simulator
     distance

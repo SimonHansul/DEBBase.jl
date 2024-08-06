@@ -98,7 +98,7 @@ module ABC
     using Random
 
     using ..Utils: fround
-    using ..ParamStructs: AbstractParams
+    using ..ParamStructs: AbstractParams, AbstractParamCollection
 
     include("ABC/structs.jl")
     export Priors, SMCResult, ppc
