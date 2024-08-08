@@ -93,8 +93,8 @@ Structure for hierarchical priors.
         hierchpriors.hyperparams = [p.first for p in hyperpriors]
         hierchpriors.hyperpriors = [p.second for p in hyperpriors]
         hierchpriors.groupparams = groupparams
-        hierchpriors.params = [p.first for p in hierchpriors]
-        hierchpriors.priors = [p.second for p in hierchpriors]
+        hierchpriors.params = [p.first for p in priors]
+        hierchpriors.priors = [p.second for p in priors]
         
         return hierchpriors
     end
