@@ -84,7 +84,7 @@ Structure for hierarchical priors.
 
     function HierchPriors(
         hyperpriors::Vector{Pair{Symbol,D}},
-        groupparams, 
+        groupparams::Vector{Symbol}, 
         priors::Vector{Pair{Symbol,D}} 
         )
 
