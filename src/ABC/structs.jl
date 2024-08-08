@@ -83,20 +83,20 @@ Structure for hierarchical priors.
     priors::Vector{Distribution}
 
     function HierchPriors(
-        hyperpriors::Vector{Pair{Symbol,D}}, 
+        hyperpriors::Vector{Pair{Symbol,D}},
+        groupparams, 
         priors::Vector{Pair{Symbol,D}} 
         )
 
-        parnames = get_par_names(numgroups, groupnames, hyperpriors, priors)
+        hierchpriors = new()
 
-        priors = new()
-
-        priors.hyperparams = [p.first for p in hyperpriors]
-        priors.hyperpriors = [p.second for p in hyperpriors]
-        priors.params = [p.first for p in priors]
-        priors.priors = [p.second for p in priors]
-
-        return priors
+        hierchpriors.hyperparams = [p.first for p in hyperpriors]
+        hierchpriors.hyperpriors = [p.second for p in hyperpriors]
+        hierchpriors.groupparams = groupparams
+        hierchpriors.params = [p.first for p in hierchpriors]
+        hierchpriors.priors = [p.second for p in hierchpriors]
+        
+        return hierchpriors
     end
 end
 
