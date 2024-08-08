@@ -30,28 +30,73 @@ mutable struct Priors
     end
 end
 
-function get_par_names(numgroups::Int64, groupnames::Nothing, hyperpriors::Vector{Pair{Symbol,D}}, priors::Vector{Pair{Symbol,D}}) where D <: Distribution
+"""
+get_par_names(
+    numgroups::Int64, 
+    groupnames::Nothing, 
+    hyperpriors::Vector{Pair{Symbol,D}}, 
+    priors::Vector{Pair{Symbol,D}}
+    ) where D <: Distribution
 
+Infer parameter names of a hierarchical model, where no group names were given. 
+Groups will be assigned numbers.
+"""
+function get_par_names(
+    numgroups::Int64, 
+    groupnames::Nothing, 
+    hyperpriors::Vector{Pair{Symbol,D}}, 
+    priors::Vector{Pair{Symbol,D}}
+    ) where D <: Distribution
+
+    # "normal" parameter names
+    parnames = [p.first for p in priors]
+    groupnames = string.(1:numgroups)
+
+    # parameter for each group
+    for (suffix,hyperprior) in zip(groupnames,hyperpriors)
+        parname = String(hyperprior.first)*"_"*suffix
+        pushfirst!(parnames, parname)
+    end
+
+    return parnames
 end
 
+"""
+    linkfunction_zoomfactor(hypersamples::Vector{Float64}, numgrups::Int64)
+
+Default link function for hierarchical model, assuming that the hyper parameter is a zoom factor.
+"""
+function linkfunction_zoomfactor(hypersamples::Vector{Float64}, numgroups::Int64)
+    Zdist = rand(Truncated(Normal(1, hypersamples[1]), 0, Inf))
+    return rand(Zdist, numgroups)
+end
+
+"""
+Structure for hierarchical priors.
+"""
 @with_kw mutable struct HierchPriors
     hyperparams::Vector{Symbol}
     hyperpriors::Vector{Distribution}
-    numgroups::Int64
-    groupnames::Union{Nothing,Vector{Symbol}} = nothing
+    groupparams::Vector{Symbol}
+    linkfunction::Function
     params::Vector{Symbol}
     priors::Vector{Distribution}
 
     function HierchPriors(
-        numgroups, groupnames; 
         hyperpriors::Vector{Pair{Symbol,D}}, 
         priors::Vector{Pair{Symbol,D}} 
         )
 
         parnames = get_par_names(numgroups, groupnames, hyperpriors, priors)
 
+        priors = new()
 
-        
+        priors.hyperparams = [p.first for p in hyperpriors]
+        priors.hyperpriors = [p.second for p in hyperpriors]
+        priors.params = [p.first for p in priors]
+        priors.priors = [p.second for p in priors]
+
+        return priors
     end
 end
 

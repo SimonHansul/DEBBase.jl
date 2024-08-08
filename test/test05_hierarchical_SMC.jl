@@ -8,9 +8,11 @@ begin
     default(leg = false, lw = 1.5)
     using OrdinaryDiffEq
     using Revise
-    @time using DEBBase.DEBODE, DEBBase.Utils, DEBBase.Figures
+    @time using DEBBase.ABC
     TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 end
+
+
 
 using DEBBase
 DEBBase.ABC.HierchPriors(
@@ -22,3 +24,19 @@ DEBBase.ABC.HierchPriors(
 function f(x::Vector{Pair{Symbol,D}}) where D <: Distribution
     println(x)
 end
+
+
+using Distributions, Plots
+
+
+hyperpriors = [Truncated(Normal(1, 1), 0, Inf)]
+
+
+
+hypersample = rand.(hyperpriors)
+
+
+plot(prior_cv)
+
+
+Z = rand(Truncated(Normal(1, )))
