@@ -148,6 +148,10 @@ end
 Retrieve the mean of a statistic from a data frame with columns 
 "statistic" (listing different kinds of summary statistics) and "value".
 """
+function getstat(data::DataFrame, statistic::String)
+    return data[data.statistic .== statistic,:].value |> mean
+end
+
 function getstat(data::Vector{DataFrame}, statistic::String)
-    return @subset(data[2], :statistic .== statistic).value |> mean
+    return getstat(data[2], statistic)
 end
