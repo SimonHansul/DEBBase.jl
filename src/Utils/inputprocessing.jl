@@ -141,3 +141,13 @@ function isolate_pmoas!(spc::AbstractParams, pmoas::Vector{String})::Nothing
     spc = isolate_pmoas(spc, pmoas)
     return nothing
 end
+
+"""
+    getstat(data::Vector{DataFrame}, statistic::String)
+
+Retrieve the mean of a statistic from a data frame with columns 
+"statistic" (listing different kinds of summary statistics) and "value".
+"""
+function getstat(data::Vector{DataFrame}, statistic::String)
+    return @subset(data[2], :statistic .== statistic).value |> mean
+end

@@ -43,6 +43,43 @@ end
         distance,
         data::AbstractDataFrame
     )
+
+Intialization of the SMC population for a hierarchical prior structure.
+"""
+function initialize(
+    n_pop::Int64, 
+    defaultparams::Union{AbstractParams,AbstractParamCollection}, 
+    priors::HierchPriors,
+    simulator,
+    distance,
+    data::Any
+    )
+
+    particles = Vector{Vector{Float64}}(undef, n_pop) #[copy(defaultparams) for _ in 1:n_pop] # predefine vector of parameter samples
+    distances = Vector{Float64}(undef, n_pop)
+    weights = ones(n_pop) |> x -> x ./ sum(x)
+
+    @info("...Evaluating initial population...")
+
+    @threads for i in eachindex(particles)
+        particles[i] = hierch_sample(priors)
+        prediction = simulator(defaultparams, priors.params, particles[i])
+        distances[i] = distance(prediction, data)
+    end
+
+    return particles, distances, weights 
+
+end
+
+"""
+    initialize(
+        n_pop::Int64, 
+        defaultparams::AbstractParams, 
+        priors::Tuple{Priors,DataFrame},
+        simulator,
+        distance,
+        data::AbstractDataFrame
+    )
     
 Initialization of the SMC population if the given priors are a combination of parameteric priors and previously accepted particles. <br>
 Note that parameteric prior distributions should always be given for all parameters. 
@@ -141,6 +178,16 @@ end
 #end
 
 """
+    resample(
+        accepted_particles::Vector{Vector{Float64}}, 
+        accepted_distances::Vector{Float64},
+        accepted_weights::Vector{Float64},
+        priors::Priors,
+        n_pop::Int64,
+        parnames::Vector{Symbol},
+        num_params::Int64
+        )
+
 Resample from previously accepted particles, with account for SMC sampling weights.
 """
 function resample(

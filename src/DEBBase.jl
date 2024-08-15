@@ -35,7 +35,7 @@ module Utils
     include("Utils/ioutils.jl")
 
     include("Utils/inputprocessing.jl")
-    export into!, into, isolate_pmoas!, isolate_pmoas, set_equal!
+    export into!, into, isolate_pmoas!, isolate_pmoas, set_equal!, getstat
 
     include("Utils/outputprocessing.jl")
     export relative_response, idcol!

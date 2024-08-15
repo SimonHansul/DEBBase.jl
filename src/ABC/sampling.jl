@@ -13,6 +13,7 @@ end
 
 """
     rand(defaultparams::DataType, priors::Priors)
+
 Sample from priors and assign to new instance of default parameter structure.
 """
 function rand(defaultparams::DataType, priors::Priors)
@@ -30,6 +31,21 @@ end
 function rand(priors::Priors)
     return [rand(p) for p in priors.priors]
 end
+
+"""
+    hierch_sample(priors::ABC.HierchPriors)::Vector{Float64}
+
+Take a sample from a hierarhcical prior structure, returning the sampled values 
+flattened as a `Vector{Float64}`.
+"""
+function hierch_sample(priors::ABC.HierchPriors)::Vector{Float64}
+    hypersample = rand(priors.hyperprior)
+    groupparam_samples = priors.linkfunction(hypersample, length(priors.groupparams))
+    param_samples = [rand(p) for p in priors.priors]
+
+    return vcat(hypersample, groupparam_samples, param_samples)
+end
+
 
 
 """

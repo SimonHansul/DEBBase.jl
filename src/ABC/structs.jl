@@ -31,70 +31,71 @@ mutable struct Priors
 end
 
 """
-get_par_names(
-    numgroups::Int64, 
-    groupnames::Nothing, 
-    hyperpriors::Vector{Pair{Symbol,D}}, 
-    priors::Vector{Pair{Symbol,D}}
-    ) where D <: Distribution
+    function get_par_names(priors.HierchPriors)::Vector{Symbol}
 
-Infer parameter names of a hierarchical model, where no group names were given. 
-Groups will be assigned numbers.
+Get parameter names of a hierarhical prior structure in flattened form.
 """
-function get_par_names(
-    numgroups::Int64, 
-    groupnames::Nothing, 
-    hyperpriors::Vector{Pair{Symbol,D}}, 
-    priors::Vector{Pair{Symbol,D}}
-    ) where D <: Distribution
-
-    # "normal" parameter names
-    parnames = [p.first for p in priors]
-    groupnames = string.(1:numgroups)
-
-    # parameter for each group
-    for (suffix,hyperprior) in zip(groupnames,hyperpriors)
-        parname = String(hyperprior.first)*"_"*suffix
-        pushfirst!(parnames, parname)
-    end
-
-    return parnames
+function get_par_names(priors::HierchPriors)::Vector{Symbol}
+    
+    return vcat(
+        priors.hyperparam,
+        priors.groupparams,
+        priors.params
+    )
 end
 
 """
-    linkfunction_zoomfactor(hypersamples::Vector{Float64}, numgrups::Int64)
+    linkfunction_zoomfactor(hypersample::Float64, numgroups::Int64)::Vector{Float64}
 
 Default link function for hierarchical model, assuming that the hyper parameter is a zoom factor.
 """
-function linkfunction_zoomfactor(hypersamples::Vector{Float64}, numgroups::Int64)
-    Zdist = rand(Truncated(Normal(1, hypersamples[1]), 0, Inf))
+function linkfunction_zoomfactor(hypersample::Float64, numgroups::Int64)::Vector{Float64}
+    Zdist = Truncated(Normal(1, hypersample), 0, Inf)
     return rand(Zdist, numgroups)
 end
+
 
 """
 Structure for hierarchical priors.
 """
 @with_kw mutable struct HierchPriors
-    hyperparams::Vector{Symbol}
-    hyperpriors::Vector{Distribution}
+    hyperparam::Symbol
+    hyperprior::Distribution
     groupparams::Vector{Symbol}
     linkfunction::Function
     params::Vector{Symbol}
     priors::Vector{Distribution}
 
+    """
+        HierchPriors(
+            hyperprior::Pair{Symbol,D},
+            groupparams::Vector{Symbol}, 
+            priors::Vector{Pair{Symbol,D}} 
+            )
+
+    Iniitalize hierarhcical prior structure.
+
+    args:
+
+    - `hyperprior`: The name and distribution of the hyperprior as a Symbol/Distribution-pair
+    - `groupparams`: A list of names for the group parameters
+    - `priors`: The remaining parameters as a vector of Symbol/Distribution-pairs
+    """
     function HierchPriors(
-        hyperpriors::Vector{Pair{Symbol,D}},
+        hyperprior::Pair{Symbol,D},
         groupparams::Vector{Symbol}, 
-        priors::Vector{Pair{Symbol,D}} 
-        )
+        priors::Vector{Pair{Symbol,D}};
+        linkfunction = linkfunction_zoomfactor
+        ) where D <: Distribution
 
         hierchpriors = new()
 
-        hierchpriors.hyperparams = [p.first for p in hyperpriors]
-        hierchpriors.hyperpriors = [p.second for p in hyperpriors]
+        hierchpriors.hyperparam = hyperprior.first
+        hierchpriors.hyperprior = hyperprior.second
         hierchpriors.groupparams = groupparams
         hierchpriors.params = [p.first for p in priors]
         hierchpriors.priors = [p.second for p in priors]
+        hierchpriors.linkfunction = linkfunction
         
         return hierchpriors
     end
