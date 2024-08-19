@@ -347,7 +347,6 @@ get_par_names(priors::Tuple{Priors,DataFrame}) = unique(vcat([Symbol.(get_par_na
 kwargs 
 
 - `convergence_eps::Float64` : we consider SMC converged if the relative difference between two successive distance thresholds ϵ is less than `convergence_eps`
-- `saveres::Bool` : whether to save the `SMCResult` object to disc. Includes metadata and all hyperparameters.
 - `savedata::Bool` : whether to include the value of positional argument `data` in the output metadata. `false` by default
 - `saveto::Bool` : where to store the `SMCResult` object on disc. `tempname()` by default.
 

@@ -30,11 +30,7 @@ using Distributions, Plots
 
 
 hyperpriors = [Truncated(Normal(1, 1), 0, Inf)]
-
-
-
 hypersample = rand.(hyperpriors)
-
 
 plot(prior_cv)
 
