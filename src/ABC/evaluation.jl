@@ -92,7 +92,7 @@ kwargs
 
 - `n_samples`: number of samples from `accepted_particles` to evaluate
 """
-function ppc(defaultparams::Union{AbstractParams,AbstractParamCollection,Namedtuple}, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
+function ppc(defaultparams::Union{AbstractParams,AbstractParamCollection}, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
     @info("Running posterior predictive check with $n_samples samples on $(Threads.nthreads()) threads")
     yhat = Vector{DataFrame}(undef, n_samples) # predictions
 
