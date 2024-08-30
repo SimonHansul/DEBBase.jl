@@ -110,6 +110,7 @@ end
 
 """
     ppc(res::SMCResult; n_samples = 1000, kwargs...)
+    
 Run a posterior predictive check, given SMC results `res`.
 """
 function ppc(res::SMCResult; n_samples = 1000, kwargs...)

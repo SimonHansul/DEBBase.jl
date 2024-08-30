@@ -11,7 +11,7 @@ initialize(
 
 Initialization of a population if the priors are purely parameteric priors.
 """
-function initialize(
+function initialize_threaded(
     n_pop::Int64, 
     defaultparams::Union{AbstractParams,AbstractParamCollection}, 
     priors::Priors,
@@ -48,7 +48,7 @@ Initialization of the SMC population if the given priors are a combination of pa
 Note that parameteric prior distributions should always be given for all parameters. 
 For the parameters which also appear in the dataframe of accepted values
 """
-function initialize(
+function initialize_threaded(
     n_pop::Int64, 
     defaultparams::Union{AbstractParams,AbstractParamCollection}, 
     priors::Tuple{Priors,DataFrame},
@@ -213,7 +213,7 @@ end
 """
 Calculate SMC sampling weights.
 """
-function calculateweights(
+function calculateweights_threaded(
     particles::Vector{Vector{Float64}}, 
     priors::Priors, 
     parnames::Vector{Symbol}, 
@@ -255,7 +255,7 @@ function calculateweights(
     return weights
 end
 
-function calculateweights(
+function calculateweights_threaded(
     particles::Vector{Vector{Float64}}, 
     priors::Tuple{Priors,DataFrame}, 
     parnames::Vector{Symbol}, 
@@ -265,13 +265,13 @@ function calculateweights(
     scales::AbstractVector
     )
 
-    calculateweights(
+    calculateweights_threaded(
         particles, priors[1], parnames, accepted_particles, accepted_idcs, accepted_weights, scales
     )
 
 end
 
-function evaluate(
+function evaluate_threaded(
     particles::Vector{Vector{Float64}},
     defaultparams::Union{AbstractParams,AbstractParamCollection},
     simulator,
@@ -294,7 +294,7 @@ function evaluate(
 end
 
 
-function evaluate(
+function evaluate_threaded(
     particles::Vector{Vector{Float64}},
     defaultparams::Union{AbstractParams,AbstractParamCollection},
     simulator,
@@ -303,7 +303,7 @@ function evaluate(
     data::Any
     )
 
-    return evaluate(
+    return evaluate_threaded(
         particles,
         defaultparams,
         simulator,
@@ -327,21 +327,22 @@ end
 get_par_names(priors::Priors) = priors.params # get parameter names from a parametric oject
 get_par_names(priors::Tuple{Priors,DataFrame}) = unique(vcat([Symbol.(get_par_names(p)) for p in priors]...)) # get parameter names if a dataframe of accepted values is also supplied
 
+@enum ParallelizationType sequential threaded distributed
+
 """
     SMC(
-        priors::Priors,
-        defaultparams::Union{AbstractParams,AbstractParamCollection},
+        priors::Union{Priors,Tuple{Priors,DataFrame}},
+        defaultparams,
         simulator,
         distance,
-        data::Union{AbstractDataFrame,Vector{AbstractDataFrame},Vector{Union{AbstractDataFrame,NamedTuple}}};
+        data::Any;
         n_pop::Int64 = 1000,
         q_eps::Float64 = 0.2,
-        k_max::Int64 = 4,
+        k_max::Int64 = 3,
         convergence_eps::Float64 = 0.1,
-        saveres::Bool = false,
-        savedata::Bool = false,
-        saveto::String = "sims/",
-        tag::String = randstring()
+        paralellization_type = threaded,
+        savetag = "smc",
+        saveto::Union{String,False} = ""
         )
 
 kwargs 
@@ -360,12 +361,14 @@ function SMC(
     n_pop::Int64 = 1000,
     q_eps::Float64 = 0.2,
     k_max::Int64 = 3,
-    convergence_eps::Float64 = 0.1
+    convergence_eps::Float64 = 0.1,
+    paralellization_type = threaded,
+    savetag = "smc",
+    saveto::Union{String,Bool} = ""
     )
     
 
     @info("Executing SMC with $((k_max+1) * n_pop) samples on $(Threads.nthreads()) threads.")
-    
     start = now() # record computation time
 
     let accepted_particles::Vector{Vector{Float64}},
@@ -377,9 +380,13 @@ function SMC(
         param_names = get_par_names(priors)
         num_params = length(param_names)
         
-        particles, distances, weights = initialize(
-            n_pop, defaultparams, priors, simulator, distance, data
-            )
+        if paralellization_type == threaded
+            particles, distances, weights = initialize_threaded(
+                n_pop, defaultparams, priors, simulator, distance, data
+                )
+        else
+            error("Paralellization types other than threaded yet to be implemented")
+        end
 
         accepted_particles, accepted_distances, accepted_weights, epsilon = reject(
             particles, distances, weights, q_eps
@@ -395,14 +402,23 @@ function SMC(
                 accepted_particles, accepted_distances, accepted_weights, priors, n_pop, param_names, num_params
                 )
 
-            weights = calculateweights(
-                particles, priors, param_names, accepted_particles, idcs, accepted_weights, scales
-                )
+            if paralellization_type == threaded
+                weights = calculateweights_threaded(
+                    particles, priors, param_names, accepted_particles, idcs, accepted_weights, scales
+                    )
+            else
+                error("Paralellization types other than threaded yet to be implemented")
+            end
+    
 
-            distances = evaluate(
-                particles, defaultparams, simulator, distance, priors, data
-                )
-            
+            if paralellization_type == threaded
+                distances = evaluate_threaded(
+                    particles, defaultparams, simulator, distance, priors, data
+                    )
+            else
+                error("Paralellization types other than threaded yet to be implemented")
+            end
+        
             accepted_particles, accepted_distances, accepted_weights, epsilon = reject(
                 particles, distances, weights, q_eps
                 )
@@ -411,12 +427,8 @@ function SMC(
             #converged = check_convergence(k, distance_schedule, convergence_eps)
         end
 
-        if converged
-            @info("SMC converged")
-        else
-            @info("SMC reached k_max")
-        end
-
+        @info("SMC reached k_max")
+       
         # assemble dataframe of accepted particles
 
         accepted = [[particle[k] for k in eachindex(get_par_names(priors))] for particle in accepted_particles] |> # convert Vector of particles to nested Vector of parameter values
@@ -443,6 +455,20 @@ function SMC(
             distance_schedule = distance_schedule,
             converged = converged
             )
+
+        if saveto != false
+            CSV.write(joinpath("$saveto", "$(savetag)_accepted.csv"), accepted)
+            CSV.write(joinpath("$saveto", "$(savetag)_info.csv"), DataFrame(
+                defaultparams = defaltaparams,
+                priors = priors,
+                n_pop = n_pop,
+                q_eps = q_eps,
+                k_max = k_max,
+                time_of_execution = start,
+                comptime = res.comptime
+
+            ))
+        end
 
         return res
     end
