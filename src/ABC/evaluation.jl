@@ -1,15 +1,27 @@
 """
-Weighted Kernel Density Estimate. 
+    wkde(X::Vector{R}, ω = Vector{R}) where R <: Real
+
+Compute a weighted Kernel Density Estimate of values in `X` with weights `ω`. 
 """
 function wkde(X::Vector{R}, ω = Vector{R}) where R <: Real
     U = kde(X, weights = Weights(ω))
     return U
 end
 
+"""
+    function wkde(accepted::DataFrame, param::Symbol)
+
+Compute a weighted kernel density estimate for parameter `param` in accepted particles `accepted`.
+"""
 function wkde(accepted::DataFrame, param::Symbol)
     return wkde(accepted[:,param], accepted[:,:weight])
 end
 
+"""
+    function wkde(X::Matrix{R}, ω = Vector{R}) where R <: Real
+
+Compute a weighted kernel density estimate on Matrix `X`.
+"""
 function wkde(X::Matrix{R}, ω = Vector{R}) where R <: Real
     U = kde(X, weights = Weights(ω))
     return U 
@@ -30,9 +42,11 @@ end
         accepted::D; 
         ffun = fround
         ) where D <: AbstractDataFrame  
+
 Compute summary statistics from a data frame of accepted particles. 
-Values are formatted using ``ffun``. \n
-Use ``ffun = x -> x`` to suppress any kind of formatting.
+Values are formatted using function ``ffun``. \n
+Use ``ffun = x -> x`` to suppress any kind of formatting. 
+By default, values are rounded to 2 significant digits and formatted as strings using `fround`.
 """
 function summarize_accepted(
     accepted::D; 
@@ -80,17 +94,17 @@ end
 """
     ppc(defaultparams::AbstractParams, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
 
-Run a posterior predictive check, given 
+Compute posterior predictions for posterior predictive check.
 
-- `defaultparam::AbstractParams`: default parameters used in Simulator
-- `simulator`: simulator function
-- `accepted::AbstractDataFrame`> accepted particles returned by SMC
+- `defaultparam::AbstractParams`: default parameters used in simulator
+- `simulator`: simulator function with signature `simulator(defaultparams, priors.params, sample)`, where 
+- `accepted::AbstractDataFrame`: accepted particles as returned by SMC
 
 This function assumes that `simulator` returns a `DataFrame`.
 
 kwargs
 
-- `n_samples`: number of samples from `accepted_particles` to evaluate
+- `n_samples = 1000`: number of samples from `accepted_particles` to evaluate
 """
 function ppc(defaultparams::Union{AbstractParams,AbstractParamCollection}, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
     @info("Running posterior predictive check with $n_samples samples on $(Threads.nthreads()) threads")
@@ -109,12 +123,12 @@ function ppc(defaultparams::Union{AbstractParams,AbstractParamCollection}, simul
 end
 
 """
-    ppc(res::SMCResult; n_samples = 1000, kwargs...)
+    ppc(fit::SMCResult; n_samples = 1000, kwargs...)
     
-Run a posterior predictive check, given SMC results `res`.
+Run a posterior predictive check, given SMCResult object `fit`.
 """
-function ppc(res::SMCResult; n_samples = 1000, kwargs...)
-    return ppc(res.defaultparams, res.simulator, res.accepted, res.priors; n_samples = n_samples, kwargs...)
+function ppc(fit::SMCResult; n_samples = 1000, kwargs...)
+    return ppc(fit.defaultparams, fit.simulator, fit.accepted, fit.priors; n_samples = n_samples, kwargs...)
 end
 
 

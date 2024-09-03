@@ -439,7 +439,7 @@ function SMC(
 
         # assemble metadata
 
-        res = SMCResult(
+        fit = SMCResult(
             accepted = accepted,
             defaultparams = defaultparams,
             priors = priors,
@@ -465,11 +465,11 @@ function SMC(
                 q_eps = q_eps,
                 k_max = k_max,
                 time_of_execution = start,
-                comptime = res.comptime
+                comptime = fit.comptime
 
             ))
         end
 
-        return res
+        return fit
     end
 end

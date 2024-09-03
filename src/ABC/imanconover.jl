@@ -1,5 +1,7 @@
 
 """
+    iman_conover(ar, cor_mat)
+
 Induce rank correlations to independent samples, using Iman-Conover algorithm. 
 This function was adopted from the MCHammer package. 
 ---

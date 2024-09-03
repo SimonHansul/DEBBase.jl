@@ -23,8 +23,8 @@
 end
 
 # TODO: add lower diagonal
-@recipe function f(res::SMCResult; q_limits = 1e-5)
-    param_names = fieldnames(typeof(res.priors))
+@recipe function f(fit::SMCResult; q_limits = 1e-5)
+    param_names = fieldnames(typeof(fit.priors))
     num_params = length(param_names)
     layout := (num_params, num_params)
 
@@ -34,7 +34,7 @@ end
             idx += 1
             if i == j
                 @series begin # plot prior
-                    dist = getfield(res.priors, param1)
+                    dist = getfield(fit.priors, param1)
                     seriestype := :path
                     subplot := idx
                     limits = quantile.(dist, (q_limits, 1-q_limits))
@@ -46,13 +46,13 @@ end
                     x,y
                 end
                 @series begin # plot marginal accepted kde
-                    U = DEBABC.wkde(res.accepted, param1)
+                    U = DEBABC.wkde(fit.accepted, param1)
                     subplot := idx
                     color --> :gray
                     fill --> true
                     fillalpha --> .5
-                    xmin = minimum(res.accepted[:,param1]) * 0.1
-                    xmax = maximum(res.accepted[:,param1]) * 1.1
+                    xmin = minimum(fit.accepted[:,param1]) * 0.1
+                    xmax = maximum(fit.accepted[:,param1]) * 1.1
                     x = range(xmin, xmax, length = 100) #(minimum(accepted[:,param1] .* 0.01), maximum(accepted[:,param1]))
                     y = [pdf(U, xi) for xi in x]
                     x,y
@@ -62,8 +62,8 @@ end
                     seriestype := :scatter
                     markershape := :vline
                     color --> :gray
-                    y = zeros(nrow(res.accepted))
-                    x = res.accepted[:,param1]
+                    y = zeros(nrow(fit.accepted))
+                    x = fit.accepted[:,param1]
 
                     x,y
                 end
@@ -71,7 +71,7 @@ end
                 # FIXME: plotting of binkde causes cryptic error message
                 subplot := idx
                 seriestype := :contour
-                U = DEBABC.wkde(res.accepted, param1, param2)
+                U = DEBABC.wkde(fit.accepted, param1, param2)
                 #xlim = (minimum(accepted[:,param1] * 1), maximum(accepted[:,param1]) * 1.1)
                 #ylim = (minimum(accepted[:,param2] * 1), maximum(accepted[:,param2]) * 1.1)
                 #x = range(xlim..., length = 100)

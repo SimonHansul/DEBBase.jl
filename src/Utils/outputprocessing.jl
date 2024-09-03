@@ -38,7 +38,7 @@ end
 """
 Calculate the relative responses. \n
 Positional arguments: 
-- `res::AbstractDataFrame`: results
+- `fit::AbstractDataFrame`: results
 - `response_vars::Vector{Symbol}`: response variables for which to calculate the relative responses
 - `treatment_var::Symbol`: Column indicating the treatment. Column values can be numerical or categorical, but `identify_control` kwarg has to be specified in the latter case
 
@@ -47,7 +47,7 @@ Keyword arguments:
 - `identify_control`: function used to identify reference values from `treatment_var`. By default, this is `minimum()` (assuming that column values in `treatment_var` are numerical).
 """
 function relative_response(
-    res::D, 
+    fit::D, 
     response_vars::Vector{Symbol},
     treatment_var::Symbol; 
     groupby_vars::Vector{Symbol} = Symbol[],
@@ -57,7 +57,7 @@ function relative_response(
     #=
     Calculation of the conditional control mean
     =#
-    reference = res[res[:,treatment_var] .== identify_control(res[:,treatment_var]),:] |> # extract the control
+    reference = fit[fit[:,treatment_var] .== identify_control(fit[:,treatment_var]),:] |> # extract the control
     x -> groupby(x, groupby_vars) |> # group by conditioning variables
     x -> combine(x) do df 
         refvals = DataFrame() # (sub-)dataframe of reference values
@@ -71,14 +71,14 @@ function relative_response(
     #=
     Calculation of the relative response
     =#
-    res = leftjoin(res, reference, on = groupby_vars) # add references as new columns
+    fit = leftjoin(fit, reference, on = groupby_vars) # add references as new columns
     for var in response_vars # for every response variable
         y_var = Symbol("y_" * String(var)) # get the relative response column name
         var_ref = Symbol(String(var) * "_ref") # get the reference column name
-        res[!,y_var] = [rr(row[var], row[var_ref]) for row in eachrow(res)] # calculate the relative response
-        select!(res, Not(var_ref)) # drop the reference column
+        fit[!,y_var] = [rr(row[var], row[var_ref]) for row in eachrow(fit)] # calculate the relative response
+        select!(fit, Not(var_ref)) # drop the reference column
     end
-    return res
+    return fit
 end
 
 """
