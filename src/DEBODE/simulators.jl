@@ -1,4 +1,21 @@
 """
+Compose an ODE system from a vector of global and species-specific derivatives, respectively.
+"""
+function compositemodel!(du, u, p, t)::Nothing
+
+    for func! in p.glb.odefuncs # calculate the global derivatives
+        func!(du, u, p, t) 
+    end
+
+    for func! in p.spc.odefuncs # calculate the species-specific derivatives
+        func!(du, u, p, t)
+    end
+
+    return nothing
+end
+
+
+"""
 simulator(
     p::AbstractParamCollection; 
     model = DEBODE!,

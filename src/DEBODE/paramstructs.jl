@@ -8,7 +8,12 @@
     k_V::Float64 = 0. # chemostat dilution rate [d-1]
     V_patch::Float64 = 0.05 # volume of a patch (L) (or the entire similated environment) [L]
     C_W::Vector{Float64} = [0.] # external chemical concentrations [μg L-1]
+    T::Float64 = 293.15 # ambient temperature [K]
+    T_ref::Float64 = 293.15 # reference temperature [K]
+    odefuncs::Vector{Function} = [] # Function of global derivatives, only used for dynamic model composition
 end
+
+@enum MixtoxModel IndependentAction DamageAddition
 
 """
 `SpeciesParams` contain population means of DEB and TKTD parameters. 
@@ -22,18 +27,21 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
 @with_kw mutable struct SpeciesParams <: AbstractSpeciesParams
     Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. This can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
     propagate_zoom::@NamedTuple{X_emb_int::Bool, H_p::Bool, K_X::Bool} = (X_emb_int = true, H_p = true, K_X = true) # Parameters to which Z will be propagated. Z is *always* applied to `Idot_max_rel` (with appropriate scaling).
-    X_emb_int::Float64 = 19.42 # initial vitellus [μgC]
-    K_X::Float64 = 1. # half-saturation constant for food uptake [μgC L-1]
-    Idot_max_rel::Float64 = 22.9 # maximum size-specific ingestion rate [μgC μgC^-(2/3) d-1]
-    Idot_max_rel_emb::Float64 = 22.9 # size-specific embryonic ingestion rate [μgC μgC^-(2/3) d-1]
-    kappa::Float64 = 0.539 # somatic allocation fraction [-]
-    eta_IA::Float64 = 0.33 # assimilation efficiency [-]
-    eta_AS::Float64 = 0.8 # growth efficiency [-]
+    T_A::Float64 # Arrhenius temperature (K)
+    X_emb_int_0::Float64 = 19.42 # initial vitellus [μgC]
+    K_X_0::Float64 = 1. # half-saturation constant for food uptake [μgC L-1]
+    Idot_max_rel_0::Float64 = 22.9 # maximum size-specific ingestion rate [μgC μgC^-(2/3) d-1]
+    Idot_max_rel_emb_0::Float64 = 22.9 # size-specific embryonic ingestion rate [μgC μgC^-(2/3) d-1]
+    kappa_0::Float64 = 0.539 # somatic allocation fraction [-]
+    eta_IA_0::Float64 = 0.33 # assimilation efficiency [-]
+    eta_AS_0::Float64 = 0.8 # growth efficiency [-]
     eta_SA::Float64 = 0.8 # shrinking efficiency [-]
-    eta_AR::Float64 = 0.95 # reproduction efficiency [-]
-    k_M::Float64 = 0.59 # somatic maintenance rate constant [d^-1]
-    k_J::Float64 = 0.504 # maturity maintenance rate constant [d^-1]
+    eta_AR_0::Float64 = 0.95 # reproduction efficiency [-]
+    k_M_0::Float64 = 0.59 # somatic maintenance rate constant [d^-1]
+    k_J_0::Float64 = 0.504 # maturity maintenance rate constant [d^-1]
     H_p::Float64 = 100. # maturity at puberty [μgC]
+
+    mixture_model::MixtoxModel = IndependentAction
     
     k_D_G::Vector{Float64} = [0.00] # toxicokinetic rate constants | PMoA growth efficiency
     k_D_M::Vector{Float64} = [0.00] # toxicokinetic rate constants | PMoA maintenance costs

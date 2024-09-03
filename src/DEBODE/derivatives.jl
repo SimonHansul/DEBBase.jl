@@ -390,7 +390,6 @@ Response to chemical stressors, assuming independent action for mixtures.
     @inbounds u.y_M = prod([p.spc.drc_functs_M[z](u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.C_W)])
     @inbounds u.y_A = prod([p.spc.drc_functs_A[z](u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.C_W)])
     @inbounds u.y_R = prod([p.spc.drc_functs_R[z](u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.C_W)])
-
     @inbounds u.h_z = sum([p.spc.drc_functs_h[z](u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.C_W)]) # hazard rate
 
     return nothing
@@ -452,6 +451,38 @@ function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float6
 end
 
 """
+Calculate Arrhenius temperature correction factor.
+"""
+function temp_corr!(
+    du::ComponentVector, 
+    u::ComponentVector, 
+    p::AbstractParamCollection, 
+    t::Real)::Nothing
+    
+    u.f_T = exp(p.glb.T_ref/u.T * ((u.T_ref - p.spc.T_A)/(u.T - p.spc.T_A)))
+    
+    return nothing
+end
+
+
+"""
+Apply stressors to baseline parameter values. 
+Temperature correction affects rate parameters, 
+other stressors affect parameters according to their respective PMoA.
+"""
+function apply_stressors!(du, u, p, t)
+
+    u.eta_AS = u.eta_AS_0 * u.y_G 
+    u.k_M = u.k_M_0 * u.y_M * u.f_T
+    u.k_J = u.k_J_0 * u.y_M * u.f_T
+    u.eta_IA = u.eta_IA_0 * u.y_A
+    u.eta_AR = u.eta_AR_0 * u.y_R
+
+    u.Idot_max_rel_emb = u.Idot_max_rel_emb_0 * u.f_T
+
+end
+
+"""
     DEBODE!(du, u, p, t)
 
 Definition of base model as a system of ordinary differential equations. 
@@ -461,6 +492,8 @@ function DEBODE!(du, u, p, t)::Nothing
 
     #### physiological responses
     y_z!(du, u, p, t) # response to chemical stressors
+    temp_corr!(du, u, p, t) # 
+    apply_stressors!()
 
     #### auxiliary state variables (record cumulative values)
     dI!(du, u, p, t)
