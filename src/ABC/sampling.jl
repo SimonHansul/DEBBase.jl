@@ -44,6 +44,8 @@ function posterior_sample(accepted::DataFrame; reserved_colnames::Vector{String}
     return Vector{Float64}(sampled_values)
 end
 
+posterior_sample(res::SMCResult; kwargs...) = posterior_sample(res.accepted; kwargs...)
+
 
 """
 Take posterior sample from a data frame of accepted values and assign to parameter structure. 

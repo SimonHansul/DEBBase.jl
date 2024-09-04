@@ -9,8 +9,7 @@
     V_patch::Float64 = 0.05 # volume of a patch (L) (or the entire similated environment) [L]
     C_W::Vector{Float64} = [0.] # external chemical concentrations [μg L-1]
     T::Float64 = 293.15 # ambient temperature [K]
-    T_ref::Float64 = 293.15 # reference temperature [K]
-    odefuncs::Vector{Function} = [] # Function of global derivatives, only used for dynamic model composition
+    odefuncs::Vector{Function} = Function[] # Function of global derivatives, only used for dynamic model composition
 end
 
 @enum MixtoxModel IndependentAction DamageAddition
@@ -26,8 +25,9 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
 """
 @with_kw mutable struct SpeciesParams <: AbstractSpeciesParams
     Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. This can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
-    propagate_zoom::@NamedTuple{X_emb_int::Bool, H_p::Bool, K_X::Bool} = (X_emb_int = true, H_p = true, K_X = true) # Parameters to which Z will be propagated. Z is *always* applied to `Idot_max_rel` (with appropriate scaling).
-    T_A::Float64 # Arrhenius temperature (K)
+    propagate_zoom::@NamedTuple{X_emb_int_0::Bool, H_p::Bool, K_X_0::Bool} = (X_emb_int_0 = true, H_p = true, K_X_0 = true) # Parameters to which Z will be propagated. Z is *always* applied to `Idot_max_rel_0` (with appropriate scaling).
+    T_A::Float64 = 8000. # Arrhenius temperature [K]
+    T_ref::Float64 = 293.15 # reference temperature [K]
     X_emb_int_0::Float64 = 19.42 # initial vitellus [μgC]
     K_X_0::Float64 = 1. # half-saturation constant for food uptake [μgC L-1]
     Idot_max_rel_0::Float64 = 22.9 # maximum size-specific ingestion rate [μgC μgC^-(2/3) d-1]
@@ -68,6 +68,7 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     b_h::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA reproduction efficiency
     
     aux::Any = nothing # placeholder for auxiliaray parameters - can be useful for development purposes
+    odefuncs::Vector{Function} = Function[DEBODE!]
 end
 
 """
@@ -75,12 +76,12 @@ end
 
 Induce agent variability in spc parameters via zoom factor `Z`. 
 `Z` is sampled from the corresponding distribution given in `p` and assumed to represent a ratio between maximum structurel *masses* (not lengths), 
-so that the surface area-specific ingestion rate `Idot_max_rel` scales with `Z^(1/3)` and parameters which represent masses or energy pools scales with `Z`.
+so that the surface area-specific ingestion rate `Idot_max_rel_0` scales with `Z^(1/3)` and parameters which represent masses or energy pools scales with `Z`.
 """
 function individual_variability!(agn::AbstractParams, spc::AbstractParams)
     agn.Z = rand(spc.Z) # sample zoom factor Z for agent from distribution
-    agn.Idot_max_rel = spc.Idot_max_rel * agn.Z^(1/3) # Z is always applied to Idot_max_rel
-    agn.Idot_max_rel_emb = spc.Idot_max_rel_emb * agn.Z^(1/3) #, including the value for embryos
+    agn.Idot_max_rel_0 = spc.Idot_max_rel_0 * agn.Z^(1/3) # Z is always applied to Idot_max_rel_0
+    agn.Idot_max_rel_emb_0 = spc.Idot_max_rel_emb_0 * agn.Z^(1/3) #, including the value for embryos
 
     for param in fieldnames(typeof(spc.propagate_zoom)) # iterate over other parameters which may be affected by Z
         if getproperty(spc.propagate_zoom, param) # check whether propagation of Z should occur for this parameter
@@ -98,11 +99,11 @@ This is in contrast to SpeciesParams, which define parameters on the species-lev
 """
 @with_kw mutable struct ODEAgentParams <: AbstractParams
     Z::Float64
-    Idot_max_rel::Float64
-    Idot_max_rel_emb::Float64
-    X_emb_int::Float64
+    Idot_max_rel_0::Float64
+    Idot_max_rel_emb_0::Float64
+    X_emb_int_0::Float64
     H_p::Float64
-    K_X::Float64
+    K_X_0::Float64
     
     """
     Initialize ODEAgentParams from SpeciesParams `spc`.

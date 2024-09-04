@@ -1,5 +1,12 @@
 """
-Compose an ODE system from a vector of global and species-specific derivatives, respectively.
+Composes an ODE system from a vector of global and species-specific derivatives, respectively. 
+This brings two advantages: 
+
+- Function definitions can be recycled in different simulation contexts (e.g. ODE-based and IBM)
+- Function vectors can be combined to facilitate modular modelling: Coupling two modules is equivalent to concatenating the function vectors and adding an adapter
+- 
+
+Users generally don't need to call with `compositemodel`, this function is used internally in `simulator`.
 """
 function compositemodel!(du, u, p, t)::Nothing
 
@@ -48,8 +55,7 @@ yhat = simulator(DEBParamCollection())
 
 """
 function simulator(
-    theta::AbstractParamCollection; 
-    model = DEBODE!,
+    theta::Union{AbstractParamCollection,NamedTuple}; 
     alg = Tsit5(),
     saveat = 1,
     reltol = 1e-6,
@@ -60,7 +66,7 @@ function simulator(
     theta.agn = AgentParamType(theta.spc) # initialize agent parameters incl. individual variability
 
     u = initialize_statevars(theta)
-    prob = ODEProblem(model, u, (0, theta.glb.t_max), theta) # define the problem
+    prob = ODEProblem(compositemodel!, u, (0, theta.glb.t_max), theta) # define the problem
     sol = solve(prob, alg; saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
 

@@ -24,12 +24,12 @@ end
 @inline function functional_response(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Float64
 
     let X_V = u.X_p / p.glb.V_patch # convert food abundance to concentration
-        return X_V / (X_V + p.agn.K_X) # calculate type II functional response
+        return X_V / (X_V + u.K_X) # calculate type II functional response
     end
 end
 
@@ -37,7 +37,7 @@ end
     dI!(
         du::ComponentArray,
         u::ComponentArray,
-        p::AbstractParamCollection,
+        p::Union{AbstractParamCollection,NamedTuple},
         t::Real
         )::Nothing
         
@@ -48,32 +48,18 @@ Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
 @inline function dI!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing
 
     u.f_X = functional_response(du, u, p, t)
     
-    du.I_emb = sig( # uptake from vitellus
-        u.X_emb, # uptake from vitellus depends on mass of vitellus
-        0., # the switch occurs when vitellus is used up 
-        0., # when the vitellus is used up, there is no uptake
-        (Complex(u.S)^(2/3)).re * p.agn.Idot_max_rel; # when the vitellus is not used up, uptake from vitellus occurs
-        beta = 1e20 # for switches around 0, we need very high beta values
-        )
+    du.I_emb = u.embryo * (Complex(u.S)^(2/3)).re * u.Idot_max_rel_emb # uptake from vitellus for embryos
+    du.I_p = (1 - u.embryo) * u.f_X * u.Idot_max_rel * (Complex(u.S)^(2/3)).re # uptake from external resource for all other life stages
+    du.I = du.I_emb + du.I_p # total uptake is the sum (though normally it is either one or the other)
 
-    du.I_p = sig( # uptake from external resource p
-        u.X_emb, # ingestion from external resource depends on mass of vitellus
-        0., # the switch occurs when the vitellus is used up  
-        u.f_X * p.agn.Idot_max_rel * (Complex(u.S)^(2/3)).re, # when the vitellus is used up, ingestion from the external resource occurs
-        0.; # while there is still vitellus left, there is no uptake from the external resource
-        beta = 1e20 # again we have a switch around 0, requiring very high beta
-        )
-
-    du.I = du.I_emb + du.I_p
-
-    du.X_p -= du.I_p
-    du.X_emb = -du.I_emb
+    du.X_p -= du.I_p # change in external resource abundance
+    du.X_emb = -du.I_emb # change in vitellus
 
     return nothing
 end
@@ -84,10 +70,10 @@ Assimilation flux
 @inline function dA!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real)::Nothing
 
-    du.A = du.I * p.spc.eta_IA * u.y_A
+    du.A = du.I * u.eta_IA
 
     return nothing
 end
@@ -98,10 +84,10 @@ Somatic maintenance flux
 @inline function dM!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real)::Nothing
 
-    du.M = u.S * p.spc.k_M * u.y_M
+    du.M = u.S * u.k_M
 
     return nothing
 end
@@ -113,11 +99,11 @@ Maturity maintenance flux
 @inline function dJ!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing
 
-    du.J = u.H * p.spc.k_J * u.y_M
+    du.J = u.H * u.k_J
 
     return nothing
 end
@@ -128,11 +114,11 @@ Positive somatic growth
 @inline function Sdot_positive(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Float64
 
-    return p.spc.eta_AS * u.y_G * (p.spc.kappa * du.A - du.M)
+    return u.eta_AS * (u.kappa * du.A - du.M)
 end
 
 """
@@ -141,22 +127,22 @@ Negative somatic growth
 @inline function Sdot_negative(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Float64 
 
-    return -(du.M / p.spc.eta_SA - p.spc.kappa * du.A)
+    return -(du.M / u.eta_SA - u.kappa * du.A)
 end
 
 function Sdot(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Float64 
 
     return sig(
-        p.spc.kappa * du.A, # growth depends on maintenance coverage
+        u.kappa * du.A, # growth depends on maintenance coverage
         du.M, # switch occurs based on maintenance costs
         Sdot_negative(du, u, p, t), # left of the threshold == maintenance costs cannot be covered == negative growth
         Sdot_positive(du, u, p, t) # right of the threshold == maintenance costs can be covered == positive growth
@@ -169,7 +155,7 @@ Somatic growth, including application of shrinking equation.
 @inline function dS!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing
 
@@ -182,7 +168,7 @@ end
     dS_max_hist!(
         du::ComponentArray,
         u::ComponentArray,
-        p::AbstractParamCollection,
+        p::Union{AbstractParamCollection,NamedTuple},
         t::Real
         )::Nothing
 
@@ -195,12 +181,11 @@ Values of `y_G != 1` are included in the calculation of `S_max_hist`, so that a 
 @inline function dS_max_hist!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing
 
-    #du.S_max_hist = p.eta_AS * u.y_G * (DEBBase.sig(u.X_emb, 0., p.agn.Idot_max_rel, p.agn.Idot_max_rel_emb; beta = 1e20) * Complex(u.S ^(2/3)).re - p.spc.k_M * u.S_max_hist)
-
+    
     u.S_max_hist = sig(
         u.S,
         u.S_max_hist,
@@ -227,16 +212,11 @@ Such rules are however likely species-specific and should be evaluated in the li
 @inline function dH!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing 
 
-    du.H = sig(
-        u.H, # maturation depends on maturity
-        p.agn.H_p, # switch occurs at maturity at puberty H_p
-        clipneg(((1 - p.spc.kappa) * du.A) - du.J), # maturation for embryos and juveniles
-        0., # maturation for adults
-    )
+    du.H = (1 - u.adult) * clipneg(((1 - u.kappa) * du.A) - du.J), # maturation for embryos and juveniles
 
     return nothing
 end
@@ -245,12 +225,12 @@ end
 Update the current estimate of H_b. 
 The current estimate of maturity at birth is equal to current maturity for embryos, 
 and will be fixed to the current value upon completion of embryonic development.
-This way, we obtain H_b as an implied trait and can use it later (for example in `abj()`).
+This way, we can obtain H_b as an implied trait for use during the simulation.
 """
 @inline function dH_b!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing
 
@@ -270,16 +250,11 @@ Reproduction flux.
 @inline function dR!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing 
 
-    du.R = sig(
-        u.H, # reproduction depends on maturity
-        p.agn.H_p, # switch occurs at maturity at puberty H_p
-        0., # reproduction for embryos and juveniles
-        clipneg(u.y_R * p.spc.eta_AR * ((1 - p.spc.kappa) * du.A - du.J)) # reproduction for adults
-    )
+    du.R = adult * clipneg(u.y_R * u.eta_AR * ((1 - u.kappa) * du.A - du.J)) # reproduction for adults
 
     return nothing
 end
@@ -288,7 +263,7 @@ end
     dQ!(
         du::ComponentArray,
         u::ComponentArray,
-        p::AbstractParamCollection,
+        p::Union{AbstractParamCollection,NamedTuple},
         t::Real
         )::Nothing 
 
@@ -297,7 +272,7 @@ Calculation of the total dissipation flux, equal to the sum of maintenance costs
 function dQ!(
     du::ComponentArray,
     u::ComponentArray,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing 
 
@@ -318,7 +293,7 @@ end
     dC_W!(
         du::ComponentVector,
         u::ComponentVector,
-        p::AbstractParamCollection,
+        p::Union{AbstractParamCollection,NamedTuple},
         t::Real
         )::Nothing 
 
@@ -329,7 +304,7 @@ Currently simply returns zeros because time-variable exposure is not yet impleme
 @inline function dC_W!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing 
 
@@ -344,11 +319,11 @@ Change in environmental resource abundance, simulating a chemostat.
 function dX_p!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing 
 
-    du.X_p = p.glb.Xdot_in - p.glb.k_V * u.X_p
+    du.X_p = u.Xdot_in - p.glb.k_V * u.X_p
 
     return nothing
 end
@@ -361,7 +336,7 @@ If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-speci
 @inline function dD!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing 
 
@@ -382,7 +357,7 @@ Response to chemical stressors, assuming independent action for mixtures.
 @inline function y_z!(
     du::ComponentVector,
     u::ComponentVector,
-    p::AbstractParamCollection,
+    p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing 
 
@@ -456,10 +431,10 @@ Calculate Arrhenius temperature correction factor.
 function temp_corr!(
     du::ComponentVector, 
     u::ComponentVector, 
-    p::AbstractParamCollection, 
+    p::Union{AbstractParamCollection,NamedTuple}, 
     t::Real)::Nothing
     
-    u.f_T = exp(p.glb.T_ref/u.T * ((u.T_ref - p.spc.T_A)/(u.T - p.spc.T_A)))
+    u.y_T = exp(p.spc.T_ref/u.T * ((p.spc.T_ref - p.spc.T_A)/(u.T - p.spc.T_A)))
     
     return nothing
 end
@@ -472,18 +447,17 @@ other stressors affect parameters according to their respective PMoA.
 """
 function apply_stressors!(du, u, p, t)
 
-    u.eta_AS = u.eta_AS_0 * u.y_G 
-    u.k_M = u.k_M_0 * u.y_M * u.f_T
-    u.k_J = u.k_J_0 * u.y_M * u.f_T
-    u.eta_IA = u.eta_IA_0 * u.y_A
-    u.eta_AR = u.eta_AR_0 * u.y_R
+    u.eta_AS = p.spc.eta_AS_0 * u.y_G 
+    u.k_M = p.spc.k_M_0 * u.y_M * u.y_T
+    u.k_J = p.spc.k_J_0 * u.y_M * u.y_T
+    u.eta_IA = p.spc.eta_IA_0 * u.y_A
+    u.eta_AR = p.spc.eta_AR_0 * u.y_R
 
-    u.Idot_max_rel_emb = u.Idot_max_rel_emb_0 * u.f_T
-
+    u.Idot_max_rel_emb = p.agn.Idot_max_rel_emb_0 * u.y_T
 end
 
 """
-    DEBODE!(du, u, p, t)
+    DEBODE!(du, u, p, t)::Nothing
 
 Definition of base model as a system of ordinary differential equations. 
 This model definition is suitable for simulating the life-history of a single organism in conjecture with OrdinaryDiffEq/DifferentialEquations.jl.
@@ -491,9 +465,9 @@ This model definition is suitable for simulating the life-history of a single or
 function DEBODE!(du, u, p, t)::Nothing
 
     #### physiological responses
-    y_z!(du, u, p, t) # response to chemical stressors
-    temp_corr!(du, u, p, t) # 
-    apply_stressors!()
+    y_z!(du, u, p, t) # calculate response to chemical stressors
+    temp_corr!(du, u, p, t) # calculate response to 
+    apply_stressors!(du, u, p, t) # apply stressors to baseline parameters
 
     #### auxiliary state variables (record cumulative values)
     dI!(du, u, p, t)
