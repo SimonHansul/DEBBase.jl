@@ -68,7 +68,28 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     b_h::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA reproduction efficiency
     
     aux::Any = nothing # placeholder for auxiliaray parameters - can be useful for development purposes
-    odefuncs::Vector{Function} = Function[DEBODE!]
+    odefuncs::Vector{Function} =  Function[
+        y_z!, # calculate response to chemical stressors
+        tempcorr!, # calculate response to 
+        apply_stressors!, # apply stressors to baseline parameters
+
+        #### auxiliary state variables (record cumulative values)
+        dI!,
+        dA!, 
+        dM!, 
+        dJ!,
+        dQ!,
+
+        #### major state variables
+        dS!,
+        dS_max_hist!,
+        dH!,
+        dH_b!,
+        dR!,
+        dX_p,
+        dD!,
+        dC_W!
+    ]
 end
 
 """

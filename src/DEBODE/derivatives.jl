@@ -354,7 +354,7 @@ end
 """
 Response to chemical stressors, assuming independent action for mixtures.
 """
-@inline function y_z!(
+@inline function y_z_IndependentAction!(
     du::ComponentVector,
     u::ComponentVector,
     p::Union{AbstractParamCollection,NamedTuple},
@@ -366,6 +366,34 @@ Response to chemical stressors, assuming independent action for mixtures.
     @inbounds u.y_A = prod([p.spc.drc_functs_A[z](u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.C_W)])
     @inbounds u.y_R = prod([p.spc.drc_functs_R[z](u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.C_W)])
     @inbounds u.h_z = sum([p.spc.drc_functs_h[z](u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.C_W)]) # hazard rate
+
+    return nothing
+end
+
+
+"""
+Response to chemical stressors, assuming damage addition for mixtures. <br>
+
+The PMoA-specific damage values for each stressor are added up,
+
+``D_j = \\sum_{z=1}^{n}{D_{j,z}}``
+
+, and the response is caluclated assuming identical DRC parameters for all stressors. 
+Currently, there are no additional weight factors implemented (assuming that the model is fitted to single-substance data only).
+
+"""
+function y_Z_DamageAddition!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::Union{AbstractParamCollection,NamedTuple},
+    t::Real
+    )::Nothing 
+    
+    u.y_G = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_M = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_A = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_R = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.h_z = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
 
     return nothing
 end
@@ -437,27 +465,7 @@ This model definition is suitable for simulating the life-history of a single or
 """
 function DEBODE!(du, u, p, t)::Nothing
 
-    #### physiological responses
-    y_z!(du, u, p, t) # calculate response to chemical stressors
-    tempcorr!(du, u, p, t) # calculate response to 
-    apply_stressors!(du, u, p, t) # apply stressors to baseline parameters
 
-    #### auxiliary state variables (record cumulative values)
-    dI!(du, u, p, t)
-    dA!(du, u, p, t) 
-    dM!(du, u, p, t) 
-    dJ!(du, u, p, t)
-    dQ!(du, u, p, t)
-
-    #### major state variables
-    dS!(du, u, p, t) # structures
-    dS_max_hist!(du, u, p, t) # reference structure
-    dH!(du, u, p, t) # maturity 
-    dH_b!(du, u, p, t) # estimate of maturity at birth
-    dR!(du, u, p, t) # reproduction buffer
-    dX_p!(du, u, p, t) # resource abundance
-    dD!(du, u, p, t) # damage
-    dC_W!(du, u, p, t) # external stressor concentration 
 
     return nothing
 end
