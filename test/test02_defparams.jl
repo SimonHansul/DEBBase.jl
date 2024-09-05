@@ -1,24 +1,4 @@
 #=
-# Testing the basic functionality based on default parameters
-=#
-
-begin
-    using Pkg; Pkg.activate("test")
-
-    using Plots, StatsPlots, Plots.Measures
-    default(leg = false)
-    using Distributions
-    using DataFrames
-    using Test
-    using OrdinaryDiffEq
-    using Chain
-
-    using Revise
-    @time using DEBBase.DEBODE
-    @time using DEBBase.Utils
-end
-
-#=
 Testing the default parameters
 =#
 @testset begin 

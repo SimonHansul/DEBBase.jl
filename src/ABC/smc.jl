@@ -1,4 +1,40 @@
 
+# TODO: define a better SMC struct
+#mutable struct SMC <: AbstractFitObject
+#    data::Union{Dataset,} = "" # data can be reference to an object, function to generate quasi-observations or an object holding the data itsel
+#    paramnames::Vector{Symbol} = [...] # parameter names
+#    priors::Vector{Distribution} = [...] # parameter priors
+#    hyperparam_names::Vector{Symbol} = [...] # hyperparameter names
+#    hyperparam_priors::Vector{Distribution} = [...] # hyper priors
+#    substructs::Union{Symbol,Vector{Symbol}} = [:pth, :pth, :spc, :glb,...] #
+#    assignment::Vector{Function} = repeat([x -> x], length(paramnames)) # additional instructions for parameter assignments prior to simulation (e.g. back-transformation of log-transformed parameters)
+#    paridx::OrderedDict{Symbol,Int64} = OrderedDict(zip(paramnames, eachindex(paramnames))) # parameter indexing to access priors etc. by name
+#    epsilon_schedule::Vector{Float64} = Float64[] # threshold values
+#    populations::Vector{DataFrame} = DataFrame[]
+#    comptime::Union{Missing,Float64} = missing # computation time [s]
+#    function SMC()
+#    end
+#end
+
+@with_kw mutable struct SMCResult
+    accepted::AbstractDataFrame = DataFrame()
+    defaultparams::Any = []
+    priors::Union{Priors,Tuple{Priors,DataFrame}} = Priors()
+    simulator = nothing
+    distance = nothing
+    data::Any = nothing
+    n_pop::Int64 = 0
+    q_eps::Float64 = NaN
+    k_max::Int64 = 0
+    convergence_eps::Float64 = NaN
+    time_of_execution::Union{String,DateTime} = ""
+    comptime::Any = 0
+    distance_schedule::Vector{Float64} = Float64[]
+    converged::Bool = false # TODO: remove this in v1.0 (keeping it for now to maintain backwards compatability for v<1)
+    errlog::DataFrame = DataFrame()
+end
+
+
 """
 initialize(
     n_pop::Int64, 

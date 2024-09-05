@@ -35,6 +35,7 @@ end
 
 """
     posterior_sample(accepted::DataFrame; reserved_colnames::Vector{String} = ["distance", "weight", "model", "chain"])
+
 Take posterior sample from a data frame of accepted values.
 """
 function posterior_sample(accepted::DataFrame; reserved_colnames::Vector{String} = ["distance", "weight", "model", "chain"])::Vector{Float64}

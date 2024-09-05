@@ -21,16 +21,9 @@ tests = glob("test/*.jl") |>
 x -> [splitpath(xi)[end] for xi in x] |>
 x -> filter(f -> f != "runtests.jl", x)
 
-using NamedTupleTools
-
-DEBParamCollection()
-
-
 
 for test in tests
     @info("Running $test")
     include(test)
 end
 
-
- 

@@ -27,6 +27,7 @@ module Utils
     using ComponentArrays
     using StatsBase
 
+    # functions from sister modules have to be imported explictly
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
     
     include("Utils/utils.jl")
@@ -39,7 +40,6 @@ module Utils
 
     include("Utils/outputprocessing.jl")
     export relative_response, idcol!
-
 end
 
 module DoseResponse
@@ -100,7 +100,7 @@ module ABC
     using ..Utils: fround
     using ..ParamStructs: AbstractParams, AbstractParamCollection
 
-    include("ABC/structs.jl")
+    include("ABC/priors.jl")
     export Priors, SMCResult, ppc
 
     include("ABC/paramhandling.jl")

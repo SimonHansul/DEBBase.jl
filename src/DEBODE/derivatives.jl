@@ -131,7 +131,7 @@ Negative somatic growth
     t::Real
     )::Float64 
 
-    return -(du.M / u.eta_SA - u.kappa * du.A)
+    return -(du.M / p.spc.eta_SA - u.kappa * du.A)
 end
 
 function Sdot(
@@ -279,9 +279,9 @@ function dQ!(
     # dissipation fluxes for the individual processes
     let Qdot_A, Qdot_S, Qdot_R
         
-        Qdot_A = du.I * (1 - p.spc.eta_IA)
-        Qdot_S = du.S >= 0 ? du.S * (1 - p.spc.eta_AS) / p.spc.eta_AS : du.S * (p.spc.eta_SA - 1)
-        Qdot_R = du.R * (1 - p.spc.eta_AR) / p.spc.eta_AR
+        Qdot_A = du.I * (1 - u.eta_IA)
+        Qdot_S = du.S >= 0 ? du.S * (1 - u.eta_AS) / u.eta_AS : du.S * (u.eta_SA - 1)
+        Qdot_R = du.R * (1 - u.eta_AR) / u.eta_AR
         
         du.Q =  Qdot_A + Qdot_S + Qdot_R + du.M + du.J + du.H
     end
@@ -371,40 +371,13 @@ Response to chemical stressors, assuming independent action for mixtures.
 end
 
 
-
-#"""
-#    Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
-#
-#Mautrity-driven metabolic acceleration from birth to maturity threshold `H_j` (metamorphosis). 
-#This form of metabolic acceleration assumes that metabolic rate constants change as maturation progresses 
-#(e.g. due to changes in gene expression). 
-#
-#We assume that some baseline parameter `p` has value `p_b` at birth and `p_j` at metamorphosis.
-#Between birth and metamorphosis, the current value of `p` is the maturity-weighted mean of `p_b` and `p_j`.
-#"""
-#function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
-#    w_b = (H_j - H) / (H_j - H_b) # weight for p_b
-#    w_j = 1 - w_b # weight for p_j
-#    p_bj = mean([p_b, p_j], Weights([w_b, w_j])) # p_bj, i.e. value between birth and maturity
-#    
-#    p = DEBBase.sig( # post-metamorphosis: value stays constant at p_j
-#        H,
-#        H_j,
-#        DEBBase.sig( # embryonic: value stays constant at p_b
-#            X_emb, 
-#            0., 
-#            p_bj, 
-#            p_b),
-#        p_j
-#    )
-#
-#    return p
-#end
-
 """
+    Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
+
 Mautrity-driven metabolic acceleration from birth to maturity threshold `H_j` (metamorphosis). 
 We assume that some baseline parameter `p` has value `p_b` at birth and `p_j` at metamorphosis.
-Between birth and metamorphosis, the current value of `p` is the maturity-weighted mean of `p_b` and `p_j`.
+Between birth and metamorphosis, the current value of `p` is the maturity-weighted mean of `p_b` and `p_j`. 
+Not used in the base model.
 """
 function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
     w_b = (H_j - H) / (H_j - H_b) # weight for p_b
@@ -428,7 +401,7 @@ end
 """
 Calculate Arrhenius temperature correction factor.
 """
-function temp_corr!(
+function tempcorr!(
     du::ComponentVector, 
     u::ComponentVector, 
     p::Union{AbstractParamCollection,NamedTuple}, 
@@ -466,7 +439,7 @@ function DEBODE!(du, u, p, t)::Nothing
 
     #### physiological responses
     y_z!(du, u, p, t) # calculate response to chemical stressors
-    temp_corr!(du, u, p, t) # calculate response to 
+    tempcorr!(du, u, p, t) # calculate response to 
     apply_stressors!(du, u, p, t) # apply stressors to baseline parameters
 
     #### auxiliary state variables (record cumulative values)

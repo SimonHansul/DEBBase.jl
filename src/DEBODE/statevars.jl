@@ -35,6 +35,7 @@ function initialize_statevars(p::Union{AbstractParamCollection,NamedTuple})::Com
         Idot_max_rel_emb = p.agn.Idot_max_rel_emb_0, 
         K_X = p.agn.K_X_0,
         eta_AS = p.spc.eta_AS_0, # current growth efficiency
+        kappa = p.spc.kappa_0,
         k_M = p.spc.k_M_0, # current maintenance rate constant
         k_J = p.spc.k_J_0, # current maturity rate constant
         eta_IA = p.spc.eta_IA_0, # current assimilation efficiency

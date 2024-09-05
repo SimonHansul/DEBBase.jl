@@ -24,7 +24,7 @@ end
 
 """
 simulator(
-    p::AbstractParamCollection; 
+    p::Union{AbstractParamCollection,NamedTuple}; 
     model = DEBODE!,
     alg = Tsit5(),
     saveat = 1,
@@ -36,7 +36,7 @@ Run an ODE-based model.
 
 **args**:
 
-- `theta::AbstractParamCollection`: A parameter collection with defined global parameters (`<: AbstractGlobalParams`) and species parameters (`<: AbstractSpeciesParams`).
+- `theta::Union{AbstractParamCollection,NamedTuple}`: A parameter collection with defined global parameters (`<: AbstractGlobalParams`) and species parameters (`<: AbstractSpeciesParams`).
 
 **kwargs**:
 

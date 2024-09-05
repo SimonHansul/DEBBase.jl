@@ -1,18 +1,3 @@
-begin
-    @info("Loading packages")
-    using Pkg; Pkg.activate("test")
-    using Test
-    using Plots, StatsPlots, Plots.Measures
-    using DataFrames, DataFramesMeta
-    using ProgressMeter
-    default(leg = false, lw = 1.5)
-    using OrdinaryDiffEq
-    using Distributions
-    using Revise
-    @time using DEBBase.ABC
-    TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
-end
-
 priors = ABC.HierchPriors(
     :Z => Truncated(Normal(1, 1), 0, Inf),
     [:Z_1, :Z_2],

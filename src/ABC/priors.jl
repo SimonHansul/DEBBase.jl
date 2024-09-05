@@ -31,20 +31,3 @@ mutable struct Priors
 end
 
 
-@with_kw mutable struct SMCResult
-    accepted::AbstractDataFrame = DataFrame()
-    defaultparams::Any = []
-    priors::Union{Priors,Tuple{Priors,DataFrame}} = Priors()
-    simulator = nothing
-    distance = nothing
-    data::Any = nothing
-    n_pop::Int64 = 0
-    q_eps::Float64 = NaN
-    k_max::Int64 = 0
-    convergence_eps::Float64 = NaN
-    time_of_execution::Union{String,DateTime} = ""
-    comptime::Any = 0
-    distance_schedule::Vector{Float64} = Float64[]
-    converged::Bool = false # TODO: remove this in v1.0 (keeping it for now to maintain backwards compatability for v<1)
-    errlog::DataFrame = DataFrame()
-end

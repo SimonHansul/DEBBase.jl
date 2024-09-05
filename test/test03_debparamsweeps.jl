@@ -1,15 +1,3 @@
-@time begin
-    using Pkg; Pkg.activate("test")
-    using Plots, StatsPlots, Plots.Measures
-    default(titlefontsize = 10, lw = 1.5, leg = false)
-    using DataFrames
-    using StatsBase
-    
-    using Revise 
-    using DEBBase.DEBODE
-
-    TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
-end
 
 begin 
     p = DEBParamCollection()
