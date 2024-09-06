@@ -23,6 +23,42 @@ end
 
 
 """
+We use callbacks to keep track of the current life stage, avoiding if/else statements in 
+the derivatives. 
+Each life stage is associated with an identically named auxiliary variable, 
+taking logical values to indicate whether this is the current life stage.
+"""
+function lifestage_callbacks()
+
+    condition_embryo(u, t, integrator) = u.X_emb < 0
+    function effect_embryo!(integrator) 
+        println(intergrator.ps)
+        integrator.u.embryo = 1.
+        integrator.u.juvenile = 0.
+        integrator.u.adult = 0.
+    end
+    cb_embryo = DiscreteCallback(condition_embryo, effect_embryo!)
+
+    condition_juvenile(u, t, integrator) = (u.X_emb <= 0) && (u.H < integrator.ps.agn.H_p)
+    function effect_juvenile!(integrator) 
+        integrator.u.embryo = 0.
+        integrator.u.juvenile = 1.
+        integrator.u.adult = 0.
+    end
+    cb_juvenile = DiscreteCallback(condition_juvenile, effect_juvenile!)
+
+    condition_adult(u, t, integrator) = u.H >= integrator.ps.agn.H_p
+    function effect_adult!(integrator) 
+        integrator.u.embryo = 0.
+        integrator.u.juvenile = 0.
+        integrator.u.adult = 1.
+    end
+    cb_adult = DiscreteCallback(condition_adult, effect_adult!)
+
+    return CallbackSet(cb_embryo, cb_juvenile, cb_adult)
+end
+
+"""
 simulator(
     p::Union{AbstractParamCollection,NamedTuple}; 
     model = DEBODE!,
@@ -67,7 +103,7 @@ function simulator(
 
     u = initialize_statevars(theta)
     prob = ODEProblem(compositemodel!, u, (0, theta.glb.t_max), theta) # define the problem
-    sol = solve(prob, alg; saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
+    sol = solve(prob, alg; callback = lifestage_callbacks(), saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
 
     return simout

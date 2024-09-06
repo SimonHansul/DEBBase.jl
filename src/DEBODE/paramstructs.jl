@@ -69,7 +69,7 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     
     aux::Any = nothing # placeholder for auxiliaray parameters - can be useful for development purposes
     odefuncs::Vector{Function} =  Function[
-        y_z!, # calculate response to chemical stressors
+        y_z_IndependentAction!, # calculate response to chemical stressors
         tempcorr!, # calculate response to 
         apply_stressors!, # apply stressors to baseline parameters
 
@@ -86,7 +86,7 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
         dH!,
         dH_b!,
         dR!,
-        dX_p,
+        dX_p!,
         dD!,
         dC_W!
     ]

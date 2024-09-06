@@ -1,3 +1,7 @@
+#derivatives.jl
+# A collection of derivative functions which is used to compose pre-defined models, and can be re-used for custom models.
+# Note that the ODE system itself is treated as a species parameter `odefunc`, where the derivatives are given as a Vector of Functions, in the order in which they are called.
+
 """
 Clip negative values.
 """
@@ -109,7 +113,7 @@ Maturity maintenance flux
 end
 
 """
-Positive somatic growth
+Positive somatic growth.
 """
 @inline function Sdot_positive(
     du::ComponentArray,
@@ -122,7 +126,7 @@ Positive somatic growth
 end
 
 """
-Negative somatic growth
+Negative somatic growth, assuming that the residual ``\\kappa``-assimiliation flux and structure will be combined to pay somatic maintenance.
 """
 @inline function Sdot_negative(
     du::ComponentArray,
@@ -134,6 +138,10 @@ Negative somatic growth
     return -(du.M / p.spc.eta_SA - u.kappa * du.A)
 end
 
+
+"""
+Somatic growth, accounting for the possibility of shrinking.
+"""
 function Sdot(
     du::ComponentArray,
     u::ComponentArray,
@@ -254,7 +262,7 @@ Reproduction flux.
     t::Real
     )::Nothing 
 
-    du.R = adult * clipneg(u.y_R * u.eta_AR * ((1 - u.kappa) * du.A - du.J)) # reproduction for adults
+    du.R = u.adult * clipneg(u.y_R * u.eta_AR * ((1 - u.kappa) * du.A - du.J)) # reproduction for adults
 
     return nothing
 end
@@ -280,7 +288,7 @@ function dQ!(
     let Qdot_A, Qdot_S, Qdot_R
         
         Qdot_A = du.I * (1 - u.eta_IA)
-        Qdot_S = du.S >= 0 ? du.S * (1 - u.eta_AS) / u.eta_AS : du.S * (u.eta_SA - 1)
+        Qdot_S = du.S >= 0 ? du.S * (1 - u.eta_AS) / u.eta_AS : du.S * (p.spc.eta_SA - 1)
         Qdot_R = du.R * (1 - u.eta_AR) / u.eta_AR
         
         du.Q =  Qdot_A + Qdot_S + Qdot_R + du.M + du.J + du.H
@@ -323,7 +331,7 @@ function dX_p!(
     t::Real
     )::Nothing 
 
-    du.X_p = u.Xdot_in - p.glb.k_V * u.X_p
+    du.X_p = p.glb.Xdot_in - p.glb.k_V * u.X_p
 
     return nothing
 end
@@ -457,15 +465,3 @@ function apply_stressors!(du, u, p, t)
     u.Idot_max_rel_emb = p.agn.Idot_max_rel_emb_0 * u.y_T
 end
 
-"""
-    DEBODE!(du, u, p, t)::Nothing
-
-Definition of base model as a system of ordinary differential equations. 
-This model definition is suitable for simulating the life-history of a single organism in conjecture with OrdinaryDiffEq/DifferentialEquations.jl.
-"""
-function DEBODE!(du, u, p, t)::Nothing
-
-
-
-    return nothing
-end

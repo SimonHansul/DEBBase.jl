@@ -4,14 +4,15 @@ using Pkg; Pkg.activate("test")
 using Plots, StatsPlots, Plots.Measures
 default(leg = false, lw = 1.5)
 
+using Test
 using StatsBase
-using DataFrames, DataFramesMeta
+using DataFrames, DataFramesMeta, Distributions
 using ProgressMeter
-
+using BenchmarkTools
 using Glob
 
 using Revise
-using DEBBase.ODE, DEBBase.ABC, DEBBase.Figures, DEBBase.Utils
+using DEBBase.DEBODE, DEBBase.ABC, DEBBase.Figures, DEBBase.Utils
 
 TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 println(TAG)
@@ -19,13 +20,8 @@ println(TAG)
 norm(x) = x ./ sum(x)
 tests = glob("test/*.jl") |> 
 x -> [splitpath(xi)[end] for xi in x] |>
-x -> filter(f -> f != "runtests.jl", x)
-
-using NamedTupleTools
-
-DEBParamCollection()
-
-
+x -> filter(f -> f != "runtests.jl", x) |>
+x -> filter(f -> occursin("test", f), x)
 
 for test in tests
     @info("Running $test")
@@ -33,4 +29,4 @@ for test in tests
 end
 
 
- 
+ yhat

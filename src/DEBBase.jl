@@ -101,10 +101,13 @@ module ABC
     using ..ParamStructs: AbstractParams, AbstractParamCollection
 
     include("ABC/priors.jl")
-    export Priors, SMCResult, ppc
+    export Priors, ppc
 
     include("ABC/paramhandling.jl")
     export assign!, getparam
+
+    include("ABC/smc.jl") # parameter estimation using sequential monte carlo approximate bayesian computation
+    export SMC, SMCResult
 
     include("ABC/sampling.jl")
     export rand!, posterior_sample!
@@ -112,9 +115,6 @@ module ABC
     include("ABC/initialization.jl") # initialization of 
     export deftruncnorm, deflognorm
 
-    include("ABC/smc.jl") # parameter estimation using sequential monte carlo approximate bayesian computation
-    export SMC
-    
     include("ABC/evaluation.jl") # evaluation of smc output
     export summarize_accepted, ppc
       
