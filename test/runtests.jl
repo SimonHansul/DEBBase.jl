@@ -1,4 +1,3 @@
-
 @info("Loading packages")
 using Pkg; Pkg.activate("test")
 using Plots, StatsPlots, Plots.Measures
@@ -12,7 +11,19 @@ using BenchmarkTools
 using Glob
 
 using Revise
-using DEBBase.DEBODE, DEBBase.ABC, DEBBase.Figures, DEBBase.Utils
+@time using DEBBase.DEBODE, DEBBase.ABC, DEBBase.Figures, DEBBase.Utils
+
+# FIXME
+yhat = simulator(DEBParamCollection(), saveat = 1/24)
+@df yhat plot(
+    plot(:t, [:embryo :juvenile :adult]),
+    plot(:t, :X_emb), 
+    plot(:t, :S), 
+    plot(:t, :H)
+)
+
+# FIXME: callback does not behave as expected.
+@df yhat plot(:t, :embryo)
 
 TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 println(TAG)
@@ -28,5 +39,3 @@ for test in tests
     include(test)
 end
 
-
- yhat

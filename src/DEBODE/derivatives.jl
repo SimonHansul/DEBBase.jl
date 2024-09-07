@@ -465,3 +465,42 @@ function apply_stressors!(du, u, p, t)
     u.Idot_max_rel_emb = p.agn.Idot_max_rel_emb_0 * u.y_T
 end
 
+
+"""
+    DEBBase!(du, u, p, t) # putting the model together
+
+The DEBBase model derivatives. <br>
+
+This model is used the default by DEBBase, and can be regarded as a version of DEBkiss with maturity (cf. Tjalling Jager's DEBkiss book).
+
+Feeding is simulated explicitly and all state variables, including structure, have the same dimension. 
+This means that the density of dry mass does not appear in the model - structure is a mass or energy pool like everyting else.
+The implication is that the surface area-specific ingestion rate as the dimension ``dim(u)^{1/3} d^{-1}``, 
+where ``dim(u)`` is the chosen model currency (e.g. dry mass or energy).
+
+The model implementation allows for simulations of mixtures with an arbitrary number of substances, 
+assuming independent action. The default dose-response is a log-logistic function, which is ``1-ln``-tansformed for maintenance costs 
+(increasing function with lower limit at 1).
+"""
+function DEBBase!(du, u, p, t) # putting the model together
+    y_z_IndependentAction!(du, u, p, t) # calculate response to chemical stressors
+    tempcorr!(du, u, p, t) # calculate response to 
+    apply_stressors!(du, u, p, t) # apply stressors to baseline parameters
+
+    #### auxiliary state variables (record cumulative values)
+    dI!(du, u, p, t)
+    dA!(du, u, p, t) 
+    dM!(du, u, p, t) 
+    dJ!(du, u, p, t)
+    dQ!(du, u, p, t)
+
+    #### major state variables
+    dS!(du, u, p, t)
+    dS_max_hist!(du, u, p, t)
+    dH!(du, u, p, t)
+    dH_b!(du, u, p, t)
+    dR!(du, u, p, t)
+    dX_p!(du, u, p, t)
+    dD!(du, u, p, t)
+    dC_W!(du, u, p, t)
+end

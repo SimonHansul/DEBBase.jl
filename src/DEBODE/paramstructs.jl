@@ -25,7 +25,11 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
 """
 @with_kw mutable struct SpeciesParams <: AbstractSpeciesParams
     Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. This can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
-    propagate_zoom::@NamedTuple{X_emb_int_0::Bool, H_p::Bool, K_X_0::Bool} = (X_emb_int_0 = true, H_p = true, K_X_0 = true) # Parameters to which Z will be propagated. Z is *always* applied to `Idot_max_rel_0` (with appropriate scaling).
+    propagate_zoom::@NamedTuple{X_emb_int_0::Bool, H_p_0::Bool, K_X_0::Bool} = (
+        X_emb_int_0 = true,
+        H_p_0 = true, 
+        K_X_0 = true
+        ) # Parameters to which Z will be propagated. Z is *always* applied to `Idot_max_rel_0` (with appropriate scaling).
     T_A::Float64 = 8000. # Arrhenius temperature [K]
     T_ref::Float64 = 293.15 # reference temperature [K]
     X_emb_int_0::Float64 = 19.42 # initial vitellus [μgC]
@@ -39,7 +43,7 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     eta_AR_0::Float64 = 0.95 # reproduction efficiency [-]
     k_M_0::Float64 = 0.59 # somatic maintenance rate constant [d^-1]
     k_J_0::Float64 = 0.504 # maturity maintenance rate constant [d^-1]
-    H_p::Float64 = 100. # maturity at puberty [μgC]
+    H_p_0::Float64 = 100. # maturity at puberty [μgC]
 
     mixture_model::MixtoxModel = IndependentAction
     
@@ -67,29 +71,7 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     b_R::Union{Nothing,Vector{Float64}} = [0.93] # slope parameters | PMoA reproduction efficiency
     b_h::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA reproduction efficiency
     
-    aux::Any = nothing # placeholder for auxiliaray parameters - can be useful for development purposes
-    odefuncs::Vector{Function} =  Function[
-        y_z_IndependentAction!, # calculate response to chemical stressors
-        tempcorr!, # calculate response to 
-        apply_stressors!, # apply stressors to baseline parameters
-
-        #### auxiliary state variables (record cumulative values)
-        dI!,
-        dA!, 
-        dM!, 
-        dJ!,
-        dQ!,
-
-        #### major state variables
-        dS!,
-        dS_max_hist!,
-        dH!,
-        dH_b!,
-        dR!,
-        dX_p!,
-        dD!,
-        dC_W!
-    ]
+    aux::Any = nothing # placeholder for auxiliaray parameters - can be useful for development purposes 
 end
 
 """
@@ -123,7 +105,7 @@ This is in contrast to SpeciesParams, which define parameters on the species-lev
     Idot_max_rel_0::Float64
     Idot_max_rel_emb_0::Float64
     X_emb_int_0::Float64
-    H_p::Float64
+    H_p_0::Float64
     K_X_0::Float64
     
     """

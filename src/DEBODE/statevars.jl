@@ -40,6 +40,9 @@ function initialize_statevars(p::Union{AbstractParamCollection,NamedTuple})::Com
         k_J = p.spc.k_J_0, # current maturity rate constant
         eta_IA = p.spc.eta_IA_0, # current assimilation efficiency
         eta_AR = p.spc.eta_AR_0, # current reproduction efficiency
+        # H_p == H_p_0 in the base model, but we need to access it in lifestage transition callbacks
+        # #TODO: how to access a parameter within a nested struct in a callback?
+        H_p = p.agn.H_p_0, # current maturity threshold at puberty; 
 
         D_G = MVector{length(p.spc.k_D_G), Float64}(zeros(length(p.spc.k_D_G))), # scaled damage | growth efficiency
         D_M = MVector{length(p.spc.k_D_M), Float64}(zeros(length(p.spc.k_D_M))), # scaled damage | maintenance costs 

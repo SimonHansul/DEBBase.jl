@@ -1,25 +1,26 @@
-"""
-Composes an ODE system from a vector of global and species-specific derivatives, respectively. 
-This brings two advantages: 
-
-- Function definitions can be recycled in different simulation contexts (e.g. ODE-based and IBM)
-- Function vectors can be combined to facilitate modular modelling: Coupling two modules is equivalent to concatenating the function vectors and adding an adapter
-- 
-
-Users generally don't need to call with `compositemodel`, this function is used internally in `simulator`.
-"""
-function compositemodel!(du, u, p, t)::Nothing
-
-    for func! in p.glb.odefuncs # calculate the global derivatives
-        func!(du, u, p, t) 
-    end
-
-    for func! in p.spc.odefuncs # calculate the species-specific derivatives
-        func!(du, u, p, t)
-    end
-
-    return nothing
-end
+#"""
+#Composes an ODE system from a vector of global and species-specific derivatives, respectively. 
+#This brings two advantages: 
+#
+#- Function definitions can be recycled in different simulation contexts (e.g. ODE-based and IBM)
+#- Function vectors can be combined to facilitate modular modelling: Coupling two modules is equivalent to concatenating the function vectors and adding an adapter
+#
+#A potential pitfall of this approach is to split up the model into too many small functions, making the model less readable. 
+#
+#Users generally don't need to call with `compositemodel`, this function is used internally in `simulator`.
+#"""
+#function compositemodel!(du, u, p, t)::Nothing
+#
+#    for func! in p.glb.odefuncs # calculate the global derivatives
+#        func!(du, u, p, t) 
+#    end
+#
+#    for func! in p.spc.odefuncs # calculate the species-specific derivatives
+#        func!(du, u, p, t)
+#    end
+#
+#    return nothing
+#end
 
 
 """
@@ -30,16 +31,18 @@ taking logical values to indicate whether this is the current life stage.
 """
 function lifestage_callbacks()
 
-    condition_embryo(u, t, integrator) = u.X_emb < 0
+    function condition_embryo(u, t, integrator) 
+        u.X_emb < 0
+    end
+
     function effect_embryo!(integrator) 
-        println(intergrator.ps)
         integrator.u.embryo = 1.
         integrator.u.juvenile = 0.
         integrator.u.adult = 0.
     end
     cb_embryo = DiscreteCallback(condition_embryo, effect_embryo!)
 
-    condition_juvenile(u, t, integrator) = (u.X_emb <= 0) && (u.H < integrator.ps.agn.H_p)
+    condition_juvenile(u, t, integrator) = (u.X_emb <= 0) && (u.H < u.H_p)
     function effect_juvenile!(integrator) 
         integrator.u.embryo = 0.
         integrator.u.juvenile = 1.
@@ -47,7 +50,7 @@ function lifestage_callbacks()
     end
     cb_juvenile = DiscreteCallback(condition_juvenile, effect_juvenile!)
 
-    condition_adult(u, t, integrator) = u.H >= integrator.ps.agn.H_p
+    condition_adult(u, t, integrator) = u.H >= u.H_p
     function effect_adult!(integrator) 
         integrator.u.embryo = 0.
         integrator.u.juvenile = 0.
@@ -95,15 +98,17 @@ function simulator(
     alg = Tsit5(),
     saveat = 1,
     reltol = 1e-6,
+    model = DEBBase!,
     AgentParamType::DataType = ODEAgentParams,
     kwargs...
     )::DataFrame
 
     theta.agn = AgentParamType(theta.spc) # initialize agent parameters incl. individual variability
+    callbacks = lifestage_callbacks()
 
     u = initialize_statevars(theta)
-    prob = ODEProblem(compositemodel!, u, (0, theta.glb.t_max), theta) # define the problem
-    sol = solve(prob, alg; callback = lifestage_callbacks(), saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
+    prob = ODEProblem(model, u, (0, theta.glb.t_max), theta) # define the problem
+    sol = solve(prob, alg; callback = callbacks, saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
 
     return simout
