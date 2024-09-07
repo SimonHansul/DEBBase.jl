@@ -225,7 +225,7 @@ Such rules are however likely species-specific and should be evaluated in the li
     )::Nothing 
 
     du.H = (1 - u.adult) * clipneg(((1 - u.kappa) * du.A) - du.J), # maturation for embryos and juveniles
-
+    
     return nothing
 end
 

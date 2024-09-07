@@ -1,5 +1,9 @@
 #=
 Testing the default parameters
+
+- is the maximum maturity equal to maturity at puberty?
+- does the maximum structure match with what is calculated from parameters?
+- does the mass balance check out?
 =#
 @testset begin 
     p = DEBParamCollection()
@@ -11,8 +15,21 @@ Testing the default parameters
         plot(:t, :H)
      ) |> display
 
-    @test isapprox(maximum(yhat.H), p.spc.H_p, rtol = 1e-2) # test for maximum maturity
+    @test isapprox(maximum(yhat.H), p.spc.H_p_0, rtol = 1e-2) # test for maximum maturity
     @test isapprox(maximum(yhat.S), DEBODE.calc_S_max(p.spc), rtol = 0.1)
+
+    # calculating cumulative energy budgets to assess mass balance
+
+    
+    budget = DataFrame()
+    for y in [:S, :M, :J, :R, :Q]
+        investment = @subset(yhat, :t .== maximum(:t))[1,y]
+        append!(budget, DataFrame(y = y, investment = investment))
+    end
+    sort!(budget, :y)
+    bar(budget.investment, xticks = (1:nrow(budget), budget.y))
+    mass_balance = sum(budget.investment) ./ @subset(yhat, :t .== maximum(:t))[1,:t]
+    @test isapprox(mass_balance, 1, atol = 0.98)
 end;
 
 #=

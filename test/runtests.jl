@@ -13,20 +13,15 @@ using Glob
 using Revise
 @time using DEBBase.DEBODE, DEBBase.ABC, DEBBase.Figures, DEBBase.Utils
 
-# FIXME
 yhat = simulator(DEBParamCollection(), saveat = 1/24)
 @df yhat plot(
     plot(:t, [:embryo :juvenile :adult]),
     plot(:t, :X_emb), 
     plot(:t, :S), 
-    plot(:t, :H)
+    plot(:t, :H),
+    plot(:t, :A)
 )
 
-# FIXME: callback does not behave as expected.
-@df yhat plot(:t, :embryo)
-
-TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
-println(TAG)
 
 norm(x) = x ./ sum(x)
 tests = glob("test/*.jl") |> 
