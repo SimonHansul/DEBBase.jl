@@ -117,6 +117,8 @@ module ABC
     
     include("ABC/evaluation.jl") # evaluation of smc output
     export summarize_accepted, ppc
+
+    include("ABC/imanconover.jl") # implementation of Iman-Conover algorithm
       
     include("ABC/recipes.jl")
 end
