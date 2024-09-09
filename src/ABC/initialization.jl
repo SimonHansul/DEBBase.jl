@@ -12,7 +12,7 @@ end
 Define a truncated normal distribution based on the mean and CV.
 """
 function deftruncnorm(mu, CV; l = 0, u = Inf) 
-    return Truncated(Normal(mu, CV * mu), l, u)
+    return Truncated(Normal(mu, abs(CV * mu)), l, u)
 end
 
 """
