@@ -5,18 +5,19 @@ Testing the default parameters
 - does the maximum structure match with what is calculated from parameters?
 - does the mass balance check out?
 =#
-@testset begin 
+
+@testset begin  
     p = DEBParamCollection()
     p.glb.t_max = 56.
     p.spc.Z = Dirac(1.)
-    yhat = simulator(p)
+    global yhat = simulator(p, alg = Euler(), dt = 1/24)
     @df yhat plot(
         plot(:t, :S),
         plot(:t, :H)
      ) |> display
 
     @test isapprox(maximum(yhat.H), p.spc.H_p_0, rtol = 1e-2) # test for maximum maturity
-    @test isapprox(maximum(yhat.S), DEBODE.calc_S_max(p.spc), rtol = 0.1)
+    @test isapprox(maximum(yhat.S), DEBODE.calc_S_max(p.spc), rtol = 0.1) # test for maximum structure
 
     # calculating cumulative energy budgets to assess mass balance
 
@@ -24,13 +25,29 @@ Testing the default parameters
     budget = DataFrame()
     for y in [:S, :M, :J, :R, :Q]
         investment = @subset(yhat, :t .== maximum(:t))[1,y]
-        append!(budget, DataFrame(y = y, investment = investment))
+        append!(budget, DataFrame(y = String(y), investment = investment))
     end
+
     sort!(budget, :y)
-    bar(budget.investment, xticks = (1:nrow(budget), budget.y))
-    mass_balance = sum(budget.investment) ./ @subset(yhat, :t .== maximum(:t))[1,:t]
+    bar(budget[budget.y .!= "Q", :investment], xticks = (1:nrow(budget), budget.y))
+    
+    mass_balance = sum(budget.investment) ./ @subset(yhat, :t .== maximum(:t))[1,:I]
     @test isapprox(mass_balance, 1, atol = 0.98)
 end;
+
+@df yhat plot(
+    plot(:t, :S), 
+    plot(:t, :H),
+    plot(:t, :X_emb), 
+    plot(:t, [:embryo]),
+    plot(:t, [:juvenile])
+)
+
+# FIXME: no maturation at all
+# FIXME: somatic growth ends prematurely
+
+@df yhat plot(:t, diffvec(:I))
+
 
 #=
 Basic test of @replicates macro

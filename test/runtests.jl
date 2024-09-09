@@ -13,16 +13,6 @@ using Glob
 using Revise
 @time using DEBBase.DEBODE, DEBBase.ABC, DEBBase.Figures, DEBBase.Utils
 
-yhat = simulator(DEBParamCollection(), saveat = 1/24)
-@df yhat plot(
-    plot(:t, [:embryo :juvenile :adult]),
-    plot(:t, :X_emb), 
-    plot(:t, :S), 
-    plot(:t, :H),
-    plot(:t, :A)
-)
-
-
 norm(x) = x ./ sum(x)
 tests = glob("test/*.jl") |> 
 x -> [splitpath(xi)[end] for xi in x] |>
