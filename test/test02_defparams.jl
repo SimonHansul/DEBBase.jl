@@ -10,7 +10,7 @@ Testing the default parameters
     p = DEBParamCollection()
     p.glb.t_max = 56.
     p.spc.Z = Dirac(1.)
-    global yhat = simulator(p, alg = Euler(), dt = 1/24)
+    global yhat = simulator(p)
     @df yhat plot(
         plot(:t, :S),
         plot(:t, :H)
@@ -46,7 +46,7 @@ end;
 # FIXME: no maturation at all
 # FIXME: somatic growth ends prematurely
 
-@df yhat plot(:t, diffvec(:I))
+@df yhat plot(:t, (1 .- :adult) .*  ((1 .- :kappa) .* diffvec(:A) .- :k_J .* :H))
 
 
 #=
