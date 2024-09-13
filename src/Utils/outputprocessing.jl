@@ -34,6 +34,15 @@ function rr(x::R, x_ref::Missing)::Missing where R <: Real
     return missing
 end
 
+function robustmean(x)
+    xfilt = filter(xi -> isfinite(xi), x)
+
+    if length(xfilt)==0
+        return NaN
+    end
+
+    return mean(xfilt)
+end
 
 """
 Calculate the relative responses. \n
@@ -63,7 +72,7 @@ function relative_response(
         refvals = DataFrame() # (sub-)dataframe of reference values
         for var in response_vars # iterate over response values
             var_ref = Symbol(String(var) * "_ref") # get the reference column name
-            refvals[!,var_ref] = [mean(df[:,var])] # calculate the conditional control mean
+            refvals[!,var_ref] = [robustmean(df[:,var])] # calculate the conditional control mean
         end
         return refvals
     end
