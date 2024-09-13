@@ -161,6 +161,12 @@ function CRS5US(x::Vector{Float64}, p::NTuple{5,Float64})
     return max.(0, y)
 end
 
+
+"""
+Continuous maximum function, using a sigmoid function to determine the maximum.
+"""
+contmax(a, b; beta = 100.) = 1. / (1. + exp(-beta*((a-b) - 0.))) * (y_right - y_left) + y_left
+
 """
 Increasing NEC model.
 

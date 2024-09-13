@@ -49,12 +49,12 @@ end
 Take posterior sample from a data frame of accepted values and assign to parameter structure. 
 ID cols are at the end of the data frame and will be omitted from the sample, according to `num_idcols`.
 """
-function posterior_sample!(p::AbstractParams, accepted::DataFrame; reserved_colnames::Vector{String} = ["distance", "weight", "model", "chain"])
+function posterior_sample!(p::AbstractParams, accepted::DataFrame; reserved_colnames::Vector{String} = ["distance", "weight", "model", "chain"], assignment_instructions::Union{Dict,Nothing} = nothing)
     ω =  accepted.weight
     selectcols = filter(x -> !(x in reserved_colnames), names(accepted)) #1:length(names(accepted)) - num_idcols
     sampled_values = accepted[sample(axes(accepted, 1), Weights(ω)),selectcols]
     param_names = names(sampled_values)
-    assign!(p, param_names, sampled_values)
+    assign!(p, param_names, sampled_values; assignment_instructions = assignment_instructions)
 end
 
 

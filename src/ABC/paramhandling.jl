@@ -78,12 +78,15 @@ Extract a valid param struct fieldname from a parameter name by dropping the suf
 getfieldname(paramname::Symbol)::Symbol = join(split(String(paramname), "_")[1:end-1], "_") |> Symbol
 
 """
-    assign!(particle::AbstractParams, paramname::Symbol, value::Float64)
+    assign!(particle::AbstractParams, paramname::Symbol, value::Float64; assignment_instructions::Nothing)
+    assign!(particle::AbstractParams, paramname::Symbol, value::Float64; assignment_instructions::Dict)
 
 Assign a sample to a param struct. 
 This accounts for the possibility that some parameters might be stored in vectors (e.g. TKTD parameters where each vector element corresponds to a chemical). 
+If kwarg `assignment_instructions` is `Nothing`, we can ignore it. 
+Otherwise, it has to be a Dict, which maps the names of selected functions to the function which handles the assignment.
 """
-function assign!(particle::AbstractParams, paramname::Symbol, value::Float64)
+function assign!(particle::AbstractParams, paramname::Symbol, value::Float64; assignment_instructions::Nothing)
     if isvecparam(paramname, particle) # does the parameter name indicate an index?
         index = getparindex(paramname) # extract index as integer
         fieldname = getfieldname(paramname) # extract the param struct fieldname
@@ -92,6 +95,22 @@ function assign!(particle::AbstractParams, paramname::Symbol, value::Float64)
         setproperty!(particle, fieldname, vectorparam) # update the vector at the given index
     else # otherwise, 
         setproperty!(particle, paramname, value) # simply update the property
+    end
+end
+
+function assign!(particle::AbstractParams, paramname::Symbol, value::Float64; assignment_instructions::Dict)
+    if isvecparam(paramname, particle) # does the parameter name indicate an index?
+        index = getparindex(paramname) # extract index as integer
+        fieldname = getfieldname(paramname) # extract the param struct fieldname
+        vectorparam = copy(getproperty(particle, fieldname)) # get the vector parameter
+        setindex!(vectorparam, value, index) # update the vector at the given index 
+        setproperty!(particle, fieldname, vectorparam) # the property of the param struct, i.e. the whole vector
+    else # otherwise, 
+        if paramname in keys(assignment_instructions) # if an assignment instruction is given for this parameter, 
+            assignment_instructions[paramname](particle, value) # apply it
+        else # otherwise
+            setproperty!(particle, paramname, value) # simply update the property
+        end
     end
 end
 
