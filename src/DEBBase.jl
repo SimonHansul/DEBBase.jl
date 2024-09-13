@@ -77,7 +77,7 @@ module DEBODE
 
     @compile_workload begin
         # precompile the default simulator
-        yhat = simulator(DEBParamCollection())
+        sim = simulator(DEBParamCollection())
     end
 end
 
