@@ -108,18 +108,18 @@ kwargs
 """
 function ppc(defaultparams::Union{AbstractParams,AbstractParamCollection}, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
     @info("Running posterior predictive check with $n_samples samples on $(Threads.nthreads()) threads")
-    yhat = Vector{DataFrame}(undef, n_samples) # predictions
+    sim = Vector{DataFrame}(undef, n_samples) # predictions
 
     @threads for i in 1:n_samples # for the given number of samples
         sample = posterior_sample(accepted)
-        yhat_i = simulator(defaultparams, priors.params, sample) # evaluate the sample 
-        yhat_i[!,:n_sample] .= i # add ID column
-        yhat[i] = yhat_i # collect results
+        sim_i = simulator(defaultparams, priors.params, sample) # evaluate the sample 
+        sim_i[!,:n_sample] .= i # add ID column
+        sim[i] = sim_i # collect results
     end
 
-    yhat = vcat(yhat...) # convert Vector of DataFrames to DataFrame
+    sim = vcat(sim...) # convert Vector of DataFrames to DataFrame
 
-    return yhat
+    return sim
 end
 
 """

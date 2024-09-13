@@ -89,7 +89,7 @@ Run an ODE-based model.
 **Example**: 
 
 ```Julia
-yhat = simulator(DEBParamCollection())
+sim = simulator(DEBParamCollection())
 ```
 
 """
@@ -123,20 +123,20 @@ Perform replicated runs of `simcall`, where `simcall` is a call to a simulator f
 Example:
 
     spc = SpeciesParams(Z = Truncated(Normal(1, 0.1), 0, Inf)) # initialize default parameters with variable zoom factor
-    yhat = @replicates DEBBase.simulator(DEBParamCollection(spc = spc))) 10 # execute replicated runs to simulator
+    sim = @replicates DEBBase.simulator(DEBParamCollection(spc = spc))) 10 # execute replicated runs to simulator
 
-In this case, `yhat` will contain the output of 10 replicated simulations. For each replicate, the zoom factor is sampled from a truncated Normal distribution. 
-`yhat` contains an additional column `replicate`.
+In this case, `sim` will contain the output of 10 replicated simulations. For each replicate, the zoom factor is sampled from a truncated Normal distribution. 
+`sim` contains an additional column `replicate`.
 """
 macro replicates(simcall::Expr, nreps::Int64)
     quote
-        yhat = DataFrame()
+        sim = DataFrame()
 
         for replicate in 1:$nreps
-            yhat_i = $(esc(simcall))
-            yhat_i[!,:replicate] .= replicate
-            append!(yhat, yhat_i)
+            sim_i = $(esc(simcall))
+            sim_i[!,:replicate] .= replicate
+            append!(sim, sim_i)
         end
-        yhat
+        sim
     end
 end

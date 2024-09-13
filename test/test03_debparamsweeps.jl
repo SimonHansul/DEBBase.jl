@@ -1,9 +1,9 @@
 
 begin 
     p = DEBParamCollection()
-    yhat = simulator(p)
+    sim = simulator(p)
 
-    plt = @df yhat plot(
+    plt = @df sim plot(
         plot(:t, :S, ylabel = "S"), 
         plot(:t, :H, ylabel = "H"),
         plot(:t, :R, ylabel = "R"), 
@@ -31,33 +31,33 @@ end
         xlabel = "Time (d)"
         )
     
-    yhat = DataFrame()
+    sim = DataFrame()
     # iterate over nutrient input concentrations
     let Xdot_in = 4800.
         for _ in 1:5
             Xdot_in /= 2
             # generate the predidction
-            yhat = simulator(
+            sim = simulator(
                 DEBParamCollection(
                     glb = GlobalParams(Xdot_in = Xdot_in, t_max = 56.), 
                     spc = SpeciesParams(K_X = 12e3))
                 )
 
             # plot the trajectories
-            @df yhat plot!(plt, :t, :S, ylabel = "S", subplot = 1, leg = :outertopleft, label = "Xdot_in = $(Xdot_in)") 
-            @df yhat plot!(plt, :t, :R, ylabel = "R", subplot = 2)
-            @df yhat plot!(plt, :t, :X_p ./ GlobalParams().V_patch, ylabel = "[X_p]", subplot = 3, 
+            @df sim plot!(plt, :t, :S, ylabel = "S", subplot = 1, leg = :outertopleft, label = "Xdot_in = $(Xdot_in)") 
+            @df sim plot!(plt, :t, :R, ylabel = "R", subplot = 2)
+            @df sim plot!(plt, :t, :X_p ./ GlobalParams().V_patch, ylabel = "[X_p]", subplot = 3, 
                 yscale = :log10
                 )
 
-            yhat[!,:Xdot_in] .= Xdot_in 
-            append!(yhat, yhat)
+            sim[!,:Xdot_in] .= Xdot_in 
+            append!(sim, sim)
         end
         hline!(plt, [DEBODE.calc_S_max(SpeciesParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
         display(plt)
     end
 
-    rankcor = combine(groupby(yhat,:Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
+    rankcor = combine(groupby(sim,:Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
 
     @test rankcor == 1 # maximm size should be strictly monotonically increasing with Xdot_in
 end

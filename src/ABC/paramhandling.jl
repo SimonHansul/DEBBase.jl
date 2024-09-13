@@ -78,10 +78,11 @@ Extract a valid param struct fieldname from a parameter name by dropping the suf
 getfieldname(paramname::Symbol)::Symbol = join(split(String(paramname), "_")[1:end-1], "_") |> Symbol
 
 """
-    assign!(particle::AbstractParams, paramname::Symbol, value::Float64)
+    assign!(particle::AbstractParams, paramname::Symbol, value::Float64; assignment_instructions::Nothing)
 
 Assign a sample to a param struct. 
 This accounts for the possibility that some parameters might be stored in vectors (e.g. TKTD parameters where each vector element corresponds to a chemical). 
+If kwarg `assignment_instructions` is `Nothing`, we can ignore it.
 """
 function assign!(particle::AbstractParams, paramname::Symbol, value::Float64)
     if isvecparam(paramname, particle) # does the parameter name indicate an index?

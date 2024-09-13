@@ -34,11 +34,20 @@ function rr(x::R, x_ref::Missing)::Missing where R <: Real
     return missing
 end
 
+function robustmean(x)
+    xfilt = filter(xi -> isfinite(xi), x)
+
+    if length(xfilt)==0
+        return NaN
+    end
+
+    return mean(xfilt)
+end
 
 """
 Calculate the relative responses. \n
 Positional arguments: 
-- `fit::AbstractDataFrame`: results
+- `sim::AbstractDataFrame`: results
 - `response_vars::Vector{Symbol}`: response variables for which to calculate the relative responses
 - `treatment_var::Symbol`: Column indicating the treatment. Column values can be numerical or categorical, but `identify_control` kwarg has to be specified in the latter case
 
@@ -47,7 +56,7 @@ Keyword arguments:
 - `identify_control`: function used to identify reference values from `treatment_var`. By default, this is `minimum()` (assuming that column values in `treatment_var` are numerical).
 """
 function relative_response(
-    fit::D, 
+    sim::D, 
     response_vars::Vector{Symbol},
     treatment_var::Symbol; 
     groupby_vars::Vector{Symbol} = Symbol[],
@@ -57,13 +66,13 @@ function relative_response(
     #=
     Calculation of the conditional control mean
     =#
-    reference = fit[fit[:,treatment_var] .== identify_control(fit[:,treatment_var]),:] |> # extract the control
+    reference = sim[sim[:,treatment_var] .== identify_control(sim[:,treatment_var]),:] |> # extract the control
     x -> groupby(x, groupby_vars) |> # group by conditioning variables
     x -> combine(x) do df 
         refvals = DataFrame() # (sub-)dataframe of reference values
         for var in response_vars # iterate over response values
             var_ref = Symbol(String(var) * "_ref") # get the reference column name
-            refvals[!,var_ref] = [mean(df[:,var])] # calculate the conditional control mean
+            refvals[!,var_ref] = [robustmean(df[:,var])] # calculate the conditional control mean
         end
         return refvals
     end
@@ -71,32 +80,32 @@ function relative_response(
     #=
     Calculation of the relative response
     =#
-    fit = leftjoin(fit, reference, on = groupby_vars) # add references as new columns
+    sim = leftjoin(sim, reference, on = groupby_vars) # add references as new columns
     for var in response_vars # for every response variable
         y_var = Symbol("y_" * String(var)) # get the relative response column name
         var_ref = Symbol(String(var) * "_ref") # get the reference column name
-        fit[!,y_var] = [rr(row[var], row[var_ref]) for row in eachrow(fit)] # calculate the relative response
-        select!(fit, Not(var_ref)) # drop the reference column
+        sim[!,y_var] = [rr(row[var], row[var_ref]) for row in eachrow(sim)] # calculate the relative response
+        select!(sim, Not(var_ref)) # drop the reference column
     end
-    return fit
+    return sim
 end
 
 """
-    idcol!(Yhat::AbstractDataFrame, col::Symbol, val)
+    idcol!(sim::AbstractDataFrame, col::Symbol, val)
 
-Add identifier column with name `col` and value `val` to results DataFrame `Yhat`
+Add identifier column with name `col` and value `val` to results DataFrame `sim`
 """
-function idcol!(Yhat::AbstractDataFrame, col::Symbol, val)
-    Yhat[!,col] .= val
+function idcol!(sim::AbstractDataFrame, col::Symbol, val)
+    sim[!,col] .= val
 end
 
 """
-    idcol!(Yhat::Any, col::Symbol, val)
+    idcol!(sim::Any, col::Symbol, val)
 
-Add identifier column to a results object `Yhat`, assuming that `Yhat` is some collection of `DataFrame`s (e.g. Tuple, Vector).
+Add identifier column to a results object `sim`, assuming that `sim` is some collection of `DataFrame`s (e.g. Tuple, Vector).
 """
-function idcol!(Yhat::Any, col::Symbol, val)
-    for df in Yhat
+function idcol!(sim::Any, col::Symbol, val)
+    for df in sim
         idcol!(df, col, val)
     end
 end

@@ -18,7 +18,7 @@ Simulate single stressors with different PMoAs
 #
 
 begin   
-    yhat = DataFrame()
+    sim = DataFrame()
     pmoas = ["G", "M", "A", "R"]
     for pmoa in pmoas
         for C_W in round.(10 .^ range(log10(0.1), log10(1.), length = 5), sigdigits = 2)
@@ -42,20 +42,20 @@ begin
                 b_h = [2.])
             theta = DEBParamCollection(glb = glb, spc = spc)
             isolate_pmoas!(theta.spc, [pmoa])
-            yhat_zj = simulator(theta)
-            yhat_zj[!,:C_W] .= C_W
-            yhat_zj[!,:pmoa] .= pmoa
-            append!(yhat, yhat_zj)
+            sim_zj = simulator(theta)
+            sim_zj[!,:C_W] .= C_W
+            sim_zj[!,:pmoa] .= pmoa
+            append!(sim, sim_zj)
 
         end # for C_W in ...
 
         
     end # for pmoa in ...
     
-    yhat = relative_response(yhat, [:S, :R], :C_W; groupby_vars = [:t, :pmoa])
+    sim = relative_response(sim, [:S, :R], :C_W; groupby_vars = [:t, :pmoa])
     
-    rankcor = combine(groupby(yhat, :pmoa)) do yhat_j
-        r = combine(groupby(yhat_j, :C_W_1), :y_R => last) |>
+    rankcor = combine(groupby(sim, :pmoa)) do sim_j
+        r = combine(groupby(sim_j, :C_W_1), :y_R => last) |>
         x -> corspearman(x.C_W_1, x.y_R_last)
         return DataFrame(r = r)
     end
@@ -74,8 +74,8 @@ begin
 
     for (j,pmoa) in enumerate(pmoas)
         
-        @df @subset(yhat, :pmoa .== pmoa) groupedlineplot!(plt, :t, :y_S, :C_W, subplot = j, label = hcat(unique(:C_W)...))
-        @df @subset(yhat, :pmoa .== pmoa) groupedlineplot!(plt, :t, :y_R, :C_W, subplot = 4+j, label = hcat(unique(:C_W)...))
+        @df @subset(sim, :pmoa .== pmoa) groupedlineplot!(plt, :t, :y_S, :C_W, subplot = j, label = hcat(unique(:C_W)...))
+        @df @subset(sim, :pmoa .== pmoa) groupedlineplot!(plt, :t, :y_R, :C_W, subplot = 4+j, label = hcat(unique(:C_W)...))
     end
 
     display(plt)
