@@ -50,7 +50,7 @@ function lifestage_callbacks()
     end
     cb_juvenile = DiscreteCallback(condition_juvenile, effect_juvenile!)
 
-    condition_adult(u, t, integrator) = u.H >= u.H_p
+    condition_adult(u, t, integrator) = (u.X_emb <= 0) & (u.H >= u.H_p)
     function effect_adult!(integrator) 
         integrator.u.embryo = 0.
         integrator.u.juvenile = 0.

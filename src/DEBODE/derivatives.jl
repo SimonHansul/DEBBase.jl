@@ -483,6 +483,7 @@ assuming independent action. The default dose-response is a log-logistic functio
 (increasing function with lower limit at 1).
 """
 function DEBBase!(du, u, p, t) # putting the model together
+
     y_z_IndependentAction!(du, u, p, t) # calculate response to chemical stressors
     tempcorr!(du, u, p, t) # calculate response to 
     apply_stressors!(du, u, p, t) # apply stressors to baseline parameters

@@ -10,42 +10,18 @@ Testing the default parameters
     p = DEBParamCollection()
     p.glb.t_max = 56.
     p.spc.Z = Dirac(1.)
-<<<<<<< HEAD
-    global yhat = simulator(p)
-    @df yhat plot(
-=======
-    sim = simulator(p)
+    global sim = simulator(p)
     @df sim plot(
->>>>>>> 041b237e17b3d5300ea06068f55701ba1bf5dfc2
         plot(:t, :S),
         plot(:t, :H)
      ) |> display
 
-<<<<<<< HEAD
-    @test isapprox(maximum(yhat.H), p.spc.H_p_0, rtol = 1e-2) # test for maximum maturity
-    @test isapprox(maximum(yhat.S), DEBODE.calc_S_max(p.spc), rtol = 0.1) # test for maximum structure
-
-    # calculating cumulative energy budgets to assess mass balance
-
-    
-    budget = DataFrame()
-    for y in [:S, :M, :J, :R, :Q]
-        investment = @subset(yhat, :t .== maximum(:t))[1,y]
-        append!(budget, DataFrame(y = String(y), investment = investment))
-    end
-
-    sort!(budget, :y)
-    bar(budget[budget.y .!= "Q", :investment], xticks = (1:nrow(budget), budget.y))
-    
-    mass_balance = sum(budget.investment) ./ @subset(yhat, :t .== maximum(:t))[1,:I]
-    @test isapprox(mass_balance, 1, atol = 0.98)
-=======
-    @test isapprox(maximum(sim.H), p.spc.H_p, rtol = 1e-2) # test for maximum maturity
+    @test isapprox(maximum(sim.H), p.spc.H_p_0, rtol = 1e-2) # test for maximum maturity
     @test isapprox(maximum(sim.S), DEBODE.calc_S_max(p.spc), rtol = 0.1)
->>>>>>> 041b237e17b3d5300ea06068f55701ba1bf5dfc2
 end;
 
-@df yhat plot(
+
+@df sim plot(
     plot(:t, :S), 
     plot(:t, :H),
     plot(:t, :X_emb), 
@@ -53,8 +29,9 @@ end;
     plot(:t, [:juvenile])
 )
 
-# FIXME: no maturation at all
+
 # FIXME: somatic growth ends prematurely
+@df sim plot(:t, diffvec(:I_p))
 
 @df yhat plot(:t, (1 .- :adult) .*  ((1 .- :kappa) .* diffvec(:A) .- :k_J .* :H))
 
