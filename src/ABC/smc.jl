@@ -44,7 +44,7 @@ end
         data::AbstractDataFrame
     )
     
-Initialization of the SMC population if the given priors are a combination of parameteric priors and previously accepted particles. <br>
+Initialization of the SMC population if the given priors are a combination of parameteric priors and previously accepted particles. \\
 Note that parameteric prior distributions should always be given for all parameters. 
 For the parameters which also appear in the dataframe of accepted values
 """

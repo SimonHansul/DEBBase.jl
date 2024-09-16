@@ -4,7 +4,7 @@ using DEBBase
 using DEBBase.ABC
 
 makedocs(
-    sitename = "DEBBase: Dynamic Energy Budget modelling in Julia", 
+    sitename = "DEBBase.jl", 
     modules = [DEBBase, DEBBase.ABC, DEBBase.DEBODE],
     format = Documenter.HTML()
     )

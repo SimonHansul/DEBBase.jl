@@ -6,7 +6,17 @@ function clipneg(x::Float64)
 end
 
 """
+function sig(
+    x::Float64, 
+    x_thr::Float64,
+    y_left::Float64, 
+    y_right::Float64; 
+    beta::Float64 = 1e16
+    )::Float6
+
 Sigmoid switch function. 
+This can be useful to replace simple if-statements with a continuous function. 
+
 `y_left` and `y_right` are the function values left and right of the threshold `x_thr`.
 
 """
@@ -21,6 +31,16 @@ Sigmoid switch function.
     return 1 / (1 + exp(-beta*(x - x_thr))) * (y_right - y_left) + y_left
 end
 
+"""
+    functional_response(
+        du::ComponentArray,
+        u::ComponentArray,
+        p::AbstractParamCollection,
+        t::Real
+        )::Float64
+        
+Compute scaled functional response `f_X`, assuming a Holling Type II relationship.
+"""
 @inline function functional_response(
     du::ComponentArray,
     u::ComponentArray,
@@ -41,9 +61,14 @@ end
         t::Real
         )::Nothing
         
+
 Calculate ingestion rate. 
-Embryos (X_emb <= 0) take up resources from the vitellus X_emb. 
-Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
+Embryos (`X_emb <= 0`) take up resources from the vitellus `X_emb`. 
+Juveniles and adults (`X_emb > 0`) feed on the external resource `X_p`. 
+
+The DEBBase model assumes that all state variables are given as mass (or a linearly proportional quantity). 
+As this includes structure, the ingestion rate scales with the structural mass ``S^{2/3}```.
+
 """
 @inline function dI!(
     du::ComponentArray,
@@ -398,7 +423,7 @@ end
 
 
 """
-Response to chemical stressors, assuming damage addition for mixtures. <br>
+Response to chemical stressors, assuming damage addition for mixtures. \\
 
 The PMoA-specific damage values for each stressor are added up,
 
