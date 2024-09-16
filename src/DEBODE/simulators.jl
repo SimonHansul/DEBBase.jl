@@ -31,17 +31,6 @@ taking logical values to indicate whether this is the current life stage.
 """
 function lifestage_callbacks()
 
-    function condition_embryo(u, t, integrator) 
-        u.X_emb > 0
-    end
-
-    function effect_embryo!(integrator) 
-        integrator.u.embryo = 1.
-        integrator.u.juvenile = 0.
-        integrator.u.adult = 0.
-    end
-    cb_embryo = DiscreteCallback(condition_embryo, effect_embryo!)
-
     condition_juvenile(u, t, integrator) = (u.X_emb <= 0) & (u.H < u.H_p)
     function effect_juvenile!(integrator) 
         integrator.u.embryo = 0.

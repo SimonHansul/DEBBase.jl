@@ -12,8 +12,6 @@ using Test
 using Revise
 @time using DEBBase.DEBODE, DEBBase.Utils
 
-TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
-
 norm(x) = x ./ sum(x)
 tests = glob("test/*.jl") |> 
 x -> [splitpath(xi)[end] for xi in x] |>
@@ -24,4 +22,7 @@ for test in tests
     @info("Running $test")
     include(test)
 end
+
+using OrdinaryDiffEq
+
 

@@ -30,6 +30,7 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
         H_p_0 = true, 
         K_X_0 = true
         ) # Parameters to which Z will be propagated. Z is *always* applied to `Idot_max_rel_0` (with appropriate scaling).
+        
     T_A::Float64 = 8000. # Arrhenius temperature [K]
     T_ref::Float64 = 293.15 # reference temperature [K]
     X_emb_int_0::Float64 = 19.42 # initial vitellus [μgC]
