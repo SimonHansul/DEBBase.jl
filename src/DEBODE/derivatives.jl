@@ -379,7 +379,7 @@ end
 """
 Response to chemical stressors, assuming independent action for mixtures.
 """
-@inline function y_z!(
+@inline function y_z_IA!(
     du::ComponentVector,
     u::ComponentVector,
     p::AbstractParamCollection,
@@ -395,6 +395,36 @@ Response to chemical stressors, assuming independent action for mixtures.
 
     return nothing
 end
+
+
+"""
+Response to chemical stressors, assuming damage addition for mixtures. <br>
+
+The PMoA-specific damage values for each stressor are added up,
+
+``D_j = \\sum_{z=1}^{n}{D_{j,z}}``
+
+, and the response is caluclated assuming identical DRC parameters for all stressors. 
+Currently, there are no additional weight factors implemented (assuming that the model is fitted to single-substance data only).
+
+"""
+function y_z_DamageAddition!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::Union{AbstractParamCollection,NamedTuple},
+    t::Real
+    )::Nothing 
+    
+    u.y_G = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_M = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_A = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_R = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.h_z = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+
+    return nothing
+end
+
+
 
 
 
@@ -452,15 +482,48 @@ function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float6
 end
 
 """
-    DEBODE!(du, u, p, t)
+    DEBODE_IA!(du, u, p, t)
 
 Definition of base model as a system of ordinary differential equations. 
 This model definition is suitable for simulating the life-history of a single organism in conjecture with OrdinaryDiffEq/DifferentialEquations.jl.
 """
-function DEBODE!(du, u, p, t)::Nothing
+function DEBODE_IA!(du, u, p, t)::Nothing
 
     #### physiological responses
-    y_z!(du, u, p, t) # response to chemical stressors
+    y_z_IA!(du, u, p, t) # response to chemical stressors
+
+    #### auxiliary state variables (record cumulative values)
+    dI!(du, u, p, t)
+    dA!(du, u, p, t) 
+    dM!(du, u, p, t) 
+    dJ!(du, u, p, t)
+    dQ!(du, u, p, t)
+
+    #### major state variables
+    dS!(du, u, p, t) # structures
+    dS_max_hist!(du, u, p, t) # reference structure
+    dH!(du, u, p, t) # maturity 
+    dH_b!(du, u, p, t) # estimate of maturity at birth
+    dR!(du, u, p, t) # reproduction buffer
+    dX_p!(du, u, p, t) # resource abundance
+    dD!(du, u, p, t) # damage
+    dC_W!(du, u, p, t) # external stressor concentration 
+
+    return nothing
+end
+
+DEBODE!(du, u, p, t) = DEBODE_IA!(du, u, p, t)
+
+
+"""
+    DEBODE_DA!()
+
+Base model assuming Damage Addition (DA) for mixture toxicity.
+"""
+function DEBODE_DA!(du, u, p, t)
+    
+    #### physiological responses
+    y_z_DA!(du, u, p, t) # response to chemical stressors
 
     #### auxiliary state variables (record cumulative values)
     dI!(du, u, p, t)

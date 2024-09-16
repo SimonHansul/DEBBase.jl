@@ -18,11 +18,6 @@ tests = glob("test/*.jl") |>
 x -> [splitpath(xi)[end] for xi in x] |>
 x -> filter(f -> f != "runtests.jl", x)
 
-include(tests[2])
-
-y = simulator(DEBParamCollection())
-
-
 for test in tests
     @info("Running $test")
     include(test)
@@ -30,5 +25,3 @@ end
 
 
 
-using Revise
-using DEBBase
