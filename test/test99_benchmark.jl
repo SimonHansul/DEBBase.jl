@@ -1,9 +1,11 @@
 using BenchmarkTools
 using ProfileView
 
-ProfileView.@profview simulator(DEBParamCollection())
+using DEBBase.DEBODE
 
-b = @benchmark yhat = simulator(DEBParamCollection()) 
+VSCodeServer.@profview [simulator(DEBParamCollection()) for _ in 1:100]
+
+b = @benchmark yhat = simulator(DEBParamCollection(), alg = Tsit5()) 
 @info("Median benchmark at $(median(b.times)/1e6) ms for default parameters")
 @test median(b.times) < 10e6 # computation time should be below 5ms for the default parameters
 
@@ -16,3 +18,4 @@ yhat
     plot(:t, :H),
     plot(:t, [:embryo, :juvenile, :adult], leg = true, label = ["embryo" "juvenile" "adult"])
 )
+

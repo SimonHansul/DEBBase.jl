@@ -32,9 +32,7 @@ end
     t::Real
     )::Float64
 
-    let X_V = u.X_p / p.glb.V_patch # convert food abundance to concentration
-        return X_V / (X_V + u.K_X) # calculate type II functional response
-    end
+    return (u.X_p / p.glb.V_patch) / ((u.X_p / p.glb.V_patch) + u.K_X) # calculate type II functional response
 end
 
 """
@@ -369,11 +367,11 @@ Response to chemical stressors, assuming independent action for mixtures.
     t::Real
     )::Nothing 
 
-    @inbounds u.y_G = prod([p.spc.drc_functs_G[z](u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.C_W)]) # combined relative responses for sublethal effects per PMoA
-    @inbounds u.y_M = prod([p.spc.drc_functs_M[z](u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.C_W)])
-    @inbounds u.y_A = prod([p.spc.drc_functs_A[z](u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.C_W)])
-    @inbounds u.y_R = prod([p.spc.drc_functs_R[z](u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.C_W)])
-    @inbounds u.h_z = sum([p.spc.drc_functs_h[z](u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.C_W)]) # hazard rate
+    @inbounds u.y_G = prod([LL2(u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.C_W)]) # combined relative responses for sublethal effects per PMoA
+    @inbounds u.y_M = prod([LL2M(u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.C_W)])
+    @inbounds u.y_A = prod([LL2(u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.C_W)])
+    @inbounds u.y_R = prod([LL2(u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.C_W)])
+    @inbounds u.h_z = sum([LL2h(u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.C_W)]) # hazard rate
 
     return nothing
 end
@@ -470,6 +468,46 @@ end
 
 
 """
+    DEBBase_Agent!(du, u, p, t)
+
+Agent-level portion of the DEBBase ODE system. 
+This calculates the derivatives which, in the context of an ABM, need to be computed for every agent at every model step.
+"""
+function DEBBase_Agent!(du, u, p, t)
+    y_z_IndependentAction!(du, u, p, t) # calculate response to chemical stressors
+    tempcorr!(du, u, p, t) # calculate response to 
+    apply_stressors!(du, u, p, t) # apply stressors to baseline parameters
+
+    #### auxiliary state variables (record cumulative values)
+    dI!(du, u, p, t)
+    dA!(du, u, p, t) 
+    dM!(du, u, p, t) 
+    dJ!(du, u, p, t)
+    #dQ!(du, u, p, t)
+
+    #### major state variables
+    dS!(du, u, p, t)
+    dS_max_hist!(du, u, p, t)
+    dH!(du, u, p, t)
+    dH_b!(du, u, p, t)
+    dR!(du, u, p, t)
+
+    dD!(du, u, p, t)
+    dC_W!(du, u, p, t)
+end
+
+"""
+    function DEBBase_global!(du, u, p, t)
+
+Global portion of the DEBBase ODE system. 
+This calculates the derivatives which, in the context of an ABM, need to be computed once in every model step.        
+"""
+function DEBBase_global!(du, u, p, t)
+    dX_p!(du, u, p, t)
+end
+
+
+"""
     DEBBase!(du, u, p, t) # putting the model together
 
 The DEBBase model derivatives. <br>
@@ -486,25 +524,6 @@ assuming independent action. The default dose-response is a log-logistic functio
 (increasing function with lower limit at 1).
 """
 function DEBBase!(du, u, p, t) # putting the model together
-
-    y_z_IndependentAction!(du, u, p, t) # calculate response to chemical stressors
-    tempcorr!(du, u, p, t) # calculate response to 
-    apply_stressors!(du, u, p, t) # apply stressors to baseline parameters
-
-    #### auxiliary state variables (record cumulative values)
-    dI!(du, u, p, t)
-    dA!(du, u, p, t) 
-    dM!(du, u, p, t) 
-    dJ!(du, u, p, t)
-    dQ!(du, u, p, t)
-
-    #### major state variables
-    dS!(du, u, p, t)
-    dS_max_hist!(du, u, p, t)
-    dH!(du, u, p, t)
-    dH_b!(du, u, p, t)
-    dR!(du, u, p, t)
-    dX_p!(du, u, p, t)
-    dD!(du, u, p, t)
-    dC_W!(du, u, p, t)
+    DEBBase_Agent!(du, u, p, t)
+    DEBBase_global!(du, u, p, t)
 end
