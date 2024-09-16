@@ -398,10 +398,10 @@ function y_Z_DamageAddition!(
     )::Nothing 
     
     u.y_G = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_M = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_A = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_R = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.h_z = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_M = p.spc.drc_functs_G(sum(u.D_M), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_A = p.spc.drc_functs_G(sum(u.D_A), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_R = p.spc.drc_functs_G(sum(u.D_R), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.h_z = p.spc.drc_functs_G(sum(u.D_h), (p.spc.e_G[z], p.spc.b_G[1]))
 
     return nothing
 end
