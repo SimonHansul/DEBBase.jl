@@ -1,6 +1,6 @@
 """
     calc_SL_max(spc::AbstractSpeciesParams)::Float64
-Calculate maximum structural length slmax [m^(1/3)]
+Calculate maximum structural length ``slmax``, given in dimension ``m^(1/3)``.
 """
 function calc_SL_max(spc::AbstractSpeciesParams)::Float64
     return ((spc.kappa * spc.Idot_max_rel * spc.eta_IA) / spc.k_M)

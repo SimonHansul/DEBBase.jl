@@ -1,38 +1,144 @@
 module DEBBase
 
 using Reexport
-@reexport using DEBParamStructs
-@reexport using DoseResponse
-using ComponentArrays, StaticArrays
-using Parameters, OrdinaryDiffEq
-using Distributions, StatsBase, Random
+using Parameters
+using ComponentArrays
+using OrdinaryDiffEq
+using Distributions
 using DataFrames
 using PrecompileTools
+using StaticArrays
+using StatsBase
 
-include("Solvers.jl")
 
-include("Params.jl")
-export AbstractABM, AbstractSpeciesParams, ABM, DEBAgent, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
-
-include("Initialize.jl")
-export init_substates_agent, init_substates_global, initialize_statevars, initialize_statevars!, initialize_agents!
-
-include("IO.jl")
-export setproperty!, isolate_pmoas!, set_equal!, relative_response
-
-include("ModelFunctions.jl")
-export sig, clipneg
-
-include("DEBODE.jl")
-export init_substates_agent, init_substates_global, abstractsimulator, returntypes, simulator, @replicates
-
-include("ImpliedTraits.jl")
-
-include("DEBABM.jl")
-
-@compile_workload begin
-    # precompile the default simulator
-    #yhat = simulator(DEBParamCollection())
+module ParamStructs
+    
+    include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
+    
+    export AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
 end
+
+module Utils
+
+    using CSV
+    using DataFrames
+    using OrdinaryDiffEq
+    using ComponentArrays
+    using StatsBase
+
+    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+    
+    include("Utils/utils.jl")
+    export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin, sol_to_df, sol_to_mat
+
+    include("Utils/ioutils.jl")
+
+    include("Utils/inputprocessing.jl")
+    export into!, into, isolate_pmoas!, isolate_pmoas, set_equal!, getstat
+
+    include("Utils/outputprocessing.jl")
+    export relative_response, idcol!
+
+end
+
+module DoseResponse
+    include("DoseResponse/doseresponse.jl")
+    export LL2, LL2h, LL2M
+end
+
+module DEBODE
+
+    using Parameters
+    using ComponentArrays
+    using OrdinaryDiffEq
+    using Distributions
+    using DataFrames
+    using PrecompileTools
+    using StaticArrays
+    using StatsBase
+
+    using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+    using ..DoseResponse: LL2, LL2M, LL2h
+    using ..Utils: sol_to_df, sol_to_mat
+
+    include("DEBODE/paramstructs.jl")
+    export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, ODEAgentParams
+
+    include("DEBODE/derivatives.jl")
+    export sig, clipneg
+
+    include("DEBODE/statevars.jl")
+
+    include("DEBODE/simulators.jl")
+    export initialize_statevars, abstractsimulator, simulator, @replicates
+
+    include("DEBODE/traits.jl")
+
+    @compile_workload begin
+        # precompile the default simulator
+        sim = simulator(DEBParamCollection())
+    end
+end
+
+"""
+Submodule for parameter estimation using approximate bayesian computation.
+"""
+module ABC
+
+    using DataFrames
+    using StatsBase
+    using KernelDensity
+    using Distributions
+    using Parameters
+    using RecipesBase
+    import Base:rand
+    using Base.Threads
+    using Dates
+    using Random
+
+    using ..Utils: fround
+    using ..ParamStructs: AbstractParams, AbstractParamCollection
+
+    include("ABC/structs.jl")
+    export Priors, SMCResult, ppc
+
+    include("ABC/paramhandling.jl")
+    export assign!, getparam
+
+    include("ABC/sampling.jl")
+    export rand!, posterior_sample!
+
+    include("ABC/initialization.jl") # initialization of 
+    export deftruncnorm, deflognorm
+
+    include("ABC/smc.jl") # parameter estimation using sequential monte carlo approximate bayesian computation
+    export SMC
+    
+    include("ABC/evaluation.jl") # evaluation of smc output
+    export summarize_accepted, ppc
+
+    include("ABC/imanconover.jl") # implementation of Iman-Conover algorithm
+      
+    include("ABC/recipes.jl")
+end
+
+"""
+Recipes and convenience functions for plotting model output.
+"""
+module Figures
+
+    using StatsBase
+    using Reexport
+    using RecipesBase
+
+    include("Figures/figutils.jl")
+    export  gridylabel, gridxlabel, gridyattr, gridxattr
+
+    include("Figures/recipes.jl")
+
+    export rugplot, lineplot, groupedlineplot
+end
+
+
 
 end # module DEBBase

@@ -13,9 +13,9 @@ begin
     using OrdinaryDiffEq
     using Chain
 
-    using SHUtils
     using Revise
-    @time using DEBBase    
+    @time using DEBBase.DEBODE
+    @time using DEBBase.Utils
 end
 
 #=
@@ -25,14 +25,14 @@ Testing the default parameters
     p = DEBParamCollection()
     p.glb.t_max = 56.
     p.spc.Z = Dirac(1.)
-    yhat = DEBBase.simulator(p)
-    @df yhat plot(
+    sim = simulator(p)
+    @df sim plot(
         plot(:t, :S),
         plot(:t, :H)
      ) |> display
 
-    @test isapprox(maximum(yhat.H), p.spc.H_p, rtol = 1e-2) # test for maximum maturity
-    @test isapprox(maximum(yhat.S), DEBBase.calc_S_max(p.spc), rtol = 0.1)
+    @test isapprox(maximum(sim.H), p.spc.H_p, rtol = 1e-2) # test for maximum maturity
+    @test isapprox(maximum(sim.S), DEBODE.calc_S_max(p.spc), rtol = 0.1)
 end;
 
 #=
@@ -42,16 +42,16 @@ Basic test of @replicates macro
 @testset begin
     p = DEBParamCollection()
     p.spc.Z = Truncated(Normal(1., 0.1), 0, Inf)
-    yhat = @replicates DEBBase.simulator(p) 10
+    sim = @replicates simulator(p) 10
 
-    plt = @df yhat plot(
+    plt = @df sim plot(
         plot(:t, :S, group = :replicate, color = 1),
         plot(:t, :H, group = :replicate, color = 1)
     )
 
     display(plt)
 
-    cvs = @chain yhat begin # compute coefficients of variation in final values
+    cvs = @chain sim begin # compute coefficients of variation in final values
         groupby(:replicate)
         combine(_) do df
             return DataFrame(
