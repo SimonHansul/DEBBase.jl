@@ -34,7 +34,8 @@ params = DEBParamCollection()
 out = DEBBase.simulator(DEBParamCollection())
 ```
 
-`params` will be a nested mutable struct containing a set of default parameters. 
+`params` will be a nested mutable struct containing a set of default parameters. <br>
+The only purpose of the default parameters is to provide a place to get started and a reference during development.<br>
 The full documentation of the package is given [here](docs/build/index.html). 
 (Note that within the documentation of each function, you can click on `source` to inspect the corresponding source code.) 
 You can also inspect the test scripts for more simulation examples.
