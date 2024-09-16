@@ -3,22 +3,38 @@ name: Documentation
 on:
   push:
     branches:
-      - main  # or your default branch
+      - main  # Adjust if your main branch is named differently
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      
+      # Caching Julia dependencies
+      - name: Cache Julia packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.julia/compiled
+          key: ${{ runner.os }}-julia-${{ hashFiles('**/Project.toml', '**/Manifest.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-
+
       - uses: julia-actions/setup-julia@v1
         with:
-          version: '1.10.4'
+          version: '1.6'
+
       - name: Install dependencies
         run: julia --project=docs -e 'using Pkg; Pkg.instantiate()'
+
       - name: Build documentation
         run: julia --project=docs docs/make.jl
+
       - name: Deploy documentation
         run: |
-          julia --project=docs -e 'using Documenter; include("docs/make.jl"); deploydocs()'
+          julia --project=docs -e '
+            using Documenter;
+            include("docs/make.jl");
+            deploydocs(repo="github.com/SimonHansul/DEBBase.jl.git")'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

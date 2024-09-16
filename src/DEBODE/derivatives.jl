@@ -450,9 +450,6 @@ function y_z_DamageAddition!(
 end
 
 
-
-
-
 #"""
 #    Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
 #

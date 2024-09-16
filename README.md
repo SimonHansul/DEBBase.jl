@@ -40,7 +40,7 @@ The full documentation of the package is given [here](docs/build/index.html).
 (Note that within the documentation of each function, you can click on `source` to inspect the corresponding source code.) 
 You can also inspect the test scripts for more simulation examples.
 
-## Earmarked future features
+## Earmarked future features (road to v1.0.0)
 
 - Simulation of time-variable exposure
 - Using callbacks for life stage transitions
