@@ -1,35 +1,6 @@
-begin
-    @info("Loading packages")
-    using Pkg; Pkg.activate("test")
-    using Test
-    using Plots, StatsPlots, Plots.Measures
-    using DataFrames, DataFramesMeta
-    using ProgressMeter
-    default(leg = false, lw = 1.5)
-    using OrdinaryDiffEq
-    using Revise
-    @time using DEBBase.DEBODE, DEBBase.Utils, DEBBase.Figures
-    TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
-end
-
-pmoa = "M"
-p = DEBParamCollection()
-p.glb.t_max = 42.
-p.spc.k_D_G = [0.]
-p.spc.k_D_M = [10.]
-p.spc.k_D_A = [0.]
-p.spc.k_D_R = [0.]
-p.spc.k_D_h = [0.]
-
-p.spc.e_M = [1.]
-p.spc.b_M = [2.]
-
 #=
 Simulate single stressors with different PMoAs
 =#
-# FIXME: negative damage...
-# does not seem related to S at all
-#
 
 begin   
     sim = DataFrame()
@@ -93,6 +64,5 @@ begin
     end
 
     display(plt)
-    savefig(plt, "plots/$(TAG).png")
 end
 

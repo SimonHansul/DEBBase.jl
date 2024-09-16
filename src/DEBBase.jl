@@ -26,6 +26,7 @@ module Utils
     using ComponentArrays
     using StatsBase
 
+    # functions from sister modules have to be imported explictly
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
     
     include("Utils/utils.jl")
@@ -34,11 +35,10 @@ module Utils
     include("Utils/ioutils.jl")
 
     include("Utils/inputprocessing.jl")
-    export into!, into, isolate_pmoas!, isolate_pmoas, set_equal!, getstat
+    export into!, into, isolate_pmoas!, isolate_pmoas, set_equal!, getstat, C2K
 
     include("Utils/outputprocessing.jl")
     export relative_response, idcol!
-
 end
 
 module DoseResponse
@@ -99,11 +99,14 @@ module ABC
     using ..Utils: fround
     using ..ParamStructs: AbstractParams, AbstractParamCollection
 
-    include("ABC/structs.jl")
-    export Priors, SMCResult, ppc
+    include("ABC/priors.jl")
+    export Priors, ppc
 
     include("ABC/paramhandling.jl")
     export assign!, getparam
+
+    include("ABC/smc.jl") # parameter estimation using sequential monte carlo approximate bayesian computation
+    export SMC, SMCResult
 
     include("ABC/sampling.jl")
     export rand!, posterior_sample!
@@ -111,9 +114,6 @@ module ABC
     include("ABC/initialization.jl") # initialization of 
     export deftruncnorm, deflognorm
 
-    include("ABC/smc.jl") # parameter estimation using sequential monte carlo approximate bayesian computation
-    export SMC
-    
     include("ABC/evaluation.jl") # evaluation of smc output
     export summarize_accepted, ppc
 

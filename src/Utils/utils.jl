@@ -210,3 +210,5 @@ Get positions of minimum values as BitVector.
 function ismin(x::Vector{R}) where R <: Real
     return x .== minimum(x)
 end
+
+get_pkg_version(pkg, deps) = OrderedDict(deps).vals |> x ->filter(d -> d.name == pkg, x) |> x -> x[1].version

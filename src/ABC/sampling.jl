@@ -35,6 +35,7 @@ end
 
 """
     posterior_sample(accepted::DataFrame; reserved_colnames::Vector{String} = ["distance", "weight", "model", "chain"])
+
 Take posterior sample from a data frame of accepted values.
 """
 function posterior_sample(accepted::DataFrame; reserved_colnames::Vector{String} = ["distance", "weight", "model", "chain"])::Vector{Float64}
@@ -43,6 +44,8 @@ function posterior_sample(accepted::DataFrame; reserved_colnames::Vector{String}
     sampled_values = accepted[sample(axes(accepted, 1), Weights(ω)),selectcols]
     return Vector{Float64}(sampled_values)
 end
+
+posterior_sample(res::SMCResult; kwargs...) = posterior_sample(res.accepted; kwargs...)
 
 
 """

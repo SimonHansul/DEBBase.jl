@@ -1,31 +1,16 @@
 #=
-# Testing the basic functionality based on default parameters
-=#
-
-begin
-    using Pkg; Pkg.activate("test")
-
-    using Plots, StatsPlots, Plots.Measures
-    default(leg = false)
-    using Distributions
-    using DataFrames
-    using Test
-    using OrdinaryDiffEq
-    using Chain
-
-    using Revise
-    @time using DEBBase.DEBODE
-    @time using DEBBase.Utils
-end
-
-#=
 Testing the default parameters
+
+- is the maximum maturity equal to maturity at puberty?
+- does the maximum structure match with what is calculated from parameters?
+- does the mass balance check out?
 =#
-@testset begin 
+
+@testset begin  
     p = DEBParamCollection()
     p.glb.t_max = 56.
     p.spc.Z = Dirac(1.)
-    sim = simulator(p)
+    global sim = simulator(p)
     @df sim plot(
         plot(:t, :S),
         plot(:t, :H)
@@ -34,6 +19,7 @@ Testing the default parameters
     @test isapprox(maximum(sim.H), p.spc.H_p, rtol = 1e-2) # test for maximum maturity
     @test isapprox(maximum(sim.S), DEBODE.calc_S_max(p.spc), rtol = 0.1)
 end;
+
 
 #=
 Basic test of @replicates macro

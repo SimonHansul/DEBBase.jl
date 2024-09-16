@@ -1,6 +1,58 @@
+#"""
+#Composes an ODE system from a vector of global and species-specific derivatives, respectively. 
+#This brings two advantages: 
+#
+#- Function definitions can be recycled in different simulation contexts (e.g. ODE-based and IBM)
+#- Function vectors can be combined to facilitate modular modelling: Coupling two modules is equivalent to concatenating the function vectors and adding an adapter
+#
+#A potential pitfall of this approach is to split up the model into too many small functions, making the model less readable. 
+#
+#Users generally don't need to call with `compositemodel`, this function is used internally in `simulator`.
+#"""
+#function compositemodel!(du, u, p, t)::Nothing
+#
+#    for func! in p.glb.odefuncs # calculate the global derivatives
+#        func!(du, u, p, t) 
+#    end
+#
+#    for func! in p.spc.odefuncs # calculate the species-specific derivatives
+#        func!(du, u, p, t)
+#    end
+#
+#    return nothing
+#end
+
+
+"""
+We use callbacks to keep track of the current life stage, avoiding if/else statements in 
+the derivatives. 
+Each life stage is associated with an identically named auxiliary variable, 
+taking logical values to indicate whether this is the current life stage.
+"""
+function lifestage_callbacks()
+
+    condition_juvenile(u, t, integrator) = u.X_emb # transition to juvenile when X_emb hits 0
+    function effect_juvenile!(integrator) 
+        integrator.u.embryo = 0.
+        integrator.u.juvenile = 1.
+        integrator.u.adult = 0.
+    end
+    cb_juvenile = ContinuousCallback(condition_juvenile, effect_juvenile!)
+
+    condition_adult(u, t, integrator) = u.H_p - u.H # condition to adult when H reaches H_p
+    function effect_adult!(integrator) 
+        integrator.u.embryo = 0.
+        integrator.u.juvenile = 0.
+        integrator.u.adult = 1.
+    end
+    cb_adult = ContinuousCallback(condition_adult, effect_adult!)
+
+    return CallbackSet(cb_juvenile, cb_adult)
+end
+
 """
 simulator(
-    p::AbstractParamCollection; 
+    p::Union{AbstractParamCollection,NamedTuple}; 
     model = DEBODE!,
     alg = Tsit5(),
     saveat = 1,
@@ -12,7 +64,7 @@ Run an ODE-based model.
 
 **args**:
 
-- `theta::AbstractParamCollection`: A parameter collection with defined global parameters (`<: AbstractGlobalParams`) and species parameters (`<: AbstractSpeciesParams`).
+- `theta::Union{AbstractParamCollection,NamedTuple}`: A parameter collection with defined global parameters (`<: AbstractGlobalParams`) and species parameters (`<: AbstractSpeciesParams`).
 
 **kwargs**:
 
@@ -31,20 +83,21 @@ sim = simulator(DEBParamCollection())
 
 """
 function simulator(
-    theta::AbstractParamCollection; 
-    model = DEBODE!,
+    theta::Union{AbstractParamCollection,NamedTuple}; 
     alg = Tsit5(),
     saveat = 1,
     reltol = 1e-6,
+    model = DEBBase!,
     AgentParamType::DataType = ODEAgentParams,
     kwargs...
     )::DataFrame
 
     theta.agn = AgentParamType(theta.spc) # initialize agent parameters incl. individual variability
+    callbacks = lifestage_callbacks()
 
     u = initialize_statevars(theta)
     prob = ODEProblem(model, u, (0, theta.glb.t_max), theta) # define the problem
-    sol = solve(prob, alg; saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
+    sol = solve(prob, alg; callback = callbacks, saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
 
     return simout

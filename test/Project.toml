@@ -11,6 +11,10 @@ Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+<<<<<<< HEAD
+=======
+ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
+>>>>>>> 0f934f80debb4f2780b085f08fbe9d06af5d466e
 NamedTupleTools = "d9ec5142-1e00-5aa0-9d6a-321866360f50"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
@@ -21,3 +25,5 @@ Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
+Term = "22787eb5-b846-44ae-b979-8e399b8463ab"
+Weave = "44d3d7a6-8a23-5bf8-98c5-b353f8df5ec9"

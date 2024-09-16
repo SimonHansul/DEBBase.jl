@@ -1,15 +1,3 @@
-@time begin
-    using Pkg; Pkg.activate("test")
-    using Plots, StatsPlots, Plots.Measures
-    default(titlefontsize = 10, lw = 1.5, leg = false)
-    using DataFrames
-    using StatsBase
-    
-    using Revise 
-    using DEBBase.DEBODE
-
-    TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
-end
 
 begin 
     p = DEBParamCollection()
@@ -27,7 +15,6 @@ begin
         layout = (2,4), 
         leftmargin = 5mm
     )
-    savefig(plt, "plots/$(TAG)_basesim")
     display(plt)
 end
 
@@ -69,7 +56,7 @@ end
         display(plt)
     end
 
-    rankcor = combine(groupby(sim,:Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
+    rankcor = combine(groupby(sim, :Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
 
     @test rankcor == 1 # maximm size should be strictly monotonically increasing with Xdot_in
 end
