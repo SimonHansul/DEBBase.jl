@@ -1,7 +1,6 @@
 using Pkg; Pkg.activate("docs")
 using Documenter
 using DEBBase
-using DEBBase.ABC
 
 makedocs(
     sitename = "DEBBase.jl", 
