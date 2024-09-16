@@ -1,21 +1,6 @@
-pmoa = "M"
-p = DEBParamCollection()
-p.glb.t_max = 42.
-p.spc.k_D_G = [0.]
-p.spc.k_D_M = [10.]
-p.spc.k_D_A = [0.]
-p.spc.k_D_R = [0.]
-p.spc.k_D_h = [0.]
-
-p.spc.e_M = [1.]
-p.spc.b_M = [2.]
-
 #=
 Simulate single stressors with different PMoAs
 =#
-# FIXME: negative damage...
-# does not seem related to S at all
-#
 
 begin   
     sim = DataFrame()
@@ -79,6 +64,5 @@ begin
     end
 
     display(plt)
-    savefig(plt, "plots/$(TAG).png")
 end
 

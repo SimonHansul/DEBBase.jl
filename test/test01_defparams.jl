@@ -16,24 +16,9 @@ Testing the default parameters
         plot(:t, :H)
      ) |> display
 
-    @test isapprox(maximum(sim.H), p.spc.H_p_0, rtol = 1e-2) # test for maximum maturity
+    @test isapprox(maximum(sim.H), p.spc.H_p, rtol = 1e-2) # test for maximum maturity
     @test isapprox(maximum(sim.S), DEBODE.calc_S_max(p.spc), rtol = 0.1)
 end;
-
-
-@df sim plot(
-    plot(:t, :S), 
-    plot(:t, :H),
-    plot(:t, :X_emb), 
-    plot(:t, [:embryo]),
-    plot(:t, [:juvenile])
-)
-
-
-# FIXME: somatic growth ends prematurely
-@df sim plot(:t, diffvec(:I_p))
-
-@df yhat plot(:t, (1 .- :adult) .*  ((1 .- :kappa) .* diffvec(:A) .- :k_J .* :H))
 
 
 #=

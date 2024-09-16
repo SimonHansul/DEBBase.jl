@@ -155,3 +155,8 @@ end
 function getstat(data::Vector{DataFrame}, statistic::String)
     return getstat(data[2], statistic)
 end
+
+"""
+Convert degrees Celsius to Kelvin.
+"""
+C2K(T_C::Float64) = T_C + 273.15

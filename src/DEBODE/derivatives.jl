@@ -435,7 +435,8 @@ function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float6
 end
 
 """
-Calculate Arrhenius temperature correction factor.
+Calculate temperature correction coefficient according to Arrhenius equation. 
+See `apply_stressor!` for application of the temperature correction.
 """
 function tempcorr!(
     du::ComponentVector, 
@@ -443,7 +444,7 @@ function tempcorr!(
     p::Union{AbstractParamCollection,NamedTuple}, 
     t::Real)::Nothing
     
-    u.y_T = exp(p.spc.T_ref/u.T * ((p.spc.T_ref - p.spc.T_A)/(u.T - p.spc.T_A)))
+    u.y_T = exp((p.spc.T_A / p.spc.T_ref) - (p.spc.T_A / p.glb.T))
     
     return nothing
 end
@@ -451,8 +452,10 @@ end
 
 """
 Apply stressors to baseline parameter values. 
-Temperature correction affects rate parameters, 
-other stressors affect parameters according to their respective PMoA.
+Temperature correction affects DEB rate parameters, 
+other stressors affect parameters according to their respective PMoA. 
+
+A direct interaction between temperature and 
 """
 function apply_stressors!(du, u, p, t)
 

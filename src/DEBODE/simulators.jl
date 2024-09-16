@@ -31,23 +31,23 @@ taking logical values to indicate whether this is the current life stage.
 """
 function lifestage_callbacks()
 
-    condition_juvenile(u, t, integrator) = (u.X_emb <= 0) & (u.H < u.H_p)
+    condition_juvenile(u, t, integrator) = u.X_emb # transition to juvenile when X_emb hits 0
     function effect_juvenile!(integrator) 
         integrator.u.embryo = 0.
         integrator.u.juvenile = 1.
         integrator.u.adult = 0.
     end
-    cb_juvenile = DiscreteCallback(condition_juvenile, effect_juvenile!)
+    cb_juvenile = ContinuousCallback(condition_juvenile, effect_juvenile!)
 
-    condition_adult(u, t, integrator) = (u.X_emb <= 0) & (u.H >= u.H_p)
+    condition_adult(u, t, integrator) = u.H_p - u.H # condition to adult when H reaches H_p
     function effect_adult!(integrator) 
         integrator.u.embryo = 0.
         integrator.u.juvenile = 0.
         integrator.u.adult = 1.
     end
-    cb_adult = DiscreteCallback(condition_adult, effect_adult!)
+    cb_adult = ContinuousCallback(condition_adult, effect_adult!)
 
-    return CallbackSet(cb_embryo, cb_juvenile, cb_adult)
+    return CallbackSet(cb_juvenile, cb_adult)
 end
 
 """

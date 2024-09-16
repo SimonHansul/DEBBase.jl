@@ -10,7 +10,7 @@ default(leg = false, lw = 1.5)
 using Test
 
 using Revise
-@time using DEBBase.DEBODE, DEBBase.Utils
+@time using DEBBase.DEBODE, DEBBase.Utils, DEBBase.Figures
 
 norm(x) = x ./ sum(x)
 tests = glob("test/*.jl") |> 
@@ -23,6 +23,6 @@ for test in tests
     include(test)
 end
 
-using OrdinaryDiffEq
+SpeciesParams()
 
 

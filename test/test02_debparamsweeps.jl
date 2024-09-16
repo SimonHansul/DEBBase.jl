@@ -15,7 +15,6 @@ begin
         layout = (2,4), 
         leftmargin = 5mm
     )
-    savefig(plt, "plots/$(TAG)_basesim")
     display(plt)
 end
 
@@ -37,27 +36,27 @@ end
         for _ in 1:5
             Xdot_in /= 2
             # generate the predidction
-            sim = simulator(
+            sim_i = simulator(
                 DEBParamCollection(
                     glb = GlobalParams(Xdot_in = Xdot_in, t_max = 56.), 
                     spc = SpeciesParams(K_X = 12e3))
                 )
 
             # plot the trajectories
-            @df sim plot!(plt, :t, :S, ylabel = "S", subplot = 1, leg = :outertopleft, label = "Xdot_in = $(Xdot_in)") 
-            @df sim plot!(plt, :t, :R, ylabel = "R", subplot = 2)
-            @df sim plot!(plt, :t, :X_p ./ GlobalParams().V_patch, ylabel = "[X_p]", subplot = 3, 
+            @df sim_i plot!(plt, :t, :S, ylabel = "S", subplot = 1, leg = :outertopleft, label = "Xdot_in = $(Xdot_in)") 
+            @df sim_i plot!(plt, :t, :R, ylabel = "R", subplot = 2)
+            @df sim_i plot!(plt, :t, :X_p ./ GlobalParams().V_patch, ylabel = "[X_p]", subplot = 3, 
                 yscale = :log10
                 )
 
-            sim[!,:Xdot_in] .= Xdot_in 
-            append!(sim, sim)
+            sim_i[!,:Xdot_in] .= Xdot_in 
+            append!(sim, sim_i)
         end
         hline!(plt, [DEBODE.calc_S_max(SpeciesParams())], linestyle = :dash, color = "gray", subplot = 1, label = "S_max")
         display(plt)
     end
 
-    rankcor = combine(groupby(sim,:Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
+    rankcor = combine(groupby(sim, :Xdot_in), :S => maximum) |> x -> corspearman(x.Xdot_in, x.S_maximum)
 
     @test rankcor == 1 # maximm size should be strictly monotonically increasing with Xdot_in
 end
