@@ -1,24 +1,10 @@
 const X_EMB_INT_REL = 0.001 
 
-
-"""
-    initialize_statevars(theta::Union{AbstractParamCollection,NamedTuple})::ComponentArray 
-
-For initialization of ODE simulator, initialize the component vector of state variables, `u`, based on common parameter collection `theta`.
-"""
-function initialize_statevars(p::Union{AbstractParamCollection,NamedTuple})::ComponentArray 
-    return ComponentArray( # initial states
-        X_p = p.glb.Xdot_in, # initial resource abundance equal to influx rate
-        C_W = p.glb.C_W, # external stressor concentrations
-        T = p.glb.T, # ambient temperature
-
-        embryo = 1, # life stage indicators - determined in callbacks
-        juvenile = 0,
-        adult = 0,
-
-        X_emb = p.agn.X_emb_int_0, # initial mass of vitellus
-        S = p.agn.X_emb_int_0 * X_EMB_INT_REL, # initial structure is a small fraction of initial reserve // mass of vitellus
-        S_max_hist = p.agn.X_emb_int_0 * X_EMB_INT_REL, # initial reference structure
+function initialize_agent_statevars(p::Union{NamedTuple,AbstractParamCollection})
+    ComponentVector(
+        X_emb = p.agn.X_emb_int, # initial mass of vitellus
+        S = p.agn.X_emb_int * X_EMB_INT_REL, # initial structure is a small fraction of initial reserve // mass of vitellus
+        S_max_hist = p.agn.X_emb_int * X_EMB_INT_REL, # initial reference structure
         H = 0, # maturity
         H_b = 0, # maturity at birth (will be derived from model output)
         R = 0, # reproduction buffer
@@ -30,20 +16,6 @@ function initialize_statevars(p::Union{AbstractParamCollection,NamedTuple})::Com
         M = 0, # somatic maintenance
         J = 0, # maturity maintenance 
         Q = 0, # cumulative dissipation flux
-
-        X_emb_int = p.agn.X_emb_int_0,
-        Idot_max_rel = p.agn.Idot_max_rel_0, 
-        Idot_max_rel_emb = p.agn.Idot_max_rel_emb_0, 
-        K_X = p.agn.K_X_0,
-        eta_AS = p.spc.eta_AS_0, # current growth efficiency
-        kappa = p.spc.kappa_0, 
-        k_M = p.spc.k_M_0, # current maintenance rate constant
-        k_J = p.spc.k_J_0, # current maturity rate constant
-        eta_IA = p.spc.eta_IA_0, # current assimilation efficiency
-        eta_AR = p.spc.eta_AR_0, # current reproduction efficiency
-        # H_p == H_p_0 in the base model, but we need to access it in lifestage transition callbacks
-        # #TODO: how to access a parameter within a nested struct in a callback?
-        H_p = p.agn.H_p_0, # current maturity threshold at puberty; 
 
         D_G = MVector{length(p.spc.k_D_G), Float64}(zeros(length(p.spc.k_D_G))), # scaled damage | growth efficiency
         D_M = MVector{length(p.spc.k_D_M), Float64}(zeros(length(p.spc.k_D_M))), # scaled damage | maintenance costs 
@@ -57,5 +29,25 @@ function initialize_statevars(p::Union{AbstractParamCollection,NamedTuple})::Com
         y_R = 1., # relative response | reproduction efficiency
         y_T = 1., # relative response | temperature effects
         h_z = 0. # hazard rate | chemical stressors
+    )
+end
+
+function initalize_global_statevars(p::Union{NamedTuple,AbstractParamCollection})
+    ComponentArray( # initial states
+        X_p = p.glb.Xdot_in, # initial resource abundance equal to influx rate
+        C_W = p.glb.C_W # external stressor concentrations
+    )
+
+end
+
+"""
+    initialize_statevars(p::AbstractParamCollection, pindt::ComponentVector{Float64})::ComponentArray
+
+For initialization of ODE simulator, initialize the component vector of state variables, `u`, based on common oaraeter collection `p`.
+"""
+function initialize_statevars(p::Union{NamedTuple,AbstractParamCollection})::ComponentArray 
+    vcat(
+        initalize_global_statevars(p),
+        initialize_agent_statevars(p)
     )
 end

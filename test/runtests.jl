@@ -11,7 +11,11 @@
     using Test
 end
 using Revise
-@time using DEBBase.DEBODE, DEBBase.Utils, DEBBase.Figures
+using DEBBase.DEBODE, DEBBase.Utils
+using DEBBase.Figures
+
+
+TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 
 norm(x) = x ./ sum(x)
 tests = glob("test/*.jl") |> 

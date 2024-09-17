@@ -456,54 +456,37 @@ function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float6
     return p
 end
 
-"""
-Calculate temperature correction coefficient according to Arrhenius equation. 
-See `apply_stressor!` for application of the temperature correction.
-"""
-function tempcorr!(
-    du::ComponentVector, 
-    u::ComponentVector, 
-    p::Union{AbstractParamCollection,NamedTuple}, 
-    t::Real)::Nothing
-    
-    u.y_T = exp((p.spc.T_A / p.spc.T_ref) - (p.spc.T_A / p.glb.T))
-    
-    return nothing
+function DEBODE_global!(du, u, p, t)
+    dC_W!(du, u, p, t) # external stressor concentration 
+    dX_p!(du, u, p, t) # resource abundance
+end
+
+function DEBODE_agent_IA!(du, u, p, t)
+    #### physiological responses
+    y_z_IA!(du, u, p, t) # response to chemical stressors
+
+    #### auxiliary state variables (record cumulative values)
+    dI!(du, u, p, t)
+    dA!(du, u, p, t) 
+    dM!(du, u, p, t) 
+    dJ!(du, u, p, t)
+    dQ!(du, u, p, t)
+
+    #### major state variables
+    dS!(du, u, p, t) # structures
+    dS_max_hist!(du, u, p, t) # reference structure
+    dH!(du, u, p, t) # maturity 
+    dH_b!(du, u, p, t) # estimate of maturity at birth
+    dR!(du, u, p, t) # reproduction buffer
+
+    dD!(du, u, p, t) # damage
 end
 
 
-"""
-    apply_stressors!(du, u, p, t)
-
-Apply stressors to baseline parameter values. 
-Temperature correction affects DEB rate parameters, 
-other stressors affect parameters according to their respective PMoA. 
-A direct interaction between temperature and chemical toxicity is currently not considered.
-"""
-function apply_stressors!(du, u, p, t)
-
-    u.eta_AS = p.spc.eta_AS_0 * u.y_G 
-    u.k_M = p.spc.k_M_0 * u.y_M * u.y_T
-    u.k_J = p.spc.k_J_0 * u.y_M * u.y_T
-    u.eta_IA = p.spc.eta_IA_0 * u.y_A
-    u.eta_AR = p.spc.eta_AR_0 * u.y_R
-
-    u.Idot_max_rel_emb = p.agn.Idot_max_rel_emb_0 * u.y_T
-end
-
-
-"""
-    DEBBase_Agent!(du, u, p, t)
-
-Agent-level portion of the DEBBase ODE system. 
-This calculates the derivatives which, in the context of an ABM, need to be computed for every agent at every model step.
-"""
-function DEBBase_Agent!(du, u, p, t)
-
-    #### compute responses to environmental variables
-    y_z_IndependentAction!(du, u, p, t) # calculate response to chemical stressors
-    tempcorr!(du, u, p, t) # calculate response to temperature
-    apply_stressors!(du, u, p, t) # apply stressors to baseline parameters
+function DEBODE_agent_DA!(du, u, p, t)
+    dD!(du, u, p, t) # damage
+    #### physiological responses
+    y_z_DA!(du, u, p, t) # response to chemical stressors
 
     #### auxiliary state variables (record cumulative values)
     dI!(du, u, p, t)
@@ -513,11 +496,39 @@ function DEBBase_Agent!(du, u, p, t)
     #dQ!(du, u, p, t)# dissipation flux is currently not used - outcommented since this currently does memory allocations
 
     #### major state variables
-    dS!(du, u, p, t)
-    dS_max_hist!(du, u, p, t)
-    dH!(du, u, p, t)
-    dH_b!(du, u, p, t)
-    dR!(du, u, p, t)
+    dS!(du, u, p, t) # structures
+    dS_max_hist!(du, u, p, t) # reference structure
+    dH!(du, u, p, t) # maturity 
+    dH_b!(du, u, p, t) # estimate of maturity at birth
+    dR!(du, u, p, t) # reproduction buffer
+end
+
+
+"""
+    DEBODE_IA!(du, u, p, t)
+
+Definition of base model as a system of ordinary differential equations. 
+This model definition is suitable for simulating the life-history of a single organism in conjecture with OrdinaryDiffEq/DifferentialEquations.jl.
+"""
+function DEBODE_IA!(du, u, p, t)::Nothing
+    DEBODE_global!(du, u, p, t)
+    DEBODE_agent_IA!(du, u, p, t)
+    return nothing
+end
+
+# IA is the default model --> alias for DEBODE
+DEBODE!(du, u, p, t) = DEBODE_IA!(du, u, p, t)
+
+
+"""
+    DEBODE_DA!(du, u, p, t)
+
+Base model assuming Damage Addition (DA) for mixture toxicity.
+"""
+function DEBODE_DA!(du, u, p, t)
+
+    DEBODE_global!(du, u, p, t)
+    DEBODE_agent_DA!(du, u, p, t)
 
     dD!(du, u, p, t)
 end
