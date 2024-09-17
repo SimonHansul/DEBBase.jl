@@ -11,10 +11,7 @@ Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-<<<<<<< HEAD
-=======
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
->>>>>>> 0f934f80debb4f2780b085f08fbe9d06af5d466e
 NamedTupleTools = "d9ec5142-1e00-5aa0-9d6a-321866360f50"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"

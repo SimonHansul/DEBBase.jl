@@ -16,12 +16,8 @@ using Revise
 norm(x) = x ./ sum(x)
 tests = glob("test/*.jl") |> 
 x -> [splitpath(xi)[end] for xi in x] |>
-<<<<<<< HEAD
-x -> filter(f -> f != "runtests.jl", x)
-=======
 x -> filter(f -> f != "runtests.jl", x) |>
 x -> filter(f -> occursin("test", f), x)
->>>>>>> 0f934f80debb4f2780b085f08fbe9d06af5d466e
 
 # show debugging statements
 # set to "" to disable
