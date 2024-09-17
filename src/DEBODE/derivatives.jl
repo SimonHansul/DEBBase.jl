@@ -503,14 +503,12 @@ function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float6
     return p
 end
 
-"""
-    DEBODE_IA!(du, u, p, t)
+function DEBODE_global!(du, u, p, t)
+    dC_W!(du, u, p, t) # external stressor concentration 
+    dX_p!(du, u, p, t) # resource abundance
+end
 
-Definition of base model as a system of ordinary differential equations. 
-This model definition is suitable for simulating the life-history of a single organism in conjecture with OrdinaryDiffEq/DifferentialEquations.jl.
-"""
-function DEBODE_IA!(du, u, p, t)::Nothing
-
+function DEBODE_agent_IA!(du, u, p, t)
     #### physiological responses
     y_z_IA!(du, u, p, t) # response to chemical stressors
 
@@ -527,23 +525,27 @@ function DEBODE_IA!(du, u, p, t)::Nothing
     dH!(du, u, p, t) # maturity 
     dH_b!(du, u, p, t) # estimate of maturity at birth
     dR!(du, u, p, t) # reproduction buffer
-    dX_p!(du, u, p, t) # resource abundance
-    dD!(du, u, p, t) # damage
-    dC_W!(du, u, p, t) # external stressor concentration 
 
+    dD!(du, u, p, t) # damage
+end
+
+"""
+    DEBODE_IA!(du, u, p, t)
+
+Definition of base model as a system of ordinary differential equations. 
+This model definition is suitable for simulating the life-history of a single organism in conjecture with OrdinaryDiffEq/DifferentialEquations.jl.
+"""
+function DEBODE_IA!(du, u, p, t)::Nothing
+
+    DEBODE_global!(du, u, p, t)
+    DEBODE_agent_IA!(du, u, p, t)
     return nothing
 end
 
+# IA is the default model --> alias for DEBODE
 DEBODE!(du, u, p, t) = DEBODE_IA!(du, u, p, t)
 
-
-"""
-    DEBODE_DA!()
-
-Base model assuming Damage Addition (DA) for mixture toxicity.
-"""
-function DEBODE_DA!(du, u, p, t)
-    
+function DEBODE_agent_DA!(du, u, p, t)
     #### physiological responses
     y_z_DA!(du, u, p, t) # response to chemical stressors
 
@@ -560,9 +562,19 @@ function DEBODE_DA!(du, u, p, t)
     dH!(du, u, p, t) # maturity 
     dH_b!(du, u, p, t) # estimate of maturity at birth
     dR!(du, u, p, t) # reproduction buffer
-    dX_p!(du, u, p, t) # resource abundance
     dD!(du, u, p, t) # damage
-    dC_W!(du, u, p, t) # external stressor concentration 
+end
+
+
+"""
+    DEBODE_DA!(du, u, p, t)
+
+Base model assuming Damage Addition (DA) for mixture toxicity.
+"""
+function DEBODE_DA!(du, u, p, t)
+
+    DEBODE_global!(du, u, p, t)
+    DEBODE_agent_DA!(du, u, p, t)
 
     return nothing
 end
