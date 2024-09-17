@@ -1,8 +1,10 @@
+# script to test the DEB-ABM on the default parameter set
 using Pkg; Pkg.activate("test")
 using Parameters
 using NamedTupleTools
 
 using DEBBase.ParamStructs
+using DEBBase.DoseResponse
 
 @with_kw mutable struct GlobalABMParams <: ParamStructs.AbstractGlobalParams
     N0::Int64 = 1 #  initial number of individuals [#]
@@ -12,7 +14,6 @@ using DEBBase.ParamStructs
     V_patch::Float64 = 0.5 # volume of a patch (L) (or the entire similated environment) [L]
     C_W::Vector{Float64} = [0.] # external chemical concentrations [μg L-1]
 end
-
 
 @with_kw mutable struct SpeciesABMParams <: AbstractSpeciesParams
     Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. This can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
@@ -56,13 +57,19 @@ end
 end
 
 glb = GlobalABMParams() |> ntfromstruct
-spc = (;
-    SpeciesABMParams()...,
+spc_ode = SpeciesABMParams() |> ntfromstruct
+# species params are extended to include additional parameters needed for ABM (aging and starvation)
+spc = (; 
+    spc_ode...,
     (
         a_max = 60., # maximum life span
         tau_R = 2. # 
-    )
+    )...
 )
+
+
+DEBODE.initialize_statevars_agent
+
 
 @with_kw mutable struct DEBAgent
     du::ComponentVector
