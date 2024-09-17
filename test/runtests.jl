@@ -19,7 +19,9 @@ x -> [splitpath(xi)[end] for xi in x] |>
 x -> filter(f -> f != "runtests.jl", x) |>
 x -> filter(f -> occursin("test", f), x)
 
-ENV["JULIA_DEBUG"] = Main # show debugging statements
+# show debugging statements
+# set to "" to disable
+ENV["JULIA_DEBUG"] = Main 
 
 for test in tests
     @info("Running $test")

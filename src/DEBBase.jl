@@ -69,9 +69,10 @@ module DEBODE
     export sig, clipneg
 
     include("DEBODE/statevars.jl")
+    export initialize_statevars
 
     include("DEBODE/simulators.jl")
-    export initialize_statevars, abstractsimulator, simulator, @replicates
+    export simulator, @replicates, replicates, exposure
 
     include("DEBODE/traits.jl")
 

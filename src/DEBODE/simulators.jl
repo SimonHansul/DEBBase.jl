@@ -150,3 +150,27 @@ function replicates(simulator::Function, params::Union{NamedTuple,AbstractParamC
     
     sim
 end
+
+
+"""
+    exposure(simcall::Expr, C_Wvec::Vector{Float64}; kwargs...)
+
+Simulate exposure to a single stressor over a Vector of constant exposure concentrations `C_Wvec`. 
+
+"""
+function exposure(simulator::Function, params::Union{AbstractParamCollection,NamedTuple}, C_Wvec::Vector{Float64})
+    
+    let C_W_int = params.glb.C_W # we will modify this value and then reset to the initial value
+        sim = DataFrame()
+
+        for C_W in C_Wvec
+            params.glb.C_W[1] = C_W
+            sim_i = simulator(params)
+            append!(sim, sim_i)
+        end
+
+        params.glb.C_W = C_W_int 
+
+        return sim
+    end
+end
