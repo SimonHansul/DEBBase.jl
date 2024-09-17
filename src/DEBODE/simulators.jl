@@ -111,8 +111,10 @@ Perform replicated runs of `simcall`, where `simcall` is a call to a simulator f
 
 Example:
 
+```Julia
     spc = SpeciesParams(Z = Truncated(Normal(1, 0.1), 0, Inf)) # initialize default parameters with variable zoom factor
     sim = @replicates DEBBase.simulator(DEBParamCollection(spc = spc))) 10 # execute replicated runs to simulator
+```
 
 In this case, `sim` will contain the output of 10 replicated simulations. For each replicate, the zoom factor is sampled from a truncated Normal distribution. 
 `sim` contains an additional column `replicate`.
@@ -127,5 +129,48 @@ macro replicates(simcall::Expr, nreps::Int64)
             append!(sim, sim_i)
         end
         sim
+    end
+end
+
+
+"""
+    replicates(simulator::Function, params::Union{NamedTuple,AbstractParamCollection}, nreps::Int64; kwargs...)
+
+Perform replicated runs of `simulator` with parameters `params` (`simulator(params)` has to be a valid function call). 
+Analogous to `@replicates`, but a bit more flexible.
+"""
+function replicates(simulator::Function, params::Union{NamedTuple,AbstractParamCollection}, nreps::Int64; kwargs...)
+    sim = DataFrame()
+
+    for replicate in 1:nreps
+        sim_i = simulator(params; kwargs...)
+        sim_i[!,:replicate] .= replicate
+        append!(sim, sim_i)
+    end
+    
+    sim
+end
+
+
+"""
+    exposure(simcall::Expr, C_Wvec::Vector{Float64}; kwargs...)
+
+Simulate exposure to a single stressor over a Vector of constant exposure concentrations `C_Wvec`. 
+
+"""
+function exposure(simulator::Function, params::Union{AbstractParamCollection,NamedTuple}, C_Wvec::Vector{Float64})
+    
+    let C_W_int = params.glb.C_W # we will modify this value and then reset to the initial value
+        sim = DataFrame()
+
+        for C_W in C_Wvec
+            params.glb.C_W[1] = C_W
+            sim_i = simulator(params)
+            append!(sim, sim_i)
+        end
+
+        params.glb.C_W = C_W_int 
+
+        return sim
     end
 end

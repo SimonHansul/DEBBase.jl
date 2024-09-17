@@ -52,9 +52,7 @@ Compute scaled functional response `f_X`, assuming a Holling Type II relationshi
     t::Real
     )::Float64
 
-    let X_V = u.X_p / p.glb.V_patch # convert food abundance to concentration
-        return X_V / (X_V + u.K_X) # calculate type II functional response
-    end
+    return (u.X_p / p.glb.V_patch) / ((u.X_p / p.glb.V_patch) + u.K_X) # calculate type II functional response
 end
 
 """
@@ -287,7 +285,7 @@ Reproduction flux.
     t::Real
     )::Nothing 
 
-    du.R = u.adult * clipneg(u.y_R * u.eta_AR * ((1 - u.kappa) * du.A - du.J)) # reproduction for adults
+    du.R = u.adult * clipneg(u.eta_AR * ((1 - u.kappa) * du.A - du.J)) # reproduction for adults
 
     return nothing
 end
@@ -363,8 +361,7 @@ end
 
 
 """
-TK for spc-TKTD model, including effect of surface area to volume ratio and dilution by growth. 
-If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-specific. 
+Minimal toxicokinetics for scaled damage dynamics, assuming no enviornmental uptake by embryos.
 """
 @inline function dD!(
     du::ComponentVector,
@@ -374,11 +371,11 @@ If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-speci
     )::Nothing 
 
     for z in eachindex(u.C_W)
-        @inbounds du.D_G[z] = sig(u.X_emb, 0., p.spc.k_D_G[z] * (u.C_W[z] - u.D_G[z]), 0.)
-        @inbounds du.D_M[z] = sig(u.X_emb, 0., p.spc.k_D_M[z] * (u.C_W[z] - u.D_M[z]), 0.)
-        @inbounds du.D_A[z] = sig(u.X_emb, 0., p.spc.k_D_A[z] * (u.C_W[z] - u.D_A[z]), 0.)
-        @inbounds du.D_R[z] = sig(u.X_emb, 0., p.spc.k_D_R[z] * (u.C_W[z] - u.D_R[z]), 0.)
-        @inbounds du.D_h[z] = sig(u.X_emb, 0., p.spc.k_D_h[z] * (u.C_W[z] - u.D_h[z]), 0.)
+        @inbounds du.D_G[z] = (1 - u.embryo) * p.spc.k_D_G[z] * (u.C_W[z] - u.D_G[z])
+        @inbounds du.D_M[z] = (1 - u.embryo) * p.spc.k_D_M[z] * (u.C_W[z] - u.D_M[z])
+        @inbounds du.D_A[z] = (1 - u.embryo) * p.spc.k_D_A[z] * (u.C_W[z] - u.D_A[z])
+        @inbounds du.D_R[z] = (1 - u.embryo) * p.spc.k_D_R[z] * (u.C_W[z] - u.D_R[z])
+        @inbounds du.D_h[z] = (1 - u.embryo) * p.spc.k_D_h[z] * (u.C_W[z] - u.D_h[z])
     end
 
     return nothing
@@ -394,11 +391,11 @@ Response to chemical stressors, assuming independent action for mixtures.
     t::Real
     )::Nothing 
 
-    @inbounds u.y_G = prod([p.spc.drc_functs_G[z](u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.C_W)]) # combined relative responses for sublethal effects per PMoA
-    @inbounds u.y_M = prod([p.spc.drc_functs_M[z](u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.C_W)])
-    @inbounds u.y_A = prod([p.spc.drc_functs_A[z](u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.C_W)])
-    @inbounds u.y_R = prod([p.spc.drc_functs_R[z](u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.C_W)])
-    @inbounds u.h_z = sum([p.spc.drc_functs_h[z](u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.C_W)]) # hazard rate
+    @inbounds u.y_G = prod([LL2(u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.C_W)]) # combined relative responses for sublethal effects per PMoA
+    @inbounds u.y_M = prod([LL2M(u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.C_W)])
+    @inbounds u.y_A = prod([LL2(u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.C_W)])
+    @inbounds u.y_R = prod([LL2(u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.C_W)])
+    @inbounds u.h_z = sum([LL2h(u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.C_W)]) # hazard rate
 
     return nothing
 end
@@ -423,10 +420,10 @@ function y_Z_DamageAddition!(
     )::Nothing 
     
     u.y_G = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_M = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_A = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_R = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.h_z = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_M = p.spc.drc_functs_M(sum(u.D_M), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_A = p.spc.drc_functs_A(sum(u.D_A), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_R = p.spc.drc_functs_R(sum(u.D_R), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.h_z = p.spc.drc_functs_h(sum(u.D_h), (p.spc.e_G[z], p.spc.b_G[1]))
 
     return nothing
 end
@@ -476,11 +473,12 @@ end
 
 
 """
+    apply_stressors!(du, u, p, t)
+
 Apply stressors to baseline parameter values. 
 Temperature correction affects DEB rate parameters, 
 other stressors affect parameters according to their respective PMoA. 
-
-A direct interaction between temperature and 
+A direct interaction between temperature and chemical toxicity is currently not considered.
 """
 function apply_stressors!(du, u, p, t)
 
@@ -491,6 +489,48 @@ function apply_stressors!(du, u, p, t)
     u.eta_AR = p.spc.eta_AR_0 * u.y_R
 
     u.Idot_max_rel_emb = p.agn.Idot_max_rel_emb_0 * u.y_T
+end
+
+
+"""
+    DEBBase_Agent!(du, u, p, t)
+
+Agent-level portion of the DEBBase ODE system. 
+This calculates the derivatives which, in the context of an ABM, need to be computed for every agent at every model step.
+"""
+function DEBBase_Agent!(du, u, p, t)
+
+    #### compute responses to environmental variables
+    y_z_IndependentAction!(du, u, p, t) # calculate response to chemical stressors
+    tempcorr!(du, u, p, t) # calculate response to temperature
+    apply_stressors!(du, u, p, t) # apply stressors to baseline parameters
+
+    #### auxiliary state variables (record cumulative values)
+    dI!(du, u, p, t)
+    dA!(du, u, p, t) 
+    dM!(du, u, p, t) 
+    dJ!(du, u, p, t)
+    #dQ!(du, u, p, t)# dissipation flux is currently not used - outcommented since this currently does memory allocations
+
+    #### major state variables
+    dS!(du, u, p, t)
+    dS_max_hist!(du, u, p, t)
+    dH!(du, u, p, t)
+    dH_b!(du, u, p, t)
+    dR!(du, u, p, t)
+
+    dD!(du, u, p, t)
+end
+
+"""
+    function DEBBase_global!(du, u, p, t)
+
+Global portion of the DEBBase ODE system. 
+This calculates the derivatives which, in the context of an ABM, need to be computed once in every model step.        
+"""
+function DEBBase_global!(du, u, p, t)
+    dC_W!(du, u, p, t)
+    dX_p!(du, u, p, t)
 end
 
 
@@ -511,6 +551,7 @@ assuming independent action. The default dose-response is a log-logistic functio
 (increasing function with lower limit at 1).
 """
 function DEBBase!(du, u, p, t) # putting the model together
+<<<<<<< HEAD
 
     y_z_IndependentAction!(du, u, p, t) # calculate response to chemical stressors
     tempcorr!(du, u, p, t) # calculate response to 
@@ -533,3 +574,8 @@ function DEBBase!(du, u, p, t) # putting the model together
     dD!(du, u, p, t)
     dC_W!(du, u, p, t)
 end
+=======
+    DEBBase_global!(du, u, p, t)
+    DEBBase_Agent!(du, u, p, t)
+end
+>>>>>>> 2c8c776ef02eae2cf256b9389035a8f1a3972655

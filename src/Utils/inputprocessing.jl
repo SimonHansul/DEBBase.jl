@@ -142,6 +142,9 @@ function isolate_pmoas!(spc::AbstractParams, pmoas::Vector{String})::Nothing
     return nothing
 end
 
+isolate_pmoas!(p::Union{NamedTuple,AbstractParamCollection}, pmoas::Vector{String}) = isolate_pmoas!(p.spc, pmoas)
+isolate_pmoas!(p::Union{NamedTuple,AbstractParamCollection}, pmoas::Vector{String}, z::Int64) = isolate_pmoas!(p.spc, pmoas, z)
+
 """
     getstat(data::Vector{DataFrame}, statistic::String)
 

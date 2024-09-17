@@ -45,8 +45,6 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     k_M_0::Float64 = 0.59 # somatic maintenance rate constant [d^-1]
     k_J_0::Float64 = 0.504 # maturity maintenance rate constant [d^-1]
     H_p_0::Float64 = 100. # maturity at puberty [μgC]
-
-    mixture_model::MixtoxModel = IndependentAction
     
     k_D_G::Vector{Float64} = [0.00] # toxicokinetic rate constants | PMoA growth efficiency
     k_D_M::Vector{Float64} = [0.00] # toxicokinetic rate constants | PMoA maintenance costs
