@@ -1,7 +1,8 @@
 # DEBBase.jl: A basis for Dynamic Energy Budget modelling in Julia
 
 
-DEBBase includes a number of submodules. 
+DEBBase is a basic package to perform Dynamic Energy Budget Toxicokinetic-Toxicodynamic (DEB-TKTD) modelling in Julia. 
+It includes a number of submodules:
 
 The core of the package is formed by `DEBBase.DEBODE` and `DEBBase.ABC`.
 
