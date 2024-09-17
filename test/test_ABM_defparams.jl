@@ -56,19 +56,26 @@ end
     b_h::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA reproduction efficiency 
 end
 
+# first we extend the species parameters to include additional params needed for the ABM
+
 glb = GlobalABMParams() |> ntfromstruct
 spc_ode = SpeciesABMParams() |> ntfromstruct
-# species params are extended to include additional parameters needed for ABM (aging and starvation)
+agn = DEBODE.ODEAgentParams(DEBParamCollection())
+
+DEBParamCollection()
+
 spc = (; 
     spc_ode...,
     (
         a_max = 60., # maximum life span
-        tau_R = 2. # 
+        tau_R = 2. # reproduction interval
     )...
 )
+agn 
 
 
-DEBODE.initialize_statevars_agent
+
+
 
 
 @with_kw mutable struct DEBAgent
