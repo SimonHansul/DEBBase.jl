@@ -8,8 +8,9 @@ using ProgressMeter
 default(leg = false, lw = 1.5)
 
 using Revise
-using DEBBase
+using DEBBase.DEBODE, DEBBase.Utils
 using DEBBase.Figures
+
 
 TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 
