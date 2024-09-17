@@ -260,7 +260,7 @@ Reproduction flux.
     t::Real
     )::Nothing 
 
-    du.R = u.adult * clipneg(u.y_R * u.eta_AR * ((1 - u.kappa) * du.A - du.J)) # reproduction for adults
+    du.R = u.adult * clipneg(u.eta_AR * ((1 - u.kappa) * du.A - du.J)) # reproduction for adults
 
     return nothing
 end
@@ -336,8 +336,7 @@ end
 
 
 """
-TK for spc-TKTD model, including effect of surface area to volume ratio and dilution by growth. 
-If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-specific. 
+Minimal toxicokinetics for scaled damage dynamics, assuming no enviornmental uptake by embryos.
 """
 @inline function dD!(
     du::ComponentVector,
@@ -347,11 +346,11 @@ If `D` and is given as a Vector, TK is only stressor-specific but not PMoA-speci
     )::Nothing 
 
     for z in eachindex(u.C_W)
-        @inbounds du.D_G[z] = sig(u.X_emb, 0., p.spc.k_D_G[z] * (u.C_W[z] - u.D_G[z]), 0.)
-        @inbounds du.D_M[z] = sig(u.X_emb, 0., p.spc.k_D_M[z] * (u.C_W[z] - u.D_M[z]), 0.)
-        @inbounds du.D_A[z] = sig(u.X_emb, 0., p.spc.k_D_A[z] * (u.C_W[z] - u.D_A[z]), 0.)
-        @inbounds du.D_R[z] = sig(u.X_emb, 0., p.spc.k_D_R[z] * (u.C_W[z] - u.D_R[z]), 0.)
-        @inbounds du.D_h[z] = sig(u.X_emb, 0., p.spc.k_D_h[z] * (u.C_W[z] - u.D_h[z]), 0.)
+        @inbounds du.D_G[z] = (1 - u.embryo) * p.spc.k_D_G[z] * (u.C_W[z] - u.D_G[z])
+        @inbounds du.D_M[z] = (1 - u.embryo) * p.spc.k_D_M[z] * (u.C_W[z] - u.D_M[z])
+        @inbounds du.D_A[z] = (1 - u.embryo) * p.spc.k_D_A[z] * (u.C_W[z] - u.D_A[z])
+        @inbounds du.D_R[z] = (1 - u.embryo) * p.spc.k_D_R[z] * (u.C_W[z] - u.D_R[z])
+        @inbounds du.D_h[z] = (1 - u.embryo) * p.spc.k_D_h[z] * (u.C_W[z] - u.D_h[z])
     end
 
     return nothing
@@ -396,10 +395,10 @@ function y_Z_DamageAddition!(
     )::Nothing 
     
     u.y_G = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_M = p.spc.drc_functs_G(sum(u.D_M), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_A = p.spc.drc_functs_G(sum(u.D_A), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_R = p.spc.drc_functs_G(sum(u.D_R), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.h_z = p.spc.drc_functs_G(sum(u.D_h), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_M = p.spc.drc_functs_M(sum(u.D_M), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_A = p.spc.drc_functs_A(sum(u.D_A), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_R = p.spc.drc_functs_R(sum(u.D_R), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.h_z = p.spc.drc_functs_h(sum(u.D_h), (p.spc.e_G[z], p.spc.b_G[1]))
 
     return nothing
 end
@@ -449,11 +448,12 @@ end
 
 
 """
+    apply_stressors!(du, u, p, t)
+
 Apply stressors to baseline parameter values. 
 Temperature correction affects DEB rate parameters, 
 other stressors affect parameters according to their respective PMoA. 
-
-A direct interaction between temperature and 
+A direct interaction between temperature and chemical toxicity is currently not considered.
 """
 function apply_stressors!(du, u, p, t)
 
@@ -474,8 +474,10 @@ Agent-level portion of the DEBBase ODE system.
 This calculates the derivatives which, in the context of an ABM, need to be computed for every agent at every model step.
 """
 function DEBBase_Agent!(du, u, p, t)
+
+    #### compute responses to environmental variables
     y_z_IndependentAction!(du, u, p, t) # calculate response to chemical stressors
-    tempcorr!(du, u, p, t) # calculate response to 
+    tempcorr!(du, u, p, t) # calculate response to temperature
     apply_stressors!(du, u, p, t) # apply stressors to baseline parameters
 
     #### auxiliary state variables (record cumulative values)
@@ -483,7 +485,7 @@ function DEBBase_Agent!(du, u, p, t)
     dA!(du, u, p, t) 
     dM!(du, u, p, t) 
     dJ!(du, u, p, t)
-    #dQ!(du, u, p, t)
+    #dQ!(du, u, p, t)# dissipation flux is currently not used - outcommented since this currently does memory allocations
 
     #### major state variables
     dS!(du, u, p, t)
@@ -493,7 +495,6 @@ function DEBBase_Agent!(du, u, p, t)
     dR!(du, u, p, t)
 
     dD!(du, u, p, t)
-    dC_W!(du, u, p, t)
 end
 
 """
@@ -503,6 +504,7 @@ Global portion of the DEBBase ODE system.
 This calculates the derivatives which, in the context of an ABM, need to be computed once in every model step.        
 """
 function DEBBase_global!(du, u, p, t)
+    dC_W!(du, u, p, t)
     dX_p!(du, u, p, t)
 end
 
@@ -524,6 +526,6 @@ assuming independent action. The default dose-response is a log-logistic functio
 (increasing function with lower limit at 1).
 """
 function DEBBase!(du, u, p, t) # putting the model together
-    DEBBase_Agent!(du, u, p, t)
     DEBBase_global!(du, u, p, t)
+    DEBBase_Agent!(du, u, p, t)
 end

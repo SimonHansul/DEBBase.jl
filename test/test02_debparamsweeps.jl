@@ -39,7 +39,7 @@ end
             sim_i = simulator(
                 DEBParamCollection(
                     glb = GlobalParams(Xdot_in = Xdot_in, t_max = 56.), 
-                    spc = SpeciesParams(K_X = 12e3))
+                    spc = SpeciesParams(K_X_0 = 12e3))
                 )
 
             # plot the trajectories
