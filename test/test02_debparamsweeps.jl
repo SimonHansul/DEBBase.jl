@@ -33,7 +33,7 @@ end
     sim = DataFrame()
     # iterate over nutrient input concentrations
     let Xdot_in = 4800.
-        for _ in 1:5
+        for i in 1:5
             Xdot_in /= 2
             # generate the predidction
             sim_i = simulator(

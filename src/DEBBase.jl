@@ -14,8 +14,7 @@ using StatsBase
 module ParamStructs
     
     include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
-    include("ParamStructs/structgeneration.jl") # functions to generate new parameter structures from base params (experimental)
-
+    
     export AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
 end
 

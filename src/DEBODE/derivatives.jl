@@ -10,7 +10,17 @@ function clipneg(x::Float64)
 end
 
 """
+function sig(
+    x::Float64, 
+    x_thr::Float64,
+    y_left::Float64, 
+    y_right::Float64; 
+    beta::Float64 = 1e16
+    )::Float6
+
 Sigmoid switch function. 
+This can be useful to replace simple if-statements with a continuous function. 
+
 `y_left` and `y_right` are the function values left and right of the threshold `x_thr`.
 
 """
@@ -25,6 +35,16 @@ Sigmoid switch function.
     return 1 / (1 + exp(-beta*(x - x_thr))) * (y_right - y_left) + y_left
 end
 
+"""
+    functional_response(
+        du::ComponentArray,
+        u::ComponentArray,
+        p::AbstractParamCollection,
+        t::Real
+        )::Float64
+        
+Compute scaled functional response `f_X`, assuming a Holling Type II relationship.
+"""
 @inline function functional_response(
     du::ComponentArray,
     u::ComponentArray,
@@ -43,9 +63,14 @@ end
         t::Real
         )::Nothing
         
+
 Calculate ingestion rate. 
-Embryos (X_emb <= 0) take up resources from the vitellus X_emb. 
-Juveniles and adults (X_emb > 0) feed on the external resource X_pcmn.
+Embryos (`X_emb <= 0`) take up resources from the vitellus `X_emb`. 
+Juveniles and adults (`X_emb > 0`) feed on the external resource `X_p`. 
+
+The DEBBase model assumes that all state variables are given as mass (or a linearly proportional quantity). 
+As this includes structure, the ingestion rate scales with the structural mass ``S^{2/3}```.
+
 """
 @inline function dI!(
     du::ComponentArray,
@@ -359,7 +384,7 @@ end
 """
 Response to chemical stressors, assuming independent action for mixtures.
 """
-@inline function y_z_IndependentAction!(
+@inline function y_z_IA!(
     du::ComponentVector,
     u::ComponentVector,
     p::Union{AbstractParamCollection,NamedTuple},
@@ -375,6 +400,33 @@ Response to chemical stressors, assuming independent action for mixtures.
     return nothing
 end
 
+
+"""
+Response to chemical stressors, assuming damage addition for mixtures. \\
+
+The PMoA-specific damage values for each stressor are added up,
+
+``D_j = \\sum_{z=1}^{n}{D_{j,z}}``
+
+, and the response is caluclated assuming identical DRC parameters for all stressors. 
+Currently, there are no additional weight factors implemented (assuming that the model is fitted to single-substance data only).
+
+"""
+function y_z_DamageAddition!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::Union{AbstractParamCollection,NamedTuple},
+    t::Real
+    )::Nothing 
+    
+    u.y_G = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_M = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_A = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_R = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.h_z = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+
+    return nothing
+end
 
 """
 Response to chemical stressors, assuming damage addition for mixtures. <br>
@@ -467,18 +519,18 @@ function apply_stressors!(du, u, p, t)
 end
 
 
-"""
-    DEBBase_Agent!(du, u, p, t)
 
-Agent-level portion of the DEBBase ODE system. 
-This calculates the derivatives which, in the context of an ABM, need to be computed for every agent at every model step.
-"""
-function DEBBase_Agent!(du, u, p, t)
+function DEBODE_global!(du, u, p, t)
+    dC_W!(du, u, p, t) # external stressor concentration 
+    dX_p!(du, u, p, t) # resource abundance
+end
 
-    #### compute responses to environmental variables
-    y_z_IndependentAction!(du, u, p, t) # calculate response to chemical stressors
-    tempcorr!(du, u, p, t) # calculate response to temperature
-    apply_stressors!(du, u, p, t) # apply stressors to baseline parameters
+function DEBODE_agent_IA!(du, u, p, t)
+    
+    dD!(du, u, p, t) # change in damage
+    y_z_IA!(du, u, p, t) # response to chemical stressors
+    tempcorr!(du, u, p, t) # response to temperature
+    apply_stressors!(du, u, p, t) # apply all stressor / environmental effects to baseline parameters
 
     #### auxiliary state variables (record cumulative values)
     dI!(du, u, p, t)
@@ -488,44 +540,11 @@ function DEBBase_Agent!(du, u, p, t)
     #dQ!(du, u, p, t)# dissipation flux is currently not used - outcommented since this currently does memory allocations
 
     #### major state variables
-    dS!(du, u, p, t)
-    dS_max_hist!(du, u, p, t)
-    dH!(du, u, p, t)
-    dH_b!(du, u, p, t)
-    dR!(du, u, p, t)
+    dS!(du, u, p, t) # structures
+    dS_max_hist!(du, u, p, t) # reference structure
+    dH!(du, u, p, t) # maturity 
+    dH_b!(du, u, p, t) # estimate of maturity at birth
+    dR!(du, u, p, t) # reproduction buffer
 
-    dD!(du, u, p, t)
-end
-
-"""
-    function DEBBase_global!(du, u, p, t)
-
-Global portion of the DEBBase ODE system. 
-This calculates the derivatives which, in the context of an ABM, need to be computed once in every model step.        
-"""
-function DEBBase_global!(du, u, p, t)
-    dC_W!(du, u, p, t)
-    dX_p!(du, u, p, t)
-end
-
-
-"""
-    DEBBase!(du, u, p, t) # putting the model together
-
-The DEBBase model derivatives. <br>
-
-This model is used the default by DEBBase, and can be regarded as a version of DEBkiss with maturity (cf. Tjalling Jager's DEBkiss book).
-
-Feeding is simulated explicitly and all state variables, including structure, have the same dimension. 
-This means that the density of dry mass does not appear in the model - structure is a mass or energy pool like everyting else.
-The implication is that the surface area-specific ingestion rate as the dimension ``dim(u)^{1/3} d^{-1}``, 
-where ``dim(u)`` is the chosen model currency (e.g. dry mass or energy).
-
-The model implementation allows for simulations of mixtures with an arbitrary number of substances, 
-assuming independent action. The default dose-response is a log-logistic function, which is ``1-ln``-tansformed for maintenance costs 
-(increasing function with lower limit at 1).
-"""
-function DEBBase!(du, u, p, t) # putting the model together
-    DEBBase_global!(du, u, p, t)
-    DEBBase_Agent!(du, u, p, t)
+    return nothing
 end

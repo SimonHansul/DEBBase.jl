@@ -1,23 +1,10 @@
 const X_EMB_INT_REL = 0.001 
 
-"""
-    initialize_statevars(theta::Union{AbstractParamCollection,NamedTuple})::ComponentArray 
-
-For initialization of ODE simulator, initialize the component vector of state variables, `u`, based on common parameter collection `theta`.
-"""
-function initialize_statevars(p::Union{AbstractParamCollection,NamedTuple})::ComponentArray 
-    return ComponentArray( # initial states
-        X_p = p.glb.Xdot_in, # initial resource abundance equal to influx rate
-        C_W = p.glb.C_W, # external stressor concentrations
-        T = p.glb.T, # ambient temperature
-
-        embryo = 1, # life stage indicators - determined in callbacks
-        juvenile = 0,
-        adult = 0,
-
-        X_emb = p.agn.X_emb_int_0, # initial mass of vitellus
-        S = p.agn.X_emb_int_0 * X_EMB_INT_REL, # initial structure is a small fraction of initial reserve // mass of vitellus
-        S_max_hist = p.agn.X_emb_int_0 * X_EMB_INT_REL, # initial reference structure
+function initialize_agent_statevars(p::Union{NamedTuple,AbstractParamCollection})
+    ComponentVector(
+        X_emb = p.agn.X_emb_int, # initial mass of vitellus
+        S = p.agn.X_emb_int * X_EMB_INT_REL, # initial structure is a small fraction of initial reserve // mass of vitellus
+        S_max_hist = p.agn.X_emb_int * X_EMB_INT_REL, # initial reference structure
         H = 0, # maturity
         H_b = 0, # maturity at birth (will be derived from model output)
         R = 0, # reproduction buffer
@@ -56,5 +43,25 @@ function initialize_statevars(p::Union{AbstractParamCollection,NamedTuple})::Com
         y_R = 1., # relative response | reproduction efficiency
         y_T = 1., # relative response | temperature effects
         h_z = 0. # hazard rate | chemical stressors
+    )
+end
+
+function initalize_global_statevars(p::Union{NamedTuple,AbstractParamCollection})
+    ComponentArray( # initial states
+        X_p = p.glb.Xdot_in, # initial resource abundance equal to influx rate
+        C_W = p.glb.C_W # external stressor concentrations
+    )
+
+end
+
+"""
+    initialize_statevars(p::AbstractParamCollection, pindt::ComponentVector{Float64})::ComponentArray
+
+For initialization of ODE simulator, initialize the component vector of state variables, `u`, based on common oaraeter collection `p`.
+"""
+function initialize_statevars(p::Union{NamedTuple,AbstractParamCollection})::ComponentArray 
+    vcat(
+        initalize_global_statevars(p),
+        initialize_agent_statevars(p)
     )
 end

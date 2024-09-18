@@ -1,5 +1,9 @@
-
+using Pkg; Pkg.activate("docs")
 using Documenter
-using DEBBase.ABC
+using DEBBase
 
-makedocs(sitename = "DEBBase: Dynamic Energy Budget modelling in Julia")
+makedocs(
+    sitename = "DEBBase.jl", 
+    modules = [DEBBase, DEBBase.ABC, DEBBase.DEBODE],
+    format = Documenter.HTML()
+    )

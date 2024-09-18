@@ -16,12 +16,12 @@ end
 
 """
 `SpeciesParams` contain population means of DEB and TKTD parameters. 
-Default values are roughly reproduce life-history of Daphnia minda (model currency mass carbon in μgC) exposued to Azoxystrobin (mg/L). <br>
+Default values are roughly reproduce life-history of Daphnia minda (model currency mass carbon in μgC) exposued to Azoxystrobin (mg/L). \\
 DEBBase.jl uses a hierarchical modelling approach where the `SpeciesParams` are  parameters which are common across all agents of a species, 
-and `ODEAgentParams` contain parameters which are specific for an individual. <br>
+and `ODEAgentParams` contain parameters which are specific for an individual. \\
 Variability is given by the zoom factor `Z::Distribution`, which is always applied to the surface-area specific ingestion rates 
-and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`. <br>
-`Z` is `Dirac(1)` by default, i.e. there is no agent variability in the default parameters. <br>
+and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`. \\
+`Z` is `Dirac(1)` by default, i.e. there is no agent variability in the default parameters. \\
 """
 @with_kw mutable struct SpeciesParams <: AbstractSpeciesParams
     Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. This can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
@@ -118,7 +118,7 @@ This is in contrast to SpeciesParams, which define parameters on the species-lev
 end
 
 """
-A `DEBParamCollection` contains global parameters `glb` and spc parameters `spc` (including TKTD-parameters). <br>
+A `DEBParamCollection` contains global parameters `glb` and spc parameters `spc` (including TKTD-parameters). \\
 Initialize the default parameter collection with `DEBParamCollection()`.
 """
 @with_kw mutable struct DEBParamCollection <: AbstractParamCollection

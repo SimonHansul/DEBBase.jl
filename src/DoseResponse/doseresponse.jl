@@ -105,8 +105,8 @@ end
 
 
 """
-Cedergreend-Ritz-Streibig model. <br>
-Parameters are <br>
+Cedergreend-Ritz-Streibig model. \\
+Parameters are \\
 - p[1] = α = rate of hormetic increase
 - p[2] = b = quasi-slope
 - p[3] = c = lower limit
@@ -142,8 +142,8 @@ function CRS6US(x::Float64, p::NTuple{6,Float64})
 end
 
 """
-Re-scaled U-shaped CRS model with parameter C fixed to 0. <br>
-Parameters are <br>
+Re-scaled U-shaped CRS model with parameter C fixed to 0. \\
+Parameters are \\
 - alpha: rate of hormetic increase
 - b: slope of the inclining part of the curve
 - d: maximum stress 
