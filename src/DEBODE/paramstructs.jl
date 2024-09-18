@@ -9,7 +9,6 @@
     V_patch::Float64 = 0.05 # volume of a patch (L) (or the entire similated environment) [L]
     C_W::Vector{Float64} = [0.] # external chemical concentrations [μg L-1]
     T::Float64 = 293.15 # ambient temperature [K]
-    odefuncs::Vector{Function} = Function[] # Function of global derivatives, only used for dynamic model composition
 end
 
 @enum MixtoxModel IndependentAction DamageAddition

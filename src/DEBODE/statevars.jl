@@ -2,7 +2,6 @@ const X_EMB_INT_REL = 0.001
 
 function initialize_agent_statevars(p::Union{NamedTuple,AbstractParamCollection})
     ComponentVector(
-
         embryo = 1,
         juvenile = 0,
         adult = 0,
@@ -51,12 +50,11 @@ function initialize_agent_statevars(p::Union{NamedTuple,AbstractParamCollection}
     )
 end
 
-function initalize_global_statevars(p::Union{NamedTuple,AbstractParamCollection})
+function initialize_global_statevars(p::Union{NamedTuple,AbstractParamCollection})
     ComponentArray( # initial states
         X_p = p.glb.Xdot_in, # initial resource abundance equal to influx rate
         C_W = p.glb.C_W # external stressor concentrations
     )
-
 end
 
 """
@@ -66,7 +64,7 @@ For initialization of ODE simulator, initialize the component vector of state va
 """
 function initialize_statevars(p::Union{NamedTuple,AbstractParamCollection})::ComponentArray 
     vcat(
-        initalize_global_statevars(p),
+        initialize_global_statevars(p),
         initialize_agent_statevars(p)
     )
 end

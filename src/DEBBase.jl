@@ -83,6 +83,18 @@ module DEBODE
     end
 end
 
+#module AgentBased
+#
+#    using Parameters
+#    using ComponentArrays
+#
+#    using ..DEBODE: GlobalParams, SpeciesParams, DEBParamCollection, DEBODE_IA!, DEBODE_agent_IA!, initialize_agent_statevars, initialize_global_statevars
+#    using ..ParamStructs: AbstractParamCollection, AbstractParams
+#
+#    include("AgentBased/AgentBased.jl")
+#    export AbstractDEBAgent, AbstractDEBABM, DEBAgent, DEBABM
+#end
+
 """
 Submodule for parameter estimation using approximate bayesian computation.
 """
