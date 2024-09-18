@@ -14,7 +14,6 @@ using Revise
 using DEBBase.DEBODE, DEBBase.Utils
 using DEBBase.Figures
 
-
 TAG = replace(splitpath(@__FILE__)[end], ".jl" =>"")
 
 norm(x) = x ./ sum(x)
