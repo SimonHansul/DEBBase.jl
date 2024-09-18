@@ -384,7 +384,7 @@ end
 """
 Response to chemical stressors, assuming independent action for mixtures.
 """
-@inline function y_z_IndependentAction!(
+@inline function y_z_IA!(
     du::ComponentVector,
     u::ComponentVector,
     p::Union{AbstractParamCollection,NamedTuple},
@@ -412,7 +412,7 @@ The PMoA-specific damage values for each stressor are added up,
 Currently, there are no additional weight factors implemented (assuming that the model is fitted to single-substance data only).
 
 """
-function y_Z_DamageAddition!(
+function y_Z_DA!(
     du::ComponentVector,
     u::ComponentVector,
     p::Union{AbstractParamCollection,NamedTuple},
@@ -539,7 +539,7 @@ end
 Global portion of the DEBBase ODE system. 
 This calculates the derivatives which, in the context of an ABM, need to be computed once in every model step.        
 """
-function DEBBase_global!(du, u, p, t)
+function DEBODE_global!(du, u, p, t)
     dC_W!(du, u, p, t)
     dX_p!(du, u, p, t)
 end
@@ -561,7 +561,7 @@ The model implementation allows for simulations of mixtures with an arbitrary nu
 assuming independent action. The default dose-response is a log-logistic function, which is ``1-ln``-tansformed for maintenance costs 
 (increasing function with lower limit at 1).
 """
-function DEBBase!(du, u, p, t) # putting the model together
-    DEBBase_global!(du, u, p, t)
-    DEBBase_Agent!(du, u, p, t)
+function DEBODE!(du, u, p, t) # putting the model together
+    DEBODE_global!(du, u, p, t)
+    DEBODE_agent_IA!(du, u, p, t)
 end

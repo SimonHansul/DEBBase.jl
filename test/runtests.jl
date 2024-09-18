@@ -24,7 +24,7 @@ x -> filter(f -> occursin("test", f), x)
 
 # show debugging statements
 # set to "" to disable
-ENV["JULIA_DEBUG"] = Main 
+ENV["JULIA_DEBUG"] = Main
 
 for test in tests
     @info("Running $test")

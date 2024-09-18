@@ -87,7 +87,7 @@ function simulator(
     alg = Tsit5(),
     saveat = 1,
     reltol = 1e-6,
-    model = DEBBase!,
+    model = DEBODE!,
     AgentParamType::DataType = ODEAgentParams,
     kwargs...
     )::DataFrame

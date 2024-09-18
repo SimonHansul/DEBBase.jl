@@ -2,9 +2,9 @@ const X_EMB_INT_REL = 0.001
 
 function initialize_agent_statevars(p::Union{NamedTuple,AbstractParamCollection})
     ComponentVector(
-        X_emb = p.agn.X_emb_int, # initial mass of vitellus
-        S = p.agn.X_emb_int * X_EMB_INT_REL, # initial structure is a small fraction of initial reserve // mass of vitellus
-        S_max_hist = p.agn.X_emb_int * X_EMB_INT_REL, # initial reference structure
+        X_emb = p.agn.X_emb_int_0, # initial mass of vitellus
+        S = p.agn.X_emb_int_0 * X_EMB_INT_REL, # initial structure is a small fraction of initial reserve // mass of vitellus
+        S_max_hist = p.agn.X_emb_int_0 * X_EMB_INT_REL, # initial reference structure
         H = 0, # maturity
         H_b = 0, # maturity at birth (will be derived from model output)
         R = 0, # reproduction buffer
