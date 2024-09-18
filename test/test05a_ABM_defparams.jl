@@ -3,6 +3,8 @@ using Pkg; Pkg.activate("test")
 using Parameters
 using NamedTupleTools
 
+using Revise 
+@time using DEBBase.DEBODE
 using DEBBase.ParamStructs
 using DEBBase.DoseResponse
 
@@ -62,8 +64,6 @@ glb = GlobalABMParams() |> ntfromstruct
 spc_ode = SpeciesABMParams() |> ntfromstruct
 agn = DEBODE.ODEAgentParams(DEBParamCollection())
 
-DEBParamCollection()
-
 spc = (; 
     spc_ode...,
     (
@@ -71,7 +71,6 @@ spc = (;
         tau_R = 2. # reproduction interval
     )...
 )
-agn 
 
 
 

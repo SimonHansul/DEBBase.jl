@@ -80,7 +80,7 @@ Induce agent variability in spc parameters via zoom factor `Z`.
 `Z` is sampled from the corresponding distribution given in `p` and assumed to represent a ratio between maximum structurel *masses* (not lengths), 
 so that the surface area-specific ingestion rate `Idot_max_rel_0` scales with `Z^(1/3)` and parameters which represent masses or energy pools scales with `Z`.
 """
-function individual_variability!(agn::AbstractParams, spc::AbstractParams)
+function individual_variability!(agn::Union{AbstractParams,NamedTuple}, spc::Union{AbstractParams,NamedTuple})
     agn.Z = rand(spc.Z) # sample zoom factor Z for agent from distribution
     agn.Idot_max_rel_0 = spc.Idot_max_rel_0 * agn.Z^(1/3) # Z is always applied to Idot_max_rel_0
     agn.Idot_max_rel_emb_0 = spc.Idot_max_rel_emb_0 * agn.Z^(1/3) #, including the value for embryos
@@ -95,7 +95,7 @@ function individual_variability!(agn::AbstractParams, spc::AbstractParams)
 end
 
 """
-    ODEAgentParams(spc::AbstractParams)
+    ODEAgentParams(spc::Union{AbstractParams,NamedTuple})
 ODEAgentParams are subject to agent variability. 
 This is in contrast to SpeciesParams, which define parameters on the species-level.
 """
@@ -110,7 +110,7 @@ This is in contrast to SpeciesParams, which define parameters on the species-lev
     """
     Initialize ODEAgentParams from SpeciesParams `spc`.
     """
-    function ODEAgentParams(spc::AbstractParams)
+    function ODEAgentParams(spc::Union{AbstractParams,NamedTuple})
         agn = new()
         individual_variability!(agn, spc)
         return agn
@@ -122,8 +122,8 @@ A `DEBParamCollection` contains global parameters `glb` and spc parameters `spc`
 Initialize the default parameter collection with `DEBParamCollection()`.
 """
 @with_kw mutable struct DEBParamCollection <: AbstractParamCollection
-    glb::AbstractParams = GlobalParams()
-    spc::AbstractParams = SpeciesParams()
+    glb::Union{AbstractParams,NamedTuple} = GlobalParams()
+    spc::Union{AbstractParams,NamedTuple} = SpeciesParams()
     agn::Union{Nothing,AbstractParams} = nothing
 
     @assert length(spc.k_D_G) >= length(glb.C_W) "Length of k_D_G is not at least length of C_W"
