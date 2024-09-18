@@ -391,11 +391,19 @@ Response to chemical stressors, assuming independent action for mixtures.
     t::Real
     )::Nothing 
 
-    @inbounds u.y_G = prod([LL2(u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) for z in 1:length(u.C_W)]) # combined relative responses for sublethal effects per PMoA
-    @inbounds u.y_M = prod([LL2M(u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z])) for z in 1:length(u.C_W)])
-    @inbounds u.y_A = prod([LL2(u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) for z in 1:length(u.C_W)])
-    @inbounds u.y_R = prod([LL2(u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) for z in 1:length(u.C_W)])
-    @inbounds u.h_z = sum([LL2h(u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) for z in 1:length(u.C_W)]) # hazard rate
+    u.y_G = 1. # reset relative responses
+    u.y_M = 1.
+    u.y_A = 1.
+    u.y_R = 1.
+    u.h_z = 0. # reset hazard rate 
+
+    for z in eachindex(u.C_W) # for each stressor
+        @inbounds u.y_G *= LL2(u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) # caclulate relative responses
+        @inbounds u.y_M *= LL2M(u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z]))
+        @inbounds u.y_A *= LL2(u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) 
+        @inbounds u.y_R *= LL2(u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) 
+        @inbounds u.h_z += LL2h(u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) # calculate hazard rate
+    end
 
     return nothing
 end
@@ -420,10 +428,10 @@ function y_z_DamageAddition!(
     )::Nothing 
     
     u.y_G = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_M = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_A = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_R = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.h_z = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_M = p.spc.drc_functs_G(sum(u.D_M), (p.spc.e_M[z], p.spc.b_M[1]))
+    u.y_A = p.spc.drc_functs_G(sum(u.D_A), (p.spc.e_A[z], p.spc.b_A[1]))
+    u.y_R = p.spc.drc_functs_G(sum(u.D_R), (p.spc.e_R[z], p.spc.b_R[1]))
+    u.h_z = p.spc.drc_functs_G(sum(u.D_z), (p.spc.e_z[z], p.spc.b_z[1]))
 
     return nothing
 end
@@ -508,7 +516,6 @@ other stressors affect parameters according to their respective PMoA.
 A direct interaction between temperature and chemical toxicity is currently not considered.
 """
 function apply_stressors!(du, u, p, t)
-
     u.eta_AS = p.spc.eta_AS_0 * u.y_G 
     u.k_M = p.spc.k_M_0 * u.y_M * u.y_T
     u.k_J = p.spc.k_J_0 * u.y_M * u.y_T
@@ -518,14 +525,12 @@ function apply_stressors!(du, u, p, t)
     u.Idot_max_rel_emb = p.agn.Idot_max_rel_emb_0 * u.y_T
 end
 
-
-
-function DEBODE_global!(du, u, p, t)
+@inline function DEBODE_global!(du, u, p, t)
     dC_W!(du, u, p, t) # external stressor concentration 
     dX_p!(du, u, p, t) # resource abundance
 end
 
-function DEBODE_agent_IA!(du, u, p, t)
+@inline function DEBODE_agent_IA!(du, u, p, t)
     
     dD!(du, u, p, t) # change in damage
     y_z_IA!(du, u, p, t) # response to chemical stressors
@@ -547,4 +552,9 @@ function DEBODE_agent_IA!(du, u, p, t)
     dR!(du, u, p, t) # reproduction buffer
 
     return nothing
+end
+
+function DEBODE_IA!(du, u, p, t)
+    DEBODE_global!(du, u, p, t)
+    DEBODE_agent_IA!(du, u, p, t)
 end

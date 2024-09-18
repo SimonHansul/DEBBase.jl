@@ -77,7 +77,9 @@ module DEBODE
 
     @compile_workload begin
         # precompile the default simulator
-        sim = simulator(DEBParamCollection())
+        for _ in 1:10
+            sim = simulator(DEBParamCollection())
+        end
     end
 end
 

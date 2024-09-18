@@ -83,20 +83,20 @@ sim = simulator(DEBParamCollection())
 
 """
 function simulator(
-    theta::Union{AbstractParamCollection,NamedTuple}; 
+    params::Union{AbstractParamCollection,NamedTuple}; 
     alg = Tsit5(),
     saveat = 1,
     reltol = 1e-6,
-    model = DEBBase!,
+    model = DEBODE_IA!,
     AgentParamType::DataType = ODEAgentParams,
     kwargs...
     )::DataFrame
 
-    theta.agn = AgentParamType(theta.spc) # initialize agent parameters incl. individual variability
+    params.agn = AgentParamType(params.spc) # initialize agent parameters incl. individual variability
     callbacks = lifestage_callbacks()
 
-    u = initialize_statevars(theta)
-    prob = ODEProblem(model, u, (0, theta.glb.t_max), theta) # define the problem
+    u = initialize_statevars(params)
+    prob = ODEProblem(model, u, (0, params.glb.t_max), params) # define the problem
     sol = solve(prob, alg; callback = callbacks, saveat = saveat, reltol = reltol, kwargs...) # get solution to the IVP
     simout = sol_to_df(sol) # convert solution to dataframe
 
