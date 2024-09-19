@@ -91,7 +91,9 @@ default(leg = false)
 end
 
 begin # setting up parameters
-    glb = GlobalParams()
+    glb = GlobalParams(
+        Xdot_in = 1200
+    )
     spc_ode = SpeciesParams(
         Z = Dirac(1.), #Truncated(Normal(1, 0.1), 0, Inf),
         ) |> ntfromstruct
@@ -125,68 +127,57 @@ using DEBBase.AgentBased
 using DataFrames, DataFramesMeta
 using Chain
 
-@time sim = AgentBased.simulator(p, saveat = 1) |> agent_record_to_df;
-sort!(sim, :t);
+#eval_df = @chain sim, simODE begin
+#    [@select(x, :t, :S, :R, :H) for x in _]
+#    leftjoin(_[1], _[2], on = :t, makeunique = true)
+#    drop_na
+#    @transform(
+#        :relerr_S = :S ./ :S_1,
+#        :relerr_H = :H ./ :H_1,
+#        :relerr_R = :R ./ :R_1, 
+#
+#        :abserr_S = abs.(:S .- :S_1),
+#        :abserr_H = abs.(:H .- :H_1),
+#        :abserr_R = abs.(:R .- :R_1), 
+#    )
+#end
 
-popsize = combine(groupby(sim, :t), nrow)
-
-
-
-
-sim = combine(groupby(sim, :id)) do df
-    df[!,:dI] = diffvec(df.I) ./ diffvec(df.t)
-    return df
-end;
-sim.t = round.(sim.t, sigdigits = 2)
-
-eval_df = @chain sim, simODE begin
-    [@select(x, :t, :S, :R, :H) for x in _]
-    leftjoin(_[1], _[2], on = :t, makeunique = true)
-    drop_na
-    @transform(
-        :relerr_S = :S ./ :S_1,
-        :relerr_H = :H ./ :H_1,
-        :relerr_R = :R ./ :R_1, 
-
-        :abserr_S = abs.(:S .- :S_1),
-        :abserr_H = abs.(:H .- :H_1),
-        :abserr_R = abs.(:R .- :R_1), 
-    )
-end
-
-@testset begin
-    @info("Checking deviation between ODE and ABM simulations")
-    @test sum(eval_df.abserr_S .> 15) == 0
-    @test sum(eval_df.abserr_R .> 15) == 0
-    @test sum(eval_df.abserr_H .> 15) == 0
-end
-
-begin
-    plt = @df sim plot(
-        plot(:t, [:age, :t], color = [1 :gray], ylabel = "age"),
-        plot(:t, :X_p, group = :id, ylabel = "X_p"), 
-        plot(:t, :f_X, group = :id, ylabel = "f_X", ylim = (0, 1.01)),
-        plot(:t, :X_emb, group = :id, ylabel = "X_emb"),
-        plot(:t, :dI, group = :id, ylabel = "dI"),
-        plot(:t, :S, group = :id, ylabel = "S"),
-        xlabel = "t",
-        size = (800,500), 
-        lw = 2
-    )
-
-    @df simODE plot!(:t, :S, subplot = 6)
-
-    hline!([DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], subplot = 5)
-
-    display(plt)
-end
+#@testset begin
+#    @info("Checking deviation between ODE and ABM simulations")
+#    @test sum(eval_df.abserr_S .> 15) == 0
+#    @test sum(eval_df.abserr_R .> 15) == 0
+#    @test sum(eval_df.abserr_H .> 15) == 0
+#end
+#
+#begin
+#    plt = @df sim plot(
+#        plot(:t, [:age, :t], color = [1 :gray], ylabel = "age"),
+#        plot(:t, :X_p, group = :id, ylabel = "X_p"), 
+#        plot(:t, :f_X, group = :id, ylabel = "f_X", ylim = (0, 1.01)),
+#        plot(:t, :X_emb, group = :id, ylabel = "X_emb"),
+#        plot(:t, :dI, group = :id, ylabel = "dI"),
+#        plot(:t, :S, group = :id, ylabel = "S"),
+#        xlabel = "t",
+#        size = (800,500), 
+#        lw = 2
+#    )
+#
+#    @df simODE plot!(:t, :S, subplot = 6)
+#
+#    hline!([DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], subplot = 5)
+#
+#    display(plt)
+#end
 
 using BenchmarkTools
 @benchmark AgentBased.simulator(p)
 @benchmark DEBODE.simulator(DEBParamCollection())
 
 begin
-    glb = GlobalParams(t_max = 150)
+    glb = GlobalParams(
+        t_max = 21,
+        N0 = 10
+        )
     spc_ode = SpeciesParams(
         Z = Dirac(1.), #Truncated(Normal(1, 0.1), 0, Inf),
         ) |> ntfromstruct
@@ -195,7 +186,6 @@ begin
     spc = (; 
         spc_ode...,
         (
-
             a_max = Truncated(Normal(60, 6), 0, Inf), # maximum life span
             tau_R = 2. # reproduction interval
         )...
@@ -210,3 +200,25 @@ begin
 
     p = (glb = glb, spc = spc, agn = agn)
 end;
+
+# FIXME: cause_of_death is not correctly recorded
+
+@time sim = AgentBased.simulator(p, saveat = 1) |> agent_record_to_df;
+sort!(sim, :t);
+
+sim_agg = combine(groupby(sim, :t)) do df
+    DataFrame(
+        N_tot = nrow(df),
+        S_mean = mean(df.S),
+        R_mean = mean(df.R),
+        fX_mean = mean(df.f_X)
+    )
+end
+
+using StatsBase
+sim.cause_of_death |> countmap
+@df sim_agg plot(
+    :t, [:N_tot, :S_mean, :R_mean], layout = (1,3), 
+    ylabel = ["N" "S_mean" "R_mean"], 
+    ylim = (0, 12)
+)

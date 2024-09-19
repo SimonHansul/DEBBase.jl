@@ -133,6 +133,12 @@ function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
     if a.age >= a.p.agn.a_max
         a.cause_of_death = 1
     end
+    
+    if (a.u.S / a.u.S_max_hist) < 0.5 # TODO:make the threshold a parameter
+        if rand() < exp(-0.7 * m.dt) 
+            a.u.cause_of_death = 2
+        end
+    end
 
     if a.time_since_last_repro >= a.p.spc.tau_R
         let num_offspring = trunc(a.u.R / a.u.X_emb_int)
@@ -178,21 +184,22 @@ function Euler!(u::ComponentVector, du::ComponentVector, dt::Real, statevar_name
     end
 end
 
-function agent_record!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
-    if isapprox(m.t % m.saveat, 0, atol = m.dt)
-        push!(
-            m.agent_record,
-            vcat(
-                ComponentVector(
-                    t = m.t, 
-                    id = a.id, 
-                    age = a.age, 
-                    cause_of_death = a.cause_of_death
-                    ),
-                a.u
-            ) # vcat
-        ) # push
-    end
+function record_agent!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
+
+    #if isapprox(m.t % m.saveat, 0, atol = m.dt)
+    push!(
+        m.agent_record,
+        vcat(
+            ComponentVector(
+                t = m.t, 
+                id = a.id, 
+                age = a.age, 
+                cause_of_death = a.cause_of_death
+                ),
+            a.u
+        ) # vcat
+    ) # push
+    #end
 
     return nothing
 end
@@ -210,7 +217,7 @@ Agents which die will be recorded a last time before they are removed.
 function step_all_agents!(m::AbstractDEBABM)::Nothing
     for a in m.agents
         agent_step!(a, m)
-        agent_record!(a, m)
+        record_agent!(a, m)
     end
     filter_agents!(m)
 
@@ -227,17 +234,25 @@ function model_step!(m::AbstractDEBABM)::Nothing
     # global statevars are updated after agent derivatives are calculated
     # this is important because agents affect global states using mutating operators
     Euler!(m.u, m.du, m.dt, m.global_statevar_names) 
-    m.u.X_p = max(0, m.u.X_p) # HOTFIX : negative food abundances cause chaos
+    m.u.X_p = max(0, m.u.X_p) # HOTFIX : negative resource abundances cause chaos
 
     m.t += m.dt
 
     return nothing
 end
 
-function simulator(p::Union{NamedTuple,AbstractParamCollection}; dt = 1/24, saveat = 1)
+function simulator(
+    p::Union{NamedTuple,AbstractParamCollection}; 
+    dt = 1/24, 
+    saveat = 1
+    )
+    @info "Running ABM simulation with t_max=$(p.glb.t_max)"
+    
     m = ABM(p; dt = dt, saveat = saveat)
 
     while !(m.t > m.p.glb.t_max)
+        isapprox(m.t % 7, 0, atol = m.dt) ? @info("t=$(m.t)") : nothing
+
         model_step!(m)
     end
 
@@ -246,8 +261,13 @@ end
 
 function agent_record_to_df(
     m::AbstractDEBABM; 
-    cols::Vector{Symbol} = [:t, :id, :embryo, :juvenile, :adult, :age, :f_X, :S, :I, :A, :M, :H, :R, :X_p, :X_emb]
+    #cols::Vector{Symbol} = [:t, :id, :embryo, :juvenile, :adult, :age, :f_X, :S, :I, :A, :M, :H, :R, :X_p, :X_emb]
     )::DataFrame
+    cols = vcat(
+        [:t, :id],
+        [keys(m.agent_record[1])...]
+    )  |> unique
+    
     hcat([map(x -> getproperty(x, y), m.agent_record) for y in cols]...) |> 
     x -> DataFrame(x, cols)
 end

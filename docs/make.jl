@@ -4,6 +4,6 @@ using DEBBase
 
 makedocs(
     sitename = "DEBBase.jl", 
-    modules = [DEBBase, DEBBase.ABC, DEBBase.DEBODE],
+    modules = [DEBBase.ABC, DEBBase.DEBODE],
     format = Documenter.HTML()
     )
