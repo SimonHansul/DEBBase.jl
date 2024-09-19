@@ -142,7 +142,7 @@ function agent_step!(a::AbstractDEBAgent, m::AbstractDEBABM)
 
     DEBODE_agent_IA!(a.du, a.u, a.p, m.t)
 
-    Euler!(a.u, a.du, m.t, m.agent_statevar_names)
+    Euler!(a.u, a.du, m.dt, m.agent_statevar_names)
     agent_step_rulebased!(a, m)
     set_global_statevars!(m, a)
 
@@ -201,7 +201,7 @@ function model_step!(m::AbstractDEBABM)::Nothing
     
     # global statevars are updated after agent derivatives are calculated
     # this is important because agents affect global states using mutating operators
-    Euler!(m.u, m.du, m.t, m.global_statevar_names) 
+    Euler!(m.u, m.du, m.dt, m.global_statevar_names) 
     m.u.X_p = max(0, m.u.X_p) # HOTFIX : negative food abundances cause chaos
 
     m.t += m.dt

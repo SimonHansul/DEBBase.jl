@@ -96,7 +96,7 @@ begin
         t_max = 30,
         N0 = 1, 
         Xdot_in = 100, 
-        k_V = 0.
+        k_V = 0.5
         )
     spc_ode = SpeciesParams(
         Z = Truncated(Normal(1, 0.1), 0, Inf),
@@ -131,34 +131,32 @@ default(leg = false)
 using DEBBase.AgentBased
 
 
+
 # FIXME: everything happens too fast...
 # dI exceeds maximum
+# turning down dt results in higher values over same time...what??
+# THE VALUE OF DT IS CHANGING DURING THE SIMULATION...
 
-# dX = X_in - k_V * X
-# dX -= dI
-# X = X - dX
-
-
-p.glb.Xdot_in = 10.
-p.glb.t_max = 3.
-dt = 1/24
-sim = AgentBased.simulator(p; dt = dt) |> agent_record_to_df
+p.glb.Xdot_in = 1000.
+p.glb.t_max = 21.
+dt = 1/100
+sim = AgentBased.simulator(p; dt = dt) |> agent_record_to_df;
 
 begin
     @df sim plot(
-        plot(eachindex(:t), [:age, :t], color = [1 :gray], ylabel = "age"),
-        plot(eachindex(:t), :X_p, ylabel = "X_p"), 
-        plot(eachindex(:t), :f_X, ylabel = "f_X", ylim = (0, 1.01)),
-        plot(eachindex(:t), :X_emb, ylabel = "X_emb"),
-        plot(eachindex(:t), diffvec(:I), ylabel = "dI"),
-        plot(eachindex(:t), :S, ylabel = "S"),
-        xlabel = "step",
+        plot(:t, [:age, :t], color = [1 :gray], ylabel = "age"),
+        plot(:t, :X_p, ylabel = "X_p"), 
+        plot(:t, :f_X, ylabel = "f_X", ylim = (0, 1.01)),
+        plot(:t, :X_emb, ylabel = "X_emb"),
+        plot(:t, diffvec(:I), ylabel = "dI"),
+        plot(:t, :S, ylabel = "S"),
+        xlabel = "t",
         marker = true, size = (800,500)
         )
 
     hline!([
         DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], 
-        c = :gray, subplot = 5, 
+        c = :gray, subplot = 5,
         leg = true, label = "dI_max_abs"
         )
 end
