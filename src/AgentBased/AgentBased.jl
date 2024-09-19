@@ -53,6 +53,7 @@ mutable struct ABM <: AbstractDEBABM
     t::Real
     dt::Real
     idcount::Int
+    saveat::Real
     agent_record::Vector{ComponentVector}
     agent_statevar_names::Vector{Symbol}
     global_statevar_names::Vector{Symbol}
@@ -70,7 +71,7 @@ mutable struct ABM <: AbstractDEBABM
     kwargs
         - `dt`: Model time step [t]
     """
-    function ABM(p::Union{AbstractParamCollection,NamedTuple}; dt = 1/24)::ABM
+    function ABM(p::Union{AbstractParamCollection,NamedTuple}; dt = 1/24, saveat = 1)::ABM
         m = new()
         m.agents = Vector{DEBAgent}(undef, p.glb.N0)
         m.u = initialize_global_statevars(p)
@@ -79,6 +80,7 @@ mutable struct ABM <: AbstractDEBABM
         m.p = p
         m.t = 0
         m.dt = dt
+        m.saveat = saveat
         m.idcount = 0
         m.agent_record = ComponentVector[]
 
@@ -156,18 +158,20 @@ function Euler!(u::ComponentVector, du::ComponentVector, dt::Real, statevar_name
 end
 
 function agent_record!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
-    push!(
-        m.agent_record,
-        vcat(
-            ComponentVector(
-                t = m.t, 
-                id = a.id, 
-                age = a.age, 
-                cause_of_death = a.cause_of_death
-                ),
-            a.u
-        ) # vcat
-    ) # push
+    if isapprox(m.t % m.saveat, 0, atol = m.dt)
+        push!(
+            m.agent_record,
+            vcat(
+                ComponentVector(
+                    t = m.t, 
+                    id = a.id, 
+                    age = a.age, 
+                    cause_of_death = a.cause_of_death
+                    ),
+                a.u
+            ) # vcat
+        ) # push
+    end
 
     return nothing
 end
@@ -209,8 +213,8 @@ function model_step!(m::AbstractDEBABM)::Nothing
     return nothing
 end
 
-function simulator(p::Union{NamedTuple,AbstractParamCollection}; dt = 1/24)
-    m = ABM(p; dt = dt)
+function simulator(p::Union{NamedTuple,AbstractParamCollection}; dt = 1/24, saveat = 1)
+    m = ABM(p; dt = dt, saveat = saveat)
 
     while !(m.t > m.p.glb.t_max)
         model_step!(m)
@@ -221,7 +225,7 @@ end
 
 function agent_record_to_df(
     m::AbstractDEBABM; 
-    cols::Vector{Symbol} = [:t, :id, :embryo, :juvenile, :adult, :age, :f_X, :S, :I, :A, :M, :H, :X_p, :X_emb]
+    cols::Vector{Symbol} = [:t, :id, :embryo, :juvenile, :adult, :age, :f_X, :S, :I, :A, :M, :H, :R, :X_p, :X_emb]
     )::DataFrame
     hcat([map(x -> getproperty(x, y), m.agent_record) for y in cols]...) |> 
     x -> DataFrame(x, cols)

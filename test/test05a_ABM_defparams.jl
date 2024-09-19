@@ -92,16 +92,9 @@ default(leg = false)
 end
 
 begin
-    glb = GlobalParams(
-        t_max = 30,
-        N0 = 1, 
-        Xdot_in = 100, 
-        k_V = 0.5
-        )
+    glb = GlobalParams()
     spc_ode = SpeciesParams(
-        Z = Truncated(Normal(1, 0.1), 0, Inf),
-        K_X_0 = 100 / 0.05,
-        Idot_max_rel_0 = 0.
+        Z = Dirac(1.), #Truncated(Normal(1, 0.1), 0, Inf),
         ) |> ntfromstruct
     agn_ode = DEBODE.ODEAgentParams(DEBParamCollection().spc) |> ntfromstruct
 
@@ -129,34 +122,60 @@ using DEBBase.Utils
 default(leg = false)
 
 using DEBBase.AgentBased
+using DataFrames, DataFramesMeta
+using Chain
+
+@time sim = AgentBased.simulator(p, saveat = 1) |> agent_record_to_df;
+sort!(sim, :t);
+
+sim = combine(groupby(sim, :id)) do df
+    df[!,:dI] = diffvec(df.I) ./ diffvec(df.t)
+    return df
+end;
+sim.t = round.(sim.t, sigdigits = 2)
 
 
+eval_df = @chain sim, simODE begin
+    [@select(x, :t, :S, :R, :H) for x in _]
+    leftjoin(_[1], _[2], on = :t, makeunique = true)
+    drop_na
+    @transform(
+        :relerr_S = :S ./ :S_1,
+        :relerr_H = :H ./ :H_1,
+        :relerr_R = :R ./ :R_1, 
 
-# FIXME: everything happens too fast...
-# dI exceeds maximum
-# turning down dt results in higher values over same time...what??
-# THE VALUE OF DT IS CHANGING DURING THE SIMULATION...
+        :abserr_S = abs.(:S .- :S_1),
+        :abserr_H = abs.(:H .- :H_1),
+        :abserr_R = abs.(:R .- :R_1), 
+    )
+end
 
-p.glb.Xdot_in = 1000.
-p.glb.t_max = 21.
-dt = 1/100
-sim = AgentBased.simulator(p; dt = dt) |> agent_record_to_df;
+@testset begin
+    @info("Checking deviation between ODE and ABM simulations")
+    @test sum(eval_df.abserr_S .> 15) == 0
+    @test sum(eval_df.abserr_R .> 15) == 0
+    @test sum(eval_df.abserr_H .> 15) == 0
+end
+
 
 begin
     @df sim plot(
         plot(:t, [:age, :t], color = [1 :gray], ylabel = "age"),
-        plot(:t, :X_p, ylabel = "X_p"), 
-        plot(:t, :f_X, ylabel = "f_X", ylim = (0, 1.01)),
-        plot(:t, :X_emb, ylabel = "X_emb"),
-        plot(:t, diffvec(:I), ylabel = "dI"),
-        plot(:t, :S, ylabel = "S"),
+        plot(:t, :X_p, group = :id, ylabel = "X_p"), 
+        plot(:t, :f_X, group = :id, ylabel = "f_X", ylim = (0, 1.01)),
+        plot(:t, :X_emb, group = :id, ylabel = "X_emb"),
+        plot(:t, :dI, group = :id, ylabel = "dI"),
+        plot(:t, :S, group = :id, ylabel = "S"),
         xlabel = "t",
-        marker = true, size = (800,500)
-        )
+        size = (800,500), 
+        lw = 2
+    )
 
-    hline!([
-        DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], 
-        c = :gray, subplot = 5,
-        leg = true, label = "dI_max_abs"
-        )
+    @df simODE plot!(:t, :S, subplot = 6)
+
+    hline!([DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], subplot = 5, c = :black)
 end
+
+using BenchmarkTools
+@benchmark AgentBased.simulator(p)
+@benchmark DEBODE.simulator(DEBParamCollection())
