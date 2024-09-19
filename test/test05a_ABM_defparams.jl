@@ -10,12 +10,15 @@ using Revise
 @time using DEBBase.DEBODE
 using DEBBase.ParamStructs
 using DEBBase.DoseResponse
-#using DEBBase.DEBABM
+using DEBBase.AgentBased
 
 # first we extend the species parameters to include additional params needed for the ABM
 begin
-    glb = GlobalParams(N0 = 3)
-    spc_ode = SpeciesParams(Z = Truncated(Normal(1, 0.1), 0, Inf)) |> ntfromstruct
+    glb = GlobalParams(N0 = 1)
+    spc_ode = SpeciesParams(
+        Z = Truncated(Normal(1, 0.1), 0, Inf),
+        K_X_0 = 100 / 0.05
+        ) |> ntfromstruct
     agn_ode = DEBODE.ODEAgentParams(DEBParamCollection().spc) |> ntfromstruct
 
     spc = (; 
@@ -39,18 +42,23 @@ end
 a = DEBAgent(p, DEBODE.initialize_global_statevars(p), 1)
 @test a isa AbstractDEBAgent
 
-m = ABM(p)
-@info "Induce variability in agent params"
-@test map(x -> x.p.agn.Idot_max_rel_0, m.agents) |> extrema |> x-> (x[2]/x[1])>0.01
+m = AgentBased.ABM(p)
+begin 
+    @info "Induce variability in agent params"
+    Idot_int = map(x -> x.p.agn.Idot_max_rel_0, m.agents) 
+    extremevals = extrema(Idot_int) 
+    relrange = extremevals[2]/extremevals[1]
+    @test relrange > 0.01
+end
+
 @info "Induce variability in initial agent states"
 @test map(x -> x.u.S, m.agents) |> extrema |> x -> (x[2]/x[1]) > 0.01
-
 
 @testset begin
     @info "Transfer global statevars from model to agent"
     @info "Independency of agent statevars from global statevars"
     m.u.C_W = [rand()]
-    get_global_statevars!(m.agents[1], m)
+    AgentBased.get_global_statevars!(m.agents[1], m)
     @test m.agents[1].u.C_W == m.u.C_W
     m.agents[1].u.C_W .+= 1
     @test m.agents[1].u.C_W != m.u.C_W
@@ -58,41 +66,93 @@ end
 
 @testset begin 
     @info "Update agent statevars using Euler!()"
-    m = ABM(p)
+    m = AgentBased.ABM(p)
     a = m.agents[1]
     S0 = a.u.S
     DEBODE.DEBODE_IA!(a.du, a.u, a.p, m.t)
-    Euler!(a.u, a.du, m.dt)
+    AgentBased.Euler!(a.u, a.du, m.dt)
     @test a.u.S > S0
 end
 
 @test begin
     @info "Run model_step! without err"
-    model_step!(m)
+    AgentBased.model_step!(m)
     true
 end
 
 using Plots
+default(leg = false)
+
 @info "Execute model step"
 @test begin 
-    m = ABM(p)
-    model_step!(m)
+    m = AgentBased.ABM(p)
+    AgentBased.model_step!(m)
     true
 end
 
-sim = simulator(p);
 
-p.glb.t_max
+begin
+    glb = GlobalParams(
+        t_max = 30,
+        N0 = 1, 
+        Xdot_in = 1e4, 
+        k_V = 0.
+        )
+    spc_ode = SpeciesParams(
+        Z = Truncated(Normal(1, 0.1), 0, Inf),
+        K_X_0 = 100 / 0.05,
+        ) |> ntfromstruct
+    agn_ode = DEBODE.ODEAgentParams(DEBParamCollection().spc) |> ntfromstruct
 
-t = map(x -> x.t, sim.agent_record)
-id = map(x -> x.id, sim.agent_record)
-age = map(x -> x.age, sim.agent_record)
-S = map(x -> x.S, sim.agent_record)
-cod = map(x -> x.cause_of_death, sim.agent_record)
+    spc = (; 
+        spc_ode...,
+        (
 
-plot(
-    plot(t, S, group = id), 
-    plot(t, age, group = id),
-    leg = false
-)
+            a_max = Truncated(Normal(60, 6), 0, Inf), # maximum life span
+            tau_R = 2. # reproduction interval
+        )...
+    )
 
+    agn = (;
+        agn_ode...,
+        (
+            a_max = rand(spc.a_max)
+        )
+    )
+
+    p = (glb = glb, spc = spc, agn = agn)
+end
+
+# FIXME: X_p gets negative...
+
+using StatsPlots
+using DEBBase.Utils
+default(leg = false)
+
+using DEBBase.AgentBased
+
+p.glb.Xdot_in
+p.glb.t_max = 3.
+sim = AgentBased.simulator(p; dt = 1/240) |> agent_record_to_df
+
+@df sim plot(
+    plot(:t, [:age, :t], color = [1 :gray], ylabel = "age"),
+    plot(:t, :X_p, ylabel = "X_p"), 
+    plot(:t, :f_X, ylabel = "f_X", ylim = (0, 1.01)),
+    plot(:t, :X_emb, ylabel = "X_emb"),
+    plot(:t, diffvec(:I), ylabel = "dI"),
+    plot(:t, :S, ylabel = "S"),
+    xlabel = "t",
+    marker = true, size = (800,500)
+    )
+
+
+    
+@df sim plot(:t, [:embryo, :juvenile, :adult], layout = (1,3))
+@df sim plot(:t, :H)
+
+DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0
+
+p.spc.H_p_0
+
+less(AgentBased.model_step!)

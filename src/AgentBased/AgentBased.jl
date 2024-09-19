@@ -1,16 +1,14 @@
-
-import DEBBase.DEBODE: simulator
-
 abstract type AbstractDEBAgent end
 
-const CAUSE_OF_DEATH = Dict(
+CAUSE_OF_DEATH = Dict(
     0 => "none",
     1 => "age"
 )
 
-
 @with_kw mutable struct DEBAgent <: AbstractDEBAgent
     id::Int
+    age::Real
+    cause_of_death::Int
     du::ComponentVector
     u::ComponentVector
     p::Union{AbstractParamCollection,NamedTuple}
@@ -22,9 +20,9 @@ const CAUSE_OF_DEATH = Dict(
             glb = p.glb, # global params
             spc = p.spc, # species params
             agn = (; # agent params
-                ntfromstruct(DEBODE.ODEAgentParams(p.spc))...,
+                ntfromstruct(ODEAgentParams(p.spc))...,
                 (
-                    a_max = rand(spc.a_max)
+                    a_max = rand(p.spc.a_max)
                 )
             ) # agn
         ) # a.p
@@ -32,10 +30,13 @@ const CAUSE_OF_DEATH = Dict(
         # vcat does not seem to work on more than two component arrays (returns Vector instead), hence the pipe syntax
         a.u = vcat(
             global_statevars,
-            DEBODE.initialize_agent_statevars(a.p)
-        ) |> x-> vcat(x, ComponentVector(age = 0, cause_of_death = 0))
+            initialize_agent_statevars(a.p)
+        )
 
         a.du = similar(a.u)
+        a.du .= 0.
+        a.age = 0.
+        a.cause_of_death = 0
     
         return a
     end
@@ -70,7 +71,7 @@ mutable struct ABM <: AbstractDEBABM
     function ABM(p::Union{AbstractParamCollection,NamedTuple}; dt = 1/24)::ABM
         m = new()
         m.agents = Vector{DEBAgent}(undef, p.glb.N0)
-        m.u = DEBODE.initialize_global_statevars(p)
+        m.u = initialize_global_statevars(p)
         m.du = similar(m.u) 
         m.p = p
         m.t = 0
@@ -101,12 +102,22 @@ function set_global_statevars!(m::AbstractDEBABM, a::AbstractDEBAgent)::Nothing
     end
 end
 
-function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)
-    a.u.age += m.dt 
+function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
+    a.age += m.dt 
 
-    if a.u.age >= a.p.agn.a_max
-        a.u.cause_of_death = 1
+    if condition_juvenile(a.u, m.t, a) <= 0
+        effect_juvenile!(a)
     end
+
+    if condition_adult(a.u, m.t, a) <= 0
+        effect_adult!(a)
+    end
+
+    #if a.age >= a.p.agn.a_max
+    #    a.cause_of_death = 1
+    #end
+
+    return nothing
 end
 
 
@@ -123,7 +134,8 @@ as well as functions which require direct information exchange between agents.
 """
 function agent_step!(a::AbstractDEBAgent, m::AbstractDEBABM)
     get_global_statevars!(a, m)
-    DEBODE.DEBODE_IA!(a.du, a.u, a.p, m.t)
+
+    DEBODE_agent_IA!(a.du, a.u, a.p, m.t)
     Euler!(a.u, a.du, m.t)
     agent_step_rulebased!(a, m)
     set_global_statevars!(m, a)
@@ -132,8 +144,8 @@ function agent_step!(a::AbstractDEBAgent, m::AbstractDEBABM)
 end
 
 function Euler!(u::ComponentVector, du::ComponentVector, dt::Real)::Nothing
-    for var in keys(u)
-        setproperty!(u, var, getproperty(u, var) + getproperty(u, var) * dt)
+    for ui in keys(u)
+        setproperty!(u, ui, getproperty(u, ui) + getproperty(du, ui) * dt)
     end
 end
 
@@ -141,25 +153,30 @@ function agent_record!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
     push!(
         m.agent_record,
         vcat(
-            ComponentVector(t = m.t, id = a.id),
+            ComponentVector(
+                t = m.t, 
+                id = a.id, 
+                age = a.age, 
+                cause_of_death = a.cause_of_death
+                ),
             a.u
-        )
-    )
+        ) # vcat
+    ) # push
 
     return nothing
 end
 
-filter_agents!(m) = m.agents = filter(x -> x.u.cause_of_death == 0, m.agents)
+filter_agents!(m) = m.agents = filter(x -> x.cause_of_death == 0, m.agents)
 
 """
-    agent_step!(m::AbstractDEBABM)
+    step_all_agents!(m::AbstractDEBABM)::Nothing
 
 Executes agent_step! for all agents in the model. 
 Records agent states.
 Filters agents vector to remove dead indiviualds. 
 Agents which die will be recorded a last time before they are removed.
 """
-function agent_step!(m::AbstractDEBABM)::Nothing
+function step_all_agents!(m::AbstractDEBABM)::Nothing
     for a in m.agents
         agent_step!(a, m)
         agent_record!(a, m)
@@ -170,23 +187,36 @@ function agent_step!(m::AbstractDEBABM)::Nothing
 end
 
 function model_step!(m::AbstractDEBABM)::Nothing
-    DEBODE.DEBODE_global!(m.du, m.u, m.p, m.t)
-    Euler!(m.u, m.du, m.t)
-    agent_step!(m)
+    # calculate global derivatives
+    # change in resource abundance, chemical stressor exposure etc.
+    
+    DEBODE_global!(m.du, m.u, m.p, m.t)
+    m.u.X_p = max(0, m.u.X_p) # HOTFIX : negative food abundances cause chaos
+    step_all_agents!(m)
+
+    # global statevars are updated after agent derivatives are calculated
+    # this is important because agents affect global states using mutating operators
+    Euler!(m.u, m.du, m.t) 
 
     m.t += m.dt
 
     return nothing
 end
 
-
 function simulator(p::Union{NamedTuple,AbstractParamCollection}; dt = 1/24)
     m = ABM(p; dt = dt)
 
     while !(m.t > m.p.glb.t_max)
         model_step!(m)
-        println(m.t)
     end
 
     return m
+end
+
+function agent_record_to_df(
+    m::AbstractDEBABM; 
+    cols::Vector{Symbol} = [:t, :id, :embryo, :juvenile, :adult, :age, :f_X, :S, :I, :A, :M, :H, :X_p, :X_emb]
+    )::DataFrame
+    hcat([map(x -> getproperty(x, y), m.agent_record) for y in cols]...) |> 
+    x -> DataFrame(x, cols)
 end

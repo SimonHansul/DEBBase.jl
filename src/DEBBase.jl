@@ -9,7 +9,7 @@ using DataFrames
 using PrecompileTools
 using StaticArrays
 using StatsBase
-
+using NamedTupleTools
 
 module ParamStructs
     
@@ -70,8 +70,10 @@ module DEBODE
     include("DEBODE/statevars.jl")
     export initialize_statevars
 
+    include("DEBODE/events.jl")
+
     include("DEBODE/simulators.jl")
-    export simulator, @replicates, replicates, exposure
+    export @replicates, replicates, exposure
 
     include("DEBODE/traits.jl")
 
@@ -83,17 +85,22 @@ module DEBODE
     end
 end
 
-#module AgentBased
-#
-#    using Parameters
-#    using ComponentArrays
-#
-#    using ..DEBODE: GlobalParams, SpeciesParams, DEBParamCollection, DEBODE_IA!, DEBODE_agent_IA!, initialize_agent_statevars, initialize_global_statevars
-#    using ..ParamStructs: AbstractParamCollection, AbstractParams
-#
-#    include("AgentBased/AgentBased.jl")
-#    export AbstractDEBAgent, AbstractDEBABM, DEBAgent, DEBABM
-#end
+module AgentBased
+
+    using Parameters
+    using ComponentArrays
+    using NamedTupleTools
+    using DataFrames
+
+    using ..DEBODE: ODEAgentParams, GlobalParams, SpeciesParams, DEBParamCollection # import ODE params
+    using ..DEBODE: DEBODE_global!, DEBODE_agent_IA! # import ODE derivatives
+    using ..DEBODE: initialize_agent_statevars, initialize_global_statevars # import ODE statevars
+    using ..DEBODE: condition_juvenile, condition_adult, effect_juvenile!, effect_adult! # import ODE lifestage definitions
+    using ..ParamStructs: AbstractParamCollection, AbstractParams # import paramstructs
+
+    include("AgentBased/AgentBased.jl")
+    export AbstractDEBAgent, AbstractDEBABM, DEBAgent, DEBABM, agent_record_to_df
+end
 
 """
 Submodule for parameter estimation using approximate bayesian computation.
