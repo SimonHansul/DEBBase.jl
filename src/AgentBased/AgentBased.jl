@@ -12,10 +12,14 @@ CAUSE_OF_DEATH = Dict(
     du::ComponentVector
     u::ComponentVector
     p::Union{AbstractParamCollection,NamedTuple}
+
+    time_since_last_repro::Real
+    cum_offspring::Int64
+    cohort::Int64
     
-    function DEBAgent(p::Union{AbstractParamCollection,NamedTuple}, global_statevars::ComponentVector, id)
+    function DEBAgent(p::Union{AbstractParamCollection,NamedTuple}, global_statevars::ComponentVector, id; cohort = 0)
         a = new() # create empty agent instance
-        a.id = id
+
         a.p = ( # agent holds its own parameter object
             glb = p.glb, # global params
             spc = p.spc, # species params
@@ -35,8 +39,14 @@ CAUSE_OF_DEATH = Dict(
 
         a.du = similar(a.u)
         a.du .= 0.
+
+        a.id = id
+        a.cohort = cohort
         a.age = 0.
         a.cause_of_death = 0
+        a.time_since_last_repro = 0.
+        a.cum_offspring = 0.
+        
     
         return a
     end
@@ -120,9 +130,20 @@ function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
         effect_adult!(a)
     end
 
-    #if a.age >= a.p.agn.a_max
-    #    a.cause_of_death = 1
-    #end
+    if a.age >= a.p.agn.a_max
+        a.cause_of_death = 1
+    end
+
+    if a.time_since_last_repro >= a.p.spc.tau_R
+        let num_offspring = trunc(a.u.R / a.u.X_emb_int)
+            for _ in 1:num_offspring
+                m.idcount += 1
+                push!(m.agents, DEBAgent(a.p, m.u, m.idcount; cohort = a.cohort + 1))    
+            end
+        end
+    else
+        a.time_since_last_repro += m.dt
+    end
 
     return nothing
 end

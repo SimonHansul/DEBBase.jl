@@ -42,7 +42,6 @@ end;
 a = DEBAgent(p, DEBODE.initialize_global_statevars(p), 1)
 @test a isa AbstractDEBAgent
 
-
 m = AgentBased.ABM(p);
 begin 
     @info "Induce variability in agent params"
@@ -91,7 +90,7 @@ default(leg = false)
     true
 end
 
-begin
+begin # setting up parameters
     glb = GlobalParams()
     spc_ode = SpeciesParams(
         Z = Dirac(1.), #Truncated(Normal(1, 0.1), 0, Inf),
@@ -117,6 +116,7 @@ begin
     p = (glb = glb, spc = spc, agn = agn)
 end;
 
+
 using StatsPlots
 using DEBBase.Utils
 default(leg = false)
@@ -128,12 +128,16 @@ using Chain
 @time sim = AgentBased.simulator(p, saveat = 1) |> agent_record_to_df;
 sort!(sim, :t);
 
+popsize = combine(groupby(sim, :t), nrow)
+
+
+
+
 sim = combine(groupby(sim, :id)) do df
     df[!,:dI] = diffvec(df.I) ./ diffvec(df.t)
     return df
 end;
 sim.t = round.(sim.t, sigdigits = 2)
-
 
 eval_df = @chain sim, simODE begin
     [@select(x, :t, :S, :R, :H) for x in _]
@@ -157,9 +161,8 @@ end
     @test sum(eval_df.abserr_H .> 15) == 0
 end
 
-
 begin
-    @df sim plot(
+    plt = @df sim plot(
         plot(:t, [:age, :t], color = [1 :gray], ylabel = "age"),
         plot(:t, :X_p, group = :id, ylabel = "X_p"), 
         plot(:t, :f_X, group = :id, ylabel = "f_X", ylim = (0, 1.01)),
@@ -173,9 +176,37 @@ begin
 
     @df simODE plot!(:t, :S, subplot = 6)
 
-    hline!([DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], subplot = 5, c = :black)
+    hline!([DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], subplot = 5)
+
+    display(plt)
 end
 
 using BenchmarkTools
 @benchmark AgentBased.simulator(p)
 @benchmark DEBODE.simulator(DEBParamCollection())
+
+begin
+    glb = GlobalParams(t_max = 150)
+    spc_ode = SpeciesParams(
+        Z = Dirac(1.), #Truncated(Normal(1, 0.1), 0, Inf),
+        ) |> ntfromstruct
+    agn_ode = DEBODE.ODEAgentParams(DEBParamCollection().spc) |> ntfromstruct
+
+    spc = (; 
+        spc_ode...,
+        (
+
+            a_max = Truncated(Normal(60, 6), 0, Inf), # maximum life span
+            tau_R = 2. # reproduction interval
+        )...
+    )
+
+    agn = (;
+        agn_ode...,
+        (
+            a_max = rand(spc.a_max)
+        )
+    )
+
+    p = (glb = glb, spc = spc, agn = agn)
+end;
