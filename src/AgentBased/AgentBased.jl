@@ -54,6 +54,8 @@ mutable struct ABM <: AbstractDEBABM
     dt::Real
     idcount::Int
     agent_record::Vector{ComponentVector}
+    agent_statevar_names::Vector{Symbol}
+    global_statevar_names::Vector{Symbol}
     #recorded_agent_vars::Vector{Symbol}
     #recorded_agent_var_indices::BitVector
 
@@ -72,6 +74,7 @@ mutable struct ABM <: AbstractDEBABM
         m = new()
         m.agents = Vector{DEBAgent}(undef, p.glb.N0)
         m.u = initialize_global_statevars(p)
+        m.global_statevar_names = Symbol[keys(m.u)...]
         m.du = similar(m.u) 
         m.p = p
         m.t = 0
@@ -83,6 +86,8 @@ mutable struct ABM <: AbstractDEBABM
             m.idcount += 1
             m.agents[i] = DEBAgent(p, m.u, m.idcount)
         end
+
+        m.agent_statevar_names = Symbol[keys(initialize_agent_statevars(p))...]
 
         return m
     end
@@ -136,15 +141,16 @@ function agent_step!(a::AbstractDEBAgent, m::AbstractDEBABM)
     get_global_statevars!(a, m)
 
     DEBODE_agent_IA!(a.du, a.u, a.p, m.t)
-    Euler!(a.u, a.du, m.t)
+
+    Euler!(a.u, a.du, m.t, m.agent_statevar_names)
     agent_step_rulebased!(a, m)
     set_global_statevars!(m, a)
 
     return nothing
 end
 
-function Euler!(u::ComponentVector, du::ComponentVector, dt::Real)::Nothing
-    for ui in keys(u)
+function Euler!(u::ComponentVector, du::ComponentVector, dt::Real, statevar_names::Vector{Symbol})::Nothing
+    for ui in statevar_names
         setproperty!(u, ui, getproperty(u, ui) + getproperty(du, ui) * dt)
     end
 end
@@ -191,12 +197,12 @@ function model_step!(m::AbstractDEBABM)::Nothing
     # change in resource abundance, chemical stressor exposure etc.
     
     DEBODE_global!(m.du, m.u, m.p, m.t)
-    m.u.X_p = max(0, m.u.X_p) # HOTFIX : negative food abundances cause chaos
     step_all_agents!(m)
-
+    
     # global statevars are updated after agent derivatives are calculated
     # this is important because agents affect global states using mutating operators
-    Euler!(m.u, m.du, m.t) 
+    Euler!(m.u, m.du, m.t, m.global_statevar_names) 
+    m.u.X_p = max(0, m.u.X_p) # HOTFIX : negative food abundances cause chaos
 
     m.t += m.dt
 

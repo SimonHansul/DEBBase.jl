@@ -37,12 +37,13 @@ begin
     )
 
     p = (glb = glb, spc = spc, agn = agn)
-end
+end;
 
 a = DEBAgent(p, DEBODE.initialize_global_statevars(p), 1)
 @test a isa AbstractDEBAgent
 
-m = AgentBased.ABM(p)
+
+m = AgentBased.ABM(p);
 begin 
     @info "Induce variability in agent params"
     Idot_int = map(x -> x.p.agn.Idot_max_rel_0, m.agents) 
@@ -70,7 +71,7 @@ end
     a = m.agents[1]
     S0 = a.u.S
     DEBODE.DEBODE_IA!(a.du, a.u, a.p, m.t)
-    AgentBased.Euler!(a.u, a.du, m.dt)
+    AgentBased.Euler!(a.u, a.du, m.dt, Symbol[keys(DEBODE.initialize_agent_statevars(p))...])
     @test a.u.S > S0
 end
 
@@ -90,17 +91,17 @@ default(leg = false)
     true
 end
 
-
 begin
     glb = GlobalParams(
         t_max = 30,
         N0 = 1, 
-        Xdot_in = 1e4, 
+        Xdot_in = 100, 
         k_V = 0.
         )
     spc_ode = SpeciesParams(
         Z = Truncated(Normal(1, 0.1), 0, Inf),
         K_X_0 = 100 / 0.05,
+        Idot_max_rel_0 = 0.
         ) |> ntfromstruct
     agn_ode = DEBODE.ODEAgentParams(DEBParamCollection().spc) |> ntfromstruct
 
@@ -121,9 +122,7 @@ begin
     )
 
     p = (glb = glb, spc = spc, agn = agn)
-end
-
-# FIXME: X_p gets negative...
+end;
 
 using StatsPlots
 using DEBBase.Utils
@@ -131,28 +130,35 @@ default(leg = false)
 
 using DEBBase.AgentBased
 
-p.glb.Xdot_in
+
+# FIXME: everything happens too fast...
+# dI exceeds maximum
+
+# dX = X_in - k_V * X
+# dX -= dI
+# X = X - dX
+
+
+p.glb.Xdot_in = 10.
 p.glb.t_max = 3.
-sim = AgentBased.simulator(p; dt = 1/240) |> agent_record_to_df
+dt = 1/24
+sim = AgentBased.simulator(p; dt = dt) |> agent_record_to_df
 
-@df sim plot(
-    plot(:t, [:age, :t], color = [1 :gray], ylabel = "age"),
-    plot(:t, :X_p, ylabel = "X_p"), 
-    plot(:t, :f_X, ylabel = "f_X", ylim = (0, 1.01)),
-    plot(:t, :X_emb, ylabel = "X_emb"),
-    plot(:t, diffvec(:I), ylabel = "dI"),
-    plot(:t, :S, ylabel = "S"),
-    xlabel = "t",
-    marker = true, size = (800,500)
-    )
+begin
+    @df sim plot(
+        plot(eachindex(:t), [:age, :t], color = [1 :gray], ylabel = "age"),
+        plot(eachindex(:t), :X_p, ylabel = "X_p"), 
+        plot(eachindex(:t), :f_X, ylabel = "f_X", ylim = (0, 1.01)),
+        plot(eachindex(:t), :X_emb, ylabel = "X_emb"),
+        plot(eachindex(:t), diffvec(:I), ylabel = "dI"),
+        plot(eachindex(:t), :S, ylabel = "S"),
+        xlabel = "step",
+        marker = true, size = (800,500)
+        )
 
-
-    
-@df sim plot(:t, [:embryo, :juvenile, :adult], layout = (1,3))
-@df sim plot(:t, :H)
-
-DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0
-
-p.spc.H_p_0
-
-less(AgentBased.model_step!)
+    hline!([
+        DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], 
+        c = :gray, subplot = 5, 
+        leg = true, label = "dI_max_abs"
+        )
+end
