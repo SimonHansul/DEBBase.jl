@@ -66,6 +66,8 @@ end
     @test m.agents[1].u.C_W != m.u.C_W
 end
 
+p isa NamedTuple
+
 @testset begin 
     @info "Update agent statevars using Euler!()"
     m = AgentBased.ABM(p)

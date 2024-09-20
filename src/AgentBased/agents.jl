@@ -25,7 +25,7 @@ CAUSE_OF_DEATH = Dict(
             glb = p.glb, # global params
             spc = p.spc, # species params
             agn = (; # agent params
-                ntfromstruct(ODEAgentParams(p.spc))...,
+                ntfromstruct(AgentParams(p.spc))...,
                 (
                     a_max = rand(p.spc.a_max)
                 )

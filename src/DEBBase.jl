@@ -64,7 +64,7 @@ module DEBODE
     using ..Utils: sol_to_df, sol_to_mat
 
     include("DEBODE/paramstructs.jl")
-    export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, ODEAgentParams
+    export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, DEBParamCollection, AgentParams
 
     include("DEBODE/derivatives.jl")
     export sig, clipneg
@@ -95,7 +95,7 @@ module AgentBased
     using DataFrames
     using Base.Threads
 
-    using ..DEBODE: ODEAgentParams, GlobalParams, SpeciesParams, DEBParamCollection # import ODE params
+    using ..DEBODE: AgentParams, GlobalParams, SpeciesParams, DEBParamCollection # import ODE params
     using ..DEBODE: DEBODE_global!, DEBODE_agent_IA! # import ODE derivatives
     using ..DEBODE: initialize_agent_statevars, initialize_global_statevars # import ODE statevars
     using ..DEBODE: condition_juvenile, condition_adult, effect_juvenile!, effect_adult! # import ODE lifestage definitions

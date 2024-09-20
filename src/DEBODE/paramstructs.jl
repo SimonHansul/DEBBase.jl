@@ -15,7 +15,7 @@ end
 `SpeciesParams` contain population means of DEB and TKTD parameters. 
 Default values are roughly reproduce life-history of Daphnia minda (model currency mass carbon in μgC) exposued to Azoxystrobin (mg/L). \\
 DEBBase.jl uses a hierarchical modelling approach where the `SpeciesParams` are  parameters which are common across all agents of a species, 
-and `ODEAgentParams` contain parameters which are specific for an individual. \\
+and `AgentParams` contain parameters which are specific for an individual. \\
 Variability is given by the zoom factor `Z::Distribution`, which is always applied to the surface-area specific ingestion rates 
 and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`. \\
 `Z` is `Dirac(1)` by default, i.e. there is no agent variability in the default parameters. \\
@@ -95,22 +95,29 @@ function individual_variability!(agn::Union{AbstractParams,NamedTuple}, spc::Uni
 end
 
 """
-    ODEAgentParams(spc::Union{AbstractParams,NamedTuple})
-ODEAgentParams are subject to agent variability. 
+    AgentParams(spc::Union{AbstractParams,NamedTuple})
+
+AgentParams are subject to agent variability. 
 This is in contrast to SpeciesParams, which define parameters on the species-level.
+
+Users of implemented models typically do not need to interact with `AgentParams`.
+
+Implementing a custom model might require to modify `AgentParams` if individual 
+    variability should occur in other variables.
 """
-@with_kw mutable struct ODEAgentParams <: AbstractParams
+@with_kw mutable struct AgentParams <: AbstractParams
     Z::Float64
     Idot_max_rel_0::Float64
     Idot_max_rel_emb_0::Float64
     X_emb_int_0::Float64
     H_p_0::Float64
     K_X_0::Float64
+    a_max::Float64
     
     """
-    Initialize ODEAgentParams from SpeciesParams `spc`.
+    Initialize AgentParams from SpeciesParams `spc`.
     """
-    function ODEAgentParams(spc::Union{AbstractParams,NamedTuple})
+    function AgentParams(spc::Union{AbstractParams,NamedTuple})
         agn = new()
         individual_variability!(agn, spc)
         return agn
