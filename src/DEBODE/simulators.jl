@@ -138,6 +138,23 @@ function replicates(simulator::Function, params::Union{NamedTuple,AbstractParamC
     sim
 end
 
+function threaded_replicates(
+    simulator::Function, 
+    params::Union{NamedTuple,AbstractParamCollection}, 
+    nreps::Int64; 
+    kwargs...)
+
+    sim = Vector{DataFrame}(undef, nreps)
+
+    @threads for replicate in 1:nreps
+        sim_i = simulator(params; kwargs...)
+        sim_i[!,:replicate] .= replicate
+        sim[replicate] = sim_i
+    end
+    
+    return vcat(sim...)
+end
+
 
 """
     exposure(simcall::Expr, C_Wvec::Vector{Float64}; kwargs...)

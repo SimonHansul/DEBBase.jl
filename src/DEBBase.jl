@@ -10,6 +10,7 @@ using PrecompileTools
 using StaticArrays
 using StatsBase
 using NamedTupleTools
+using Base.Threads
 
 module ParamStructs
     
@@ -56,6 +57,7 @@ module DEBODE
     using PrecompileTools
     using StaticArrays
     using StatsBase
+    using Base.Threads
 
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
     using ..DoseResponse: LL2, LL2M, LL2h
@@ -91,6 +93,7 @@ module AgentBased
     using ComponentArrays
     using NamedTupleTools
     using DataFrames
+    using Base.Threads
 
     using ..DEBODE: ODEAgentParams, GlobalParams, SpeciesParams, DEBParamCollection # import ODE params
     using ..DEBODE: DEBODE_global!, DEBODE_agent_IA! # import ODE derivatives
@@ -99,7 +102,13 @@ module AgentBased
     using ..DoseResponse: LL2h
     using ..ParamStructs: AbstractParamCollection, AbstractParams # import paramstructs
 
-    include("AgentBased/AgentBased.jl")
+    include("AgentBased/paramstructs.jl")
+    export ABMParamCollection
+    include("AgentBased/agents.jl")
+    include("AgentBased/model.jl")
+    include("AgentBased/schedules.jl")
+    include("AgentBased/simulators.jl")
+
     export AbstractDEBAgent, AbstractDEBABM, DEBAgent, DEBABM, agent_record_to_df
 end
 

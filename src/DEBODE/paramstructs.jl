@@ -11,8 +11,6 @@
     T::Float64 = 293.15 # ambient temperature [K]
 end
 
-@enum MixtoxModel IndependentAction DamageAddition
-
 """
 `SpeciesParams` contain population means of DEB and TKTD parameters. 
 Default values are roughly reproduce life-history of Daphnia minda (model currency mass carbon in μgC) exposued to Azoxystrobin (mg/L). \\
@@ -69,7 +67,8 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     b_R::Union{Nothing,Vector{Float64}} = [0.93] # slope parameters | PMoA reproduction efficiency
     b_h::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA reproduction efficiency
     
-    aux::Any = nothing # placeholder for auxiliaray parameters - can be useful for development purposes 
+    a_max = Truncated(Normal(60, 6), 0, Inf) # maximum life span - currently only used by ABM
+    tau_R = 2. # reproduction interval - currently only used by ABM
 end
 
 """
@@ -81,6 +80,8 @@ so that the surface area-specific ingestion rate `Idot_max_rel_0` scales with `Z
 """
 function individual_variability!(agn::Union{AbstractParams,NamedTuple}, spc::Union{AbstractParams,NamedTuple})
     agn.Z = rand(spc.Z) # sample zoom factor Z for agent from distribution
+    agn.a_max = rand(spc.a_max) # sample maximum age from distribution - currently only used by ABM
+
     agn.Idot_max_rel_0 = spc.Idot_max_rel_0 * agn.Z^(1/3) # Z is always applied to Idot_max_rel_0
     agn.Idot_max_rel_emb_0 = spc.Idot_max_rel_emb_0 * agn.Z^(1/3) #, including the value for embryos
 

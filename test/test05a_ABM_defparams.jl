@@ -12,6 +12,7 @@ using DEBBase.ParamStructs
 using DEBBase.DoseResponse
 using DEBBase.AgentBased
 
+
 # first we extend the species parameters to include additional params needed for the ABM
 begin
     glb = GlobalParams(N0 = 1)
@@ -93,7 +94,7 @@ end
 
 begin # setting up parameters
     glb = GlobalParams(
-        Xdot_in = 1200
+        Xdot_in = 2400
     )
     spc_ode = SpeciesParams(
         Z = Dirac(1.), #Truncated(Normal(1, 0.1), 0, Inf),
@@ -105,7 +106,7 @@ begin # setting up parameters
         (
 
             a_max = Truncated(Normal(60, 6), 0, Inf), # maximum life span
-            tau_R = 2. # reproduction interval
+            tau_R = Inf # reproduction interval
         )...
     )
 
@@ -128,70 +129,80 @@ using DEBBase.AgentBased
 using DataFrames, DataFramesMeta
 using Chain
 
-#eval_df = @chain sim, simODE begin
-#    [@select(x, :t, :S, :R, :H) for x in _]
-#    leftjoin(_[1], _[2], on = :t, makeunique = true)
-#    drop_na
-#    @transform(
-#        :relerr_S = :S ./ :S_1,
-#        :relerr_H = :H ./ :H_1,
-#        :relerr_R = :R ./ :R_1, 
-#
-#        :abserr_S = abs.(:S .- :S_1),
-#        :abserr_H = abs.(:H .- :H_1),
-#        :abserr_R = abs.(:R .- :R_1), 
-#    )
-#end
+sim = AgentBased.simulator(p) 
+simODE = DEBODE.simulator(DEBParamCollection())
 
-#@testset begin
-#    @info("Checking deviation between ODE and ABM simulations")
-#    @test sum(eval_df.abserr_S .> 15) == 0
-#    @test sum(eval_df.abserr_R .> 15) == 0
-#    @test sum(eval_df.abserr_H .> 15) == 0
-#end
-#
-#begin
-#    plt = @df sim plot(
-#        plot(:t, [:age, :t], color = [1 :gray], ylabel = "age"),
-#        plot(:t, :X_p, group = :id, ylabel = "X_p"), 
-#        plot(:t, :f_X, group = :id, ylabel = "f_X", ylim = (0, 1.01)),
-#        plot(:t, :X_emb, group = :id, ylabel = "X_emb"),
-#        plot(:t, :dI, group = :id, ylabel = "dI"),
-#        plot(:t, :S, group = :id, ylabel = "S"),
-#        xlabel = "t",
-#        size = (800,500), 
-#        lw = 2
-#    )
-#
-#    @df simODE plot!(:t, :S, subplot = 6)
-#
-#    hline!([DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], subplot = 5)
-#
-#    display(plt)
-#end
+eval_df = @chain sim, simODE begin
+    [@select(x, :t, :S, :R, :H) for x in _]
+    leftjoin(_[1], _[2], on = :t, makeunique = true)
+    drop_na
+    @transform(
+        :relerr_S = :S ./ :S_1,
+        :relerr_H = :H ./ :H_1,
+        :relerr_R = :R ./ :R_1, 
+
+        :abserr_S = abs.(:S .- :S_1),
+        :abserr_H = abs.(:H .- :H_1),
+        :abserr_R = abs.(:R .- :R_1), 
+    )
+end
+
+@testset begin
+    @info("Checking deviation between ODE and ABM simulations")
+    # We accept an absolute error of 0.1 μgC for an individual that can reach >300 μgC in structure
+    @test sum(eval_df.abserr_S .> 0.1) == 0
+    @test sum(eval_df.abserr_R .> 0.1) == 0
+    @test sum(eval_df.abserr_H .> 0.1) == 0
+end
+
+
+begin
+    plt = @df sim plot(
+        plot(:t, :S, group = :id, ylabel = "S", linestyle = :dash),
+        plot(:t, :H, group = :id, ylabel = "H", linestyle = :dash),
+        plot(:t, :R, group = :id, ylabel = "R", linestyle = :dash),
+        xlabel = "t",
+        size = (800,500), 
+        lw = 2
+    )
+
+    @df simODE plot!(:t, :S, subplot = 1)
+    @df simODE plot!(:t, :H, subplot = 2)
+    @df simODE plot!(:t, :R, subplot = 3)
+
+    #hline!([DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], subplot = 5)
+
+    display(plt)
+end
 
 using BenchmarkTools
-@benchmark AgentBased.simulator(p)
-@benchmark DEBODE.simulator(DEBParamCollection())
+@info "Comparing simulation times of ODE and ABM"
+b = @benchmark AgentBased.simulator(p)
+bmedian_agentbased = median(b.times)
+bODE = @benchmark DEBODE.simulator(DEBParamCollection())
+bmedian_ODE = median(bODE.times)
+@info("ODE is $(round(bmedian_agentbased/bmedian_ODE, sigdigits = 2)) times faster than ABM") 
 
 using DEBBase.AgentBased
 begin
     glb = GlobalParams(
-        t_max = 56,
+        t_max = 70,
         N0 = 10,
         Xdot_in = 30_000,
-        k_V = 0.1
+        k_V = 0.1,
+        V_patch = 0.5
         )
     spc_ode = SpeciesParams(
-        Z = Dirac(1.), #Truncated(Normal(1, 0.1), 0, Inf),
+        Z = Truncated(Normal(1, 0.1), 0, Inf),
+        K_X_0 = 10_000
         ) |> ntfromstruct
     agn_ode = DEBODE.ODEAgentParams(DEBParamCollection().spc) |> ntfromstruct
 
     spc = (; 
         spc_ode...,
         (
-            a_max = Truncated(Normal(30, 6), 0, Inf), # maximum life span
-            tau_R = 2. # reproduction interval
+            a_max = Truncated(Normal(60, 6), 0, Inf), # maximum life span
+            tau_R = 2.5 # reproduction interval
         )...
     )
 
@@ -206,10 +217,13 @@ begin
 end;
 
 using DEBBase.Figures
+using DEBBase.DEBODE
 
 begin
-    # FIXME: food updates are not correct
-    @time sim = @replicates AgentBased.simulator(p, saveat = 1) |> agent_record_to_df 3
+
+    @time sim = DEBODE.threaded_replicates(
+        AgentBased.simulator, p, 3; saveat = 1
+        )
     sort!(sim, :t);
 
     sim_agg = combine(groupby(sim, [:t, :replicate])) do df
@@ -226,17 +240,17 @@ begin
     using StatsBase
     sim.cause_of_death |> countmap
 
-    plot([
-    lineplot(sim_agg.t, sim_agg[:,y], ylabel = y) 
-    for y in [:N_tot, :W_tot, :S_mean, :R_mean, :fX_mean, :Xp_mean]]...,
-        size = (800,500), 
-        xlabel = "t"
+    plot(
+        [
+            lineplot(sim_agg.t, sim_agg[:,y], ylabel = y) 
+            for y in [:N_tot, :W_tot, :S_mean, :R_mean, :fX_mean, :Xp_mean]]...,
+                size = (800,500),
+                xlabel = "t"
         ) |> display
 end
 
 
+sim.cause_of_death |> countmap
 
 VSCodeServer.@profview AgentBased.simulator(p, saveat = 1)
-
-
 
