@@ -41,8 +41,9 @@ end;
 
 a = DEBAgent(p, DEBODE.initialize_global_statevars(p), 1)
 @test a isa AbstractDEBAgent
-
 m = AgentBased.ABM(p);
+@test m isa AbstractDEBABM
+
 begin 
     @info "Induce variability in agent params"
     Idot_int = map(x -> x.p.agn.Idot_max_rel_0, m.agents) 
@@ -70,7 +71,7 @@ end
     a = m.agents[1]
     S0 = a.u.S
     DEBODE.DEBODE_IA!(a.du, a.u, a.p, m.t)
-    AgentBased.Euler!(a.u, a.du, m.dt, Symbol[keys(DEBODE.initialize_agent_statevars(p))...])
+    AgentBased.Euler!(a.u, a.du, m.dt, collect(eachindex(a.u)))
     @test a.u.S > S0
 end
 
@@ -173,10 +174,13 @@ using BenchmarkTools
 @benchmark AgentBased.simulator(p)
 @benchmark DEBODE.simulator(DEBParamCollection())
 
+using DEBBase.AgentBased
 begin
     glb = GlobalParams(
-        t_max = 21,
-        N0 = 10
+        t_max = 56,
+        N0 = 10,
+        Xdot_in = 30_000,
+        k_V = 0.1
         )
     spc_ode = SpeciesParams(
         Z = Dirac(1.), #Truncated(Normal(1, 0.1), 0, Inf),
@@ -186,7 +190,7 @@ begin
     spc = (; 
         spc_ode...,
         (
-            a_max = Truncated(Normal(60, 6), 0, Inf), # maximum life span
+            a_max = Truncated(Normal(30, 6), 0, Inf), # maximum life span
             tau_R = 2. # reproduction interval
         )...
     )
@@ -201,24 +205,38 @@ begin
     p = (glb = glb, spc = spc, agn = agn)
 end;
 
-# FIXME: cause_of_death is not correctly recorded
+using DEBBase.Figures
 
-@time sim = AgentBased.simulator(p, saveat = 1) |> agent_record_to_df;
-sort!(sim, :t);
+begin
+    # FIXME: food updates are not correct
+    @time sim = @replicates AgentBased.simulator(p, saveat = 1) |> agent_record_to_df 3
+    sort!(sim, :t);
 
-sim_agg = combine(groupby(sim, :t)) do df
-    DataFrame(
-        N_tot = nrow(df),
-        S_mean = mean(df.S),
-        R_mean = mean(df.R),
-        fX_mean = mean(df.f_X)
-    )
+    sim_agg = combine(groupby(sim, [:t, :replicate])) do df
+        DataFrame(
+            N_tot = nrow(df),
+            W_tot = sum(df.S) + sum(df.R),
+            S_mean = mean(df.S),
+            R_mean = mean(df.R),
+            fX_mean = mean(df.f_X),
+            Xp_mean = mean(df.X_p)
+        )
+    end
+
+    using StatsBase
+    sim.cause_of_death |> countmap
+
+    plot([
+    lineplot(sim_agg.t, sim_agg[:,y], ylabel = y) 
+    for y in [:N_tot, :W_tot, :S_mean, :R_mean, :fX_mean, :Xp_mean]]...,
+        size = (800,500), 
+        xlabel = "t"
+        ) |> display
 end
 
-using StatsBase
-sim.cause_of_death |> countmap
-@df sim_agg plot(
-    :t, [:N_tot, :S_mean, :R_mean], layout = (1,3), 
-    ylabel = ["N" "S_mean" "R_mean"], 
-    ylim = (0, 12)
-)
+
+
+VSCodeServer.@profview AgentBased.simulator(p, saveat = 1)
+
+
+

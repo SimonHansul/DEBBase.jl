@@ -96,6 +96,7 @@ module AgentBased
     using ..DEBODE: DEBODE_global!, DEBODE_agent_IA! # import ODE derivatives
     using ..DEBODE: initialize_agent_statevars, initialize_global_statevars # import ODE statevars
     using ..DEBODE: condition_juvenile, condition_adult, effect_juvenile!, effect_adult! # import ODE lifestage definitions
+    using ..DoseResponse: LL2h
     using ..ParamStructs: AbstractParamCollection, AbstractParams # import paramstructs
 
     include("AgentBased/AgentBased.jl")

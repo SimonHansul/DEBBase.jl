@@ -47,7 +47,6 @@ CAUSE_OF_DEATH = Dict(
         a.time_since_last_repro = 0.
         a.cum_offspring = 0.
         
-    
         return a
     end
 end
@@ -65,8 +64,11 @@ mutable struct ABM <: AbstractDEBABM
     idcount::Int
     saveat::Real
     agent_record::Vector{ComponentVector}
-    agent_statevar_names::Vector{Symbol}
     global_statevar_names::Vector{Symbol}
+    global_statevar_indices::Vector{Int64}
+    agent_statevar_names::Vector{Symbol}
+    agent_statevar_indices::Vector{Int64}
+
     #recorded_agent_vars::Vector{Symbol}
     #recorded_agent_var_indices::BitVector
 
@@ -86,6 +88,7 @@ mutable struct ABM <: AbstractDEBABM
         m.agents = Vector{DEBAgent}(undef, p.glb.N0)
         m.u = initialize_global_statevars(p)
         m.global_statevar_names = Symbol[keys(m.u)...]
+        m.global_statevar_indices = collect(eachindex(m.global_statevar_names))
         m.du = similar(m.u) 
         m.p = p
         m.t = 0
@@ -101,6 +104,12 @@ mutable struct ABM <: AbstractDEBABM
 
         m.agent_statevar_names = Symbol[keys(initialize_agent_statevars(p))...]
 
+        if p.glb.N0 > 0
+            m.agent_statevar_indices = findall(x -> x in m.agent_statevar_names, keys(m.agents[1].u))
+        else
+            m.agent_statevar_indices = Int64[]
+        end
+
         return m
     end
 end
@@ -108,14 +117,17 @@ end
 get_recorded_agent_var_indices(m::AbstractDEBABM) = map(x -> x in m.recorded_agent_vars,  keys(a.u)) |> BitVector
 
 function get_global_statevars!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
+    # TODO: replacte setproperty!/getproperty with direct indexing
     for var in keys(m.u)
         setproperty!(a.u, var, getproperty(m.u, var))
+        setproperty!(a.du, var, getproperty(m.du, var))
     end
 end
 
 function set_global_statevars!(m::AbstractDEBABM, a::AbstractDEBAgent)::Nothing
     for var in keys(m.u)
         setproperty!(m.u, var, getproperty(a.u, var))
+        setproperty!(m.du, var, getproperty(a.du, var))
     end
 end
 
@@ -134,18 +146,26 @@ function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
         a.cause_of_death = 1
     end
     
-    if (a.u.S / a.u.S_max_hist) < 0.5 # TODO:make the threshold a parameter
-        if rand() < exp(-0.7 * m.dt) 
-            a.u.cause_of_death = 2
+    if (a.u.S / a.u.S_max_hist) < 0.5
+        if rand() < exp(-0.7 * m.dt)
+            a.cause_of_death = 2
         end
     end
+
+    #if (a.u.S / a.u.S_max_hist) < 0.5 # TODO:make the threshold a parameter
+    #    if rand() < exp(-0.7 * m.dt) 
+    #        a.u.cause_of_death = 2
+    #    end
+    #end
 
     if a.time_since_last_repro >= a.p.spc.tau_R
         let num_offspring = trunc(a.u.R / a.u.X_emb_int)
             for _ in 1:num_offspring
                 m.idcount += 1
-                push!(m.agents, DEBAgent(a.p, m.u, m.idcount; cohort = a.cohort + 1))    
+                push!(m.agents, DEBAgent(a.p, m.u, m.idcount; cohort = a.cohort + 1))
+                a.u.R -= a.u.X_emb_int
             end
+            a.time_since_last_repro = 0.
         end
     else
         a.time_since_last_repro += m.dt
@@ -171,22 +191,27 @@ function agent_step!(a::AbstractDEBAgent, m::AbstractDEBABM)
 
     DEBODE_agent_IA!(a.du, a.u, a.p, m.t)
 
-    Euler!(a.u, a.du, m.dt, m.agent_statevar_names)
+    Euler!(a.u, a.du, m.dt, m.agent_statevar_indices)
     agent_step_rulebased!(a, m)
     set_global_statevars!(m, a)
 
     return nothing
 end
 
-function Euler!(u::ComponentVector, du::ComponentVector, dt::Real, statevar_names::Vector{Symbol})::Nothing
-    for ui in statevar_names
-        setproperty!(u, ui, getproperty(u, ui) + getproperty(du, ui) * dt)
-    end
+function Euler!(u::ComponentVector, du::ComponentVector, dt::Real, statevar_indices::Vector{Int})::Nothing
+    
+    u[statevar_indices] .+= du[statevar_indices] .* dt
+    
+    #for ui in statevar_names
+    #    setproperty!(u, ui, getproperty(u, ui) + getproperty(du, ui) * dt)
+    #end
+
+    return nothing
 end
 
 function record_agent!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
 
-    #if isapprox(m.t % m.saveat, 0, atol = m.dt)
+    if isapprox(m.t % m.saveat, 0, atol = m.dt)
     push!(
         m.agent_record,
         vcat(
@@ -199,7 +224,7 @@ function record_agent!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
             a.u
         ) # vcat
     ) # push
-    #end
+    end
 
     return nothing
 end
@@ -233,7 +258,7 @@ function model_step!(m::AbstractDEBABM)::Nothing
     
     # global statevars are updated after agent derivatives are calculated
     # this is important because agents affect global states using mutating operators
-    Euler!(m.u, m.du, m.dt, m.global_statevar_names) 
+    Euler!(m.u, m.du, m.dt, m.global_statevar_indices) 
     m.u.X_p = max(0, m.u.X_p) # HOTFIX : negative resource abundances cause chaos
 
     m.t += m.dt
@@ -246,12 +271,12 @@ function simulator(
     dt = 1/24, 
     saveat = 1
     )
-    @info "Running ABM simulation with t_max=$(p.glb.t_max)"
+    #@info "Running ABM simulation with t_max=$(p.glb.t_max)"
     
     m = ABM(p; dt = dt, saveat = saveat)
 
     while !(m.t > m.p.glb.t_max)
-        isapprox(m.t % 7, 0, atol = m.dt) ? @info("t=$(m.t)") : nothing
+        #isapprox(m.t % 14, 0, atol = m.dt) ? @info("t=$(m.t)") : nothing
 
         model_step!(m)
     end
