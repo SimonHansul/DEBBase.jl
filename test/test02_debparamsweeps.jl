@@ -1,23 +1,3 @@
-
-begin 
-    p = DEBParamCollection()
-    sim = simulator(p)
-
-    plt = @df sim plot(
-        plot(:t, :S, ylabel = "S"), 
-        plot(:t, :H, ylabel = "H"),
-        plot(:t, :R, ylabel = "R"), 
-        plot(:t, [diffvec(:I), diffvec(:I_p), diffvec(:I_emb), diffvec(:A)], ylabel = "Idot"), 
-        plot(:t, :X_p, ylabel = "X_p"), 
-        plot(:t, :X_emb, ylabel = "X_emb"),
-        xlabel = "t", 
-        size = (800,500), 
-        layout = (2,4), 
-        leftmargin = 5mm
-    )
-    display(plt)
-end
-
 @testset begin # effect of food input
     norm(x) = x ./ sum(x)
     # prepare the plot
@@ -36,8 +16,8 @@ end
         for i in 1:5
             Xdot_in /= 2
             # generate the predidction
-            sim_i = simulator(
-                DEBParamCollection(
+            sim_i = DEBODE.simulator(
+                Params(
                     glb = GlobalParams(Xdot_in = Xdot_in, t_max = 56.), 
                     spc = SpeciesParams(K_X_0 = 12e3))
                 )
@@ -60,5 +40,3 @@ end
 
     @test rankcor == 1 # maximm size should be strictly monotonically increasing with Xdot_in
 end
-
-

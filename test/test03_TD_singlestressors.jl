@@ -8,7 +8,7 @@ using DEBBase.DEBODE
 
 ENV["JULIA_DEBUG"] = Main
 
-params = DEBParamCollection()
+params = Params()
 isolate_pmoas!(params, ["M"])
 params.spc.k_D_M = [1.]
 params.spc.e_M = [1.]
@@ -57,7 +57,7 @@ let C_Wvec =  vcat([0], round.(10 .^ range(log10(0.1), log10(1.), length = 5), s
                 b_R = [2.],
                 b_h = [2.]
                 )
-            theta = DEBParamCollection(glb = glb, spc = spc)
+            theta = Params(glb = glb, spc = spc)
             isolate_pmoas!(theta.spc, [pmoa])
             sim_zj = simulator(theta)
             sim_zj[!,:C_W] .= C_W

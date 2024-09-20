@@ -12,7 +12,6 @@ using DEBBase.ParamStructs
 using DEBBase.DoseResponse
 using DEBBase.AgentBased
 
-
 # first we extend the species parameters to include additional params needed for the ABM
 begin
     glb = GlobalParams(N0 = 1)
@@ -20,7 +19,7 @@ begin
         Z = Truncated(Normal(1, 0.1), 0, Inf),
         K_X_0 = 100 / 0.05
         ) |> ntfromstruct
-    agn_ode = DEBODE.ODEAgentParams(DEBParamCollection().spc) |> ntfromstruct
+    agn_ode = DEBODE.AgentParams(Params().spc) |> ntfromstruct
 
     spc = (; 
         spc_ode...,
@@ -101,7 +100,7 @@ begin # setting up parameters
     spc_ode = SpeciesParams(
         Z = Dirac(1.), #Truncated(Normal(1, 0.1), 0, Inf),
         ) |> ntfromstruct
-    agn_ode = DEBODE.ODEAgentParams(DEBParamCollection().spc) |> ntfromstruct
+    agn_ode = DEBODE.AgentParams(Params().spc) |> ntfromstruct
 
     spc = (; 
         spc_ode...,
@@ -122,7 +121,6 @@ begin # setting up parameters
     p = (glb = glb, spc = spc, agn = agn)
 end;
 
-
 using StatsPlots
 using DEBBase.Utils
 default(leg = false)
@@ -132,7 +130,9 @@ using DataFrames, DataFramesMeta
 using Chain
 
 sim = AgentBased.simulator(p) 
-simODE = DEBODE.simulator(DEBParamCollection())
+simODE = DEBODE.simulator(Params())
+
+sim
 
 eval_df = @chain sim, simODE begin
     [@select(x, :t, :S, :R, :H) for x in _]
@@ -157,11 +157,10 @@ end
     @test sum(eval_df.abserr_H .> 0.1) == 0
 end
 
-
 begin
     plt = @df sim plot(
         plot(:t, :S, group = :id, ylabel = "S", linestyle = :dash),
-        plot(:t, :H, group = :id, ylabel = "H", linestyle = :dash),
+        plot(:t, :H, group = :id, ylabel = "H", linestyle = :dash, leg = true, label = "ABM"),
         plot(:t, :R, group = :id, ylabel = "R", linestyle = :dash),
         xlabel = "t",
         size = (800,500), 
@@ -169,7 +168,7 @@ begin
     )
 
     @df simODE plot!(:t, :S, subplot = 1)
-    @df simODE plot!(:t, :H, subplot = 2)
+    @df simODE plot!(:t, :H, subplot = 2, label = "ODE")
     @df simODE plot!(:t, :R, subplot = 3)
 
     #hline!([DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], subplot = 5)
@@ -178,17 +177,17 @@ begin
 end
 
 using BenchmarkTools
-@info "Comparing simulation times of ODE and ABM"
+@info "Comparing simulation times of ODE and ABM: We expect ODE to be faster than ABM"
 b = @benchmark AgentBased.simulator(p)
 bmedian_agentbased = median(b.times)
-bODE = @benchmark DEBODE.simulator(DEBParamCollection())
+bODE = @benchmark DEBODE.simulator(Params())
 bmedian_ODE = median(bODE.times)
 @info("ODE is $(round(bmedian_agentbased/bmedian_ODE, sigdigits = 2)) times faster than ABM") 
 
 using DEBBase.AgentBased
 begin
     glb = GlobalParams(
-        t_max = 70,
+        t_max = 365,
         N0 = 10,
         Xdot_in = 30_000,
         k_V = 0.1,
@@ -198,7 +197,7 @@ begin
         Z = Truncated(Normal(1, 0.1), 0, Inf),
         K_X_0 = 10_000
         ) |> ntfromstruct
-    agn_ode = DEBODE.ODEAgentParams(DEBParamCollection().spc) |> ntfromstruct
+    agn_ode = DEBODE.AgentParams(Params().spc) |> ntfromstruct
 
     spc = (; 
         spc_ode...,
@@ -228,7 +227,7 @@ begin
         )
     sort!(sim, :t);
 
-    sim_agg = combine(groupby(sim, [:t, :replicate])) do df
+    sim_agg = combine(groupby(sim, [:t, :replicate, :cohort])) do df
         DataFrame(
             N_tot = nrow(df),
             W_tot = sum(df.S) + sum(df.R),
@@ -244,15 +243,10 @@ begin
 
     plot(
         [
-            lineplot(sim_agg.t, sim_agg[:,y], ylabel = y) 
+            groupedlineplot(sim_agg.t, sim_agg[:,y], sim_agg.cohort, ylabel = y) 
             for y in [:N_tot, :W_tot, :S_mean, :R_mean, :fX_mean, :Xp_mean]]...,
                 size = (800,500),
                 xlabel = "t"
         ) |> display
 end
-
-
-sim.cause_of_death |> countmap
-
-VSCodeServer.@profview AgentBased.simulator(p, saveat = 1)
 

@@ -7,10 +7,10 @@ Testing the default parameters
 =#
 
 @testset begin  
-    p = DEBParamCollection()
+    p = Params()
     p.glb.t_max = 56.
     p.spc.Z = Dirac(1.)
-    global sim = simulator(p)
+    global sim = DEBODE.simulator(p)
     @df sim plot(
         plot(:t, :S),
         plot(:t, :H)
@@ -26,9 +26,9 @@ Basic test of @replicates macro
 =#
 
 @testset begin
-    p = DEBParamCollection()
+    p = Params()
     p.spc.Z = Truncated(Normal(1., 0.1), 0, Inf)
-    sim = @replicates simulator(p) 10
+    sim = @replicates DEBODE.simulator(p) 10
 
     plt = @df sim plot(
         plot(:t, :S, group = :replicate, color = 1),

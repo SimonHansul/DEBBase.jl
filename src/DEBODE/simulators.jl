@@ -65,7 +65,7 @@ Run an ODE-based model.
 **Example**: 
 
 ```Julia
-sim = simulator(DEBParamCollection())
+sim = simulator(Params())
 ```
 
 """
@@ -100,7 +100,7 @@ Example:
 
 ```Julia
     spc = SpeciesParams(Z = Truncated(Normal(1, 0.1), 0, Inf)) # initialize default parameters with variable zoom factor
-    sim = @replicates DEBBase.simulator(DEBParamCollection(spc = spc))) 10 # execute replicated runs to simulator
+    sim = @replicates DEBBase.simulator(Params(spc = spc))) 10 # execute replicated runs to simulator
 ```
 
 In this case, `sim` will contain the output of 10 replicated simulations. For each replicate, the zoom factor is sampled from a truncated Normal distribution. 

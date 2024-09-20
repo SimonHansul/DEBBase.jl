@@ -18,18 +18,18 @@ CAUSE_OF_DEATH = Dict(
     cohort::Int64
     global_statevar_indices::Vector{Int}
     
-    function DEBAgent(p::Union{AbstractParamCollection,NamedTuple}, global_statevars::ComponentVector, id; cohort = 0)
+    function DEBAgent(
+        p::Union{AbstractParamCollection,NamedTuple}, 
+        global_statevars::ComponentVector, 
+        id; 
+        cohort = 0
+        )
         a = new() # create empty agent instance
 
-        a.p = ( # agent holds its own parameter object
+        a.p = Params( # agent holds its own parameter object
             glb = p.glb, # global params
             spc = p.spc, # species params
-            agn = (; # agent params
-                ntfromstruct(AgentParams(p.spc))...,
-                (
-                    a_max = rand(p.spc.a_max)
-                )
-            ) # agn
+            agn = AgentParams(p.spc) # agent parameters
         ) # a.p
         
         # vcat does not seem to work on more than two component arrays (returns Vector instead), hence the pipe syntax

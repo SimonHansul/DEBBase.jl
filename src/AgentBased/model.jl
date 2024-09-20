@@ -28,7 +28,7 @@ mutable struct ABM <: AbstractDEBABM
     kwargs
         - `dt`: Model time step [t]
     """
-    function ABM(p::Union{AbstractParamCollection,NamedTuple}; dt = 1/24, saveat = 1, record_agents::Bool)::ABM
+    function ABM(p::Union{AbstractParamCollection,NamedTuple}; dt = 1/24, saveat = 1, record_agents::Bool = true)::ABM
         m = new()
         m.agents = Vector{DEBAgent}(undef, p.glb.N0)
         m.u = initialize_global_statevars(p)
@@ -50,7 +50,7 @@ mutable struct ABM <: AbstractDEBABM
             m.agents[i] = DEBAgent(p, m.u, m.idcount)
         end
 
-        m.agent_statevar_names = Symbol[keys(initialize_agent_statevars(p))...]
+        m.agent_statevar_names = Symbol[keys(initialize_agent_statevars(m.agents[1].p))...]
 
         if p.glb.N0 > 0
             m.agent_statevar_indices = findall(x -> x in m.agent_statevar_names, keys(m.agents[1].u))

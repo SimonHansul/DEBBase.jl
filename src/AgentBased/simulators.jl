@@ -36,7 +36,9 @@ function simulator(
     m = ABM(p; dt = dt, saveat = saveat)
 
     while !(m.t > m.p.glb.t_max)
-        isapprox(m.t % 14, 0, atol = m.dt) ? @info("t=$(m.t)") : nothing
+        if showinfo < Inf && isapprox(m.t % showinfo, 0, atol = m.dt)
+            @info("t=$(m.t)") : nothing
+        end
 
         model_step!(m)
     end

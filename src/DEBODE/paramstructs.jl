@@ -22,16 +22,24 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
 """
 @with_kw mutable struct SpeciesParams <: AbstractSpeciesParams
     Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. This can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
-    propagate_zoom::@NamedTuple{X_emb_int_0::Bool, H_p_0::Bool, K_X_0::Bool} = (
-        X_emb_int_0 = true,
-        H_p_0 = true, 
-        K_X_0 = true
-        ) # Parameters to which Z will be propagated. Z is *always* applied to `Idot_max_rel_0` (with appropriate scaling).
-        
+    propagate_zoom::@NamedTuple{
+        Idot_max_rel_0, 
+        Idot_max_rel_emb_0, 
+        X_emb_int_0::Bool, 
+        H_p_0::Bool, 
+        # Parameters to which Z will be propagated
+        # individual_variability! will take care of appropriate scaling
+        K_X_0::Bool} = ( 
+            Idot_max_rel_0 = true, 
+            Idot_max_rel_emb_0 = true,
+            X_emb_int_0 = true,
+            H_p_0 = true, 
+            K_X_0 = true
+        )         
     T_A::Float64 = 8000. # Arrhenius temperature [K]
     T_ref::Float64 = 293.15 # reference temperature [K]
     X_emb_int_0::Float64 = 19.42 # initial vitellus [μgC]
-    K_X_0::Float64 = 1. # half-saturation constant for food uptake [μgC L-1]
+    K_X_0::Float64 = 10_000 # half-saturation constant for food uptake [μgC L-1]
     Idot_max_rel_0::Float64 = 22.9 # maximum size-specific ingestion rate [μgC μgC^-(2/3) d-1]
     Idot_max_rel_emb_0::Float64 = 22.9 # size-specific embryonic ingestion rate [μgC μgC^-(2/3) d-1]
     kappa_0::Float64 = 0.539 # somatic allocation fraction [-]
@@ -66,9 +74,14 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     b_A::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA assimilation efficiency
     b_R::Union{Nothing,Vector{Float64}} = [0.93] # slope parameters | PMoA reproduction efficiency
     b_h::Union{Nothing,Vector{Float64}} = [1e10] # slope parameters | PMoA reproduction efficiency
+
+    # the following are parameters which are currently only relevant for the  ABM
     
-    a_max = Truncated(Normal(60, 6), 0, Inf) # maximum life span - currently only used by ABM
-    tau_R = 2. # reproduction interval - currently only used by ABM
+    f_Xthr::Float64 = 0.5 # functional response threshold for starvation mortality
+    s_min::Float64 = 0.25 # daily survival mortality at complete food deprivation
+
+    a_max = Truncated(Normal(60, 6), 0, Inf) # maximum life span 
+    tau_R = 2. # reproduction interval
 end
 
 """
@@ -84,6 +97,10 @@ function individual_variability!(agn::Union{AbstractParams,NamedTuple}, spc::Uni
 
     agn.Idot_max_rel_0 = spc.Idot_max_rel_0 * agn.Z^(1/3) # Z is always applied to Idot_max_rel_0
     agn.Idot_max_rel_emb_0 = spc.Idot_max_rel_emb_0 * agn.Z^(1/3) #, including the value for embryos
+
+    agn.X_emb_int_0 = spc.X_emb_int_0 * agn.Z
+    agn.H_p_0 = spc.H_p_0 * agn.Z
+    agn.K_X_0 = spc.K_X_0 * agn.Z^(1/3) # K_X = Idot_max_rel / F_m with F_m = searching rate
 
     for param in fieldnames(typeof(spc.propagate_zoom)) # iterate over other parameters which may be affected by Z
         if getproperty(spc.propagate_zoom, param) # check whether propagation of Z should occur for this parameter
@@ -125,10 +142,10 @@ Implementing a custom model might require to modify `AgentParams` if individual
 end
 
 """
-A `DEBParamCollection` contains global parameters `glb` and spc parameters `spc` (including TKTD-parameters). \\
-Initialize the default parameter collection with `DEBParamCollection()`.
+A `Params` contains global parameters `glb` and spc parameters `spc` (including TKTD-parameters). \\
+Initialize the default parameter collection with `Params()`.
 """
-@with_kw mutable struct DEBParamCollection <: AbstractParamCollection
+@with_kw mutable struct Params <: AbstractParamCollection
     glb::Union{AbstractParams,NamedTuple} = GlobalParams()
     spc::Union{AbstractParams,NamedTuple} = SpeciesParams()
     agn::Union{Nothing,AbstractParams} = nothing

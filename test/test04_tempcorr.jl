@@ -18,7 +18,7 @@
 
             # generate the predidction
             sim_i = simulator(
-                DEBParamCollection(
+                Params(
                     glb = GlobalParams(T = C2K(T_C), t_max = 56.), 
                     spc = SpeciesParams(K_X_0 = 12e3))
                 )

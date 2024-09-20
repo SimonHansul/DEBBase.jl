@@ -31,8 +31,8 @@ The following Code will simulate the DEB model based on the given default parame
 
 ```Julia
 using DEBBase
-params = DEBParamCollection()
-out = DEBBase.simulator(DEBParamCollection())
+params = Params()
+out = DEBBase.simulator(Params())
 ```
 
 `params` will be a nested mutable struct containing a set of default parameters. <br>

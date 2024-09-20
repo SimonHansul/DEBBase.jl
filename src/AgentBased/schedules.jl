@@ -56,11 +56,21 @@ function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
         a.cause_of_death = 1
     end
     
-    if (a.u.S / a.u.S_max_hist) < 0.66
-        if rand() < exp(-0.7 * m.dt)
-            a.cause_of_death = 2
+    let s_f = sig(
+        a.u.f_X, a.p.spc.f_Xthr, 
+        (1 - a.p.spc.s_min) * a.u.f_X / a.p.spc.f_Xthr + a.p.spc.s_min,
+        1.)^m.dt
+
+        if rand() > s_f
+            a.cause_of_death = 2.
         end
     end
+
+    #if (a.u.S / a.u.S_max_hist) < 0.66
+    #    if rand() < exp(-0.7 * m.dt)
+    #        a.cause_of_death = 2
+    #    end
+    #end
 
     if a.time_since_last_repro >= a.p.spc.tau_R
         let num_offspring = trunc(a.u.R / a.u.X_emb_int)
@@ -142,6 +152,7 @@ function record_agent!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
                 ComponentVector(
                     t = m.t, 
                     id = a.id, 
+                    cohort = a.cohort,
                     age = a.age, 
                     cause_of_death = a.cause_of_death
                     ),

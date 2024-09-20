@@ -35,6 +35,10 @@ function initialize_agent_statevars(p::Union{NamedTuple,AbstractParamCollection}
         # #TODO: how to access a parameter within a nested struct in a callback?
         H_p = p.agn.H_p_0, # current maturity threshold at puberty; 
 
+        # LSmax is the cubic root of maximum structural mass, proportional to structural length
+
+        LSmax = (p.spc.kappa_0 * p.agn.Idot_max_rel_0 * p.spc.eta_IA_0)/p.spc.k_M_0, 
+
         D_G = MVector{length(p.spc.k_D_G), Float64}(zeros(length(p.spc.k_D_G))), # scaled damage | growth efficiency
         D_M = MVector{length(p.spc.k_D_M), Float64}(zeros(length(p.spc.k_D_M))), # scaled damage | maintenance costs 
         D_A = MVector{length(p.spc.k_D_A), Float64}(zeros(length(p.spc.k_D_A))), # scaled damage | assimilation efficiency
@@ -46,7 +50,9 @@ function initialize_agent_statevars(p::Union{NamedTuple,AbstractParamCollection}
         y_A = 1., # relative response | assimilation efficiency
         y_R = 1., # relative response | reproduction efficiency
         y_T = 1., # relative response | temperature effects
-        h_z = 0. # hazard rate | chemical stressors
+        h_z = 0., # hazard rate | chemical stressors
+
+        h_fX = 0. # starvation-induced hazard rate
     )
 end
 
