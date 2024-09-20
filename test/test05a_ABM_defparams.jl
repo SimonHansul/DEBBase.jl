@@ -44,7 +44,7 @@ a = DEBAgent(p, DEBODE.initialize_global_statevars(p), 1)
 m = AgentBased.ABM(p);
 @test m isa AbstractDEBABM
 
-begin 
+@testset begin 
     @info "Induce variability in agent params"
     Idot_int = map(x -> x.p.agn.Idot_max_rel_0, m.agents) 
     extremevals = extrema(Idot_int) 
@@ -221,7 +221,7 @@ using DEBBase.Figures
 using DEBBase.DEBODE
 
 begin
-
+    @info "Generating output plot for ABM with defaults"
     @time sim = DEBODE.threaded_replicates(
         AgentBased.simulator, p, 3; saveat = 1
         )

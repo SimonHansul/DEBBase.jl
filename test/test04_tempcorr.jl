@@ -17,7 +17,7 @@
             T_C += 5
 
             # generate the predidction
-            sim_i = simulator(
+            sim_i = DEBODE.simulator(
                 Params(
                     glb = GlobalParams(T = C2K(T_C), t_max = 56.), 
                     spc = SpeciesParams(K_X_0 = 12e3))

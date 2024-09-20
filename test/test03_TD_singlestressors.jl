@@ -14,24 +14,6 @@ params.spc.k_D_M = [1.]
 params.spc.e_M = [1.]
 params.spc.b_M = [2.]
 
-sim = exposure(
-    simulator, 
-    params, 
-    [0., 1.]
-) |> x -> relative_response(x, [:S, :R], :C_W_1, groupby_vars = [:t])
-
-
-@df sim plot(:t, :y_S, group = :C_W_1)
-
-
-@df sim plot(:t, :D_M_1)
-
-@df sim plot(
-    plot(:t, :S, group = :C_W_1, layout = (1,3)),
-    plot(:t, :D_M_1, group = :C_W_1, layout = (1,3)), 
-    layout = (2,1)
-    )
-
 
 let C_Wvec =  vcat([0], round.(10 .^ range(log10(0.1), log10(1.), length = 5), sigdigits = 2))
     global sim = DataFrame()
@@ -59,7 +41,7 @@ let C_Wvec =  vcat([0], round.(10 .^ range(log10(0.1), log10(1.), length = 5), s
                 )
             theta = Params(glb = glb, spc = spc)
             isolate_pmoas!(theta.spc, [pmoa])
-            sim_zj = simulator(theta)
+            sim_zj = DEBODE.simulator(theta)
             sim_zj[!,:C_W] .= C_W
             sim_zj[!,:pmoa] .= pmoa
             append!(sim, sim_zj)
