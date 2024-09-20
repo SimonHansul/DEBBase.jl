@@ -14,7 +14,6 @@ The purpose of DEBBase is explicitly not to provide functionality for parameter 
 - Definition of ODE systems for DEB-TKTD with mixture exposure
     - Reserveless DEB 
     - Minimal toxikokinetics
-    - Flexible toxicodynamics: Dose-response functions can be swapped out via the species-specific parameters.
     - Mixture toxicity simulated based on Independent Action or Damage Addition
     - Simulation of an arbitrary number of mixture exposures with arbitrary PMoA combinations
     - Functions to facilitate model input / output handling, e.g. converting ODE solution output to tidy data frame
