@@ -1,0 +1,26 @@
+# example of possible dataconfig.yaml file
+# TODO: write functions that 
+
+data_sources:
+  - species: Daphnia magna
+  - name: "Cu-cumR-t"
+    time-resolved: True
+    description: ""
+    path: "./data/cu_repro.csv"
+    metadata:
+      independent_variables:
+        - column_name: "t"
+          type: "String"
+          explanation: "time since birth"
+      response_variables: ["cumR", "y_cumR"]
+      columns:
+        - name: "Date"
+          type: "string"
+        - name: "Product"
+          type: "string"
+        - name: "Quantity Sold"
+          type: "integer"
+        - name: "Revenue"
+          type: "float"
+      source: "Internal Sales System"
+      owner: "sales-team@example.com"

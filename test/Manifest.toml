@@ -2,7 +2,7 @@
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "edda0f177283f85b62545f36f5379d489dcf8c1a"
+project_hash = "163628469dd3b115faa0392bfa2af6ff50a6fef2"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "daf26bbdec60d9ca1c0003b70f389d821ddb4224"
@@ -401,10 +401,10 @@ uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "4.1.1"
 
 [[deps.DEBBase]]
-deps = ["CSV", "ComponentArrays", "DataFrames", "Dates", "Distributions", "KernelDensity", "OrdinaryDiffEq", "Parameters", "PrecompileTools", "Random", "RecipesBase", "Reexport", "StaticArrays", "StatsBase"]
+deps = ["CSV", "ComponentArrays", "DataFrames", "Dates", "Distributions", "KernelDensity", "NamedTupleTools", "OrdinaryDiffEq", "Parameters", "PrecompileTools", "Random", "RecipesBase", "Reexport", "StaticArrays", "StatsBase"]
 path = ".."
 uuid = "0e91d03b-6562-4ef9-a38e-775ced00eaf8"
-version = "0.3.22"
+version = "0.4.0"
 
 [[deps.DataAPI]]
 git-tree-sha1 = "abe83f3a2f1b857aac70ef8b269080af17764bbe"

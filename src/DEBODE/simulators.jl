@@ -31,20 +31,7 @@ taking logical values to indicate whether this is the current life stage.
 """
 function lifestage_callbacks()
 
-    condition_juvenile(u, t, integrator) = u.X_emb # transition to juvenile when X_emb hits 0
-    function effect_juvenile!(integrator) 
-        integrator.u.embryo = 0.
-        integrator.u.juvenile = 1.
-        integrator.u.adult = 0.
-    end
     cb_juvenile = ContinuousCallback(condition_juvenile, effect_juvenile!)
-
-    condition_adult(u, t, integrator) = u.H_p - u.H # condition to adult when H reaches H_p
-    function effect_adult!(integrator) 
-        integrator.u.embryo = 0.
-        integrator.u.juvenile = 0.
-        integrator.u.adult = 1.
-    end
     cb_adult = ContinuousCallback(condition_adult, effect_adult!)
 
     return CallbackSet(cb_juvenile, cb_adult)
@@ -149,6 +136,23 @@ function replicates(simulator::Function, params::Union{NamedTuple,AbstractParamC
     end
     
     sim
+end
+
+function threaded_replicates(
+    simulator::Function, 
+    params::Union{NamedTuple,AbstractParamCollection}, 
+    nreps::Int64; 
+    kwargs...)
+
+    sim = Vector{DataFrame}(undef, nreps)
+
+    @threads for replicate in 1:nreps
+        sim_i = simulator(params; kwargs...)
+        sim_i[!,:replicate] .= replicate
+        sim[replicate] = sim_i
+    end
+    
+    return vcat(sim...)
 end
 
 

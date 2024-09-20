@@ -196,13 +196,6 @@ Somatic growth, including application of shrinking equation.
 end
 
 """
-    dS_max_hist!(
-        du::ComponentArray,
-        u::ComponentArray,
-        p::Union{AbstractParamCollection,NamedTuple},
-        t::Real
-        )::Nothing
-
 Reference structure `S_max_hist`, which is used as a measure of energetic state.
 
 This is the amount of structure an individual of the given age has under ideal conditions, 
@@ -554,7 +547,7 @@ end
     return nothing
 end
 
-function DEBODE_IA!(du, u, p, t)
+@inline function DEBODE_IA!(du, u, p, t)
     DEBODE_global!(du, u, p, t)
     DEBODE_agent_IA!(du, u, p, t)
 end
