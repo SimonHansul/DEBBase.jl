@@ -27,7 +27,7 @@ Two-parameter log-logistic function transformed to increasing function
 for application to PMoA maintenance costs.
 """
 function LL2M(x::Float64, p::NTuple{2,Float64})
-    1 - log(LL2(x, p))
+    1 + (x/p[1])^p[2]
 end
 
 """

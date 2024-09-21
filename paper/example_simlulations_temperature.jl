@@ -18,9 +18,9 @@ end
 sort!(sim, :t)
 
 fig1 = @df sim plot(
-    plot(:t, :S, group = :T, ylabel = "Structural mass [μg C]", lw = 1.5, legendtitle = "T [°C]"),
+    plot(:t, :S, group = :T, ylabel = "Structural mass [μg C]", legendtitle = "T [°C]"),
     plot(:t, :R ./ p.spc.X_emb_int_0, group = :T, ylabel = "Cumulative reproduction [#]", leg = false), 
-    xlabel = "Age [d]"
+    xlabel = "Age [d]", lw = 1.5
 )
 
 savefig(plot(fig1, dpi = 300), "paper/fig1.png")
@@ -53,15 +53,19 @@ popdata = combine(groupby(sim, [:t, :replicate, :T])) do df
     DataFrame(
         N_tot = nrow(df),
         W_tot = sum(df.S) + sum(df.R),
+        X_p_median = median(df.X_p),
         S_median = median(df.S),
-        freq_emb = sum(df.embryo),
-        freq_juv = sum(df.juvenile),
-        freq_ad = sum(df.adult)
+        freq_emb = sum(df.embryo) ./ nrow(df),
+        freq_juv = sum(df.juvenile) ./ nrow(df),
+        freq_ad = sum(df.adult) ./ nrow(df),
+        ratio_juv = sum(df.juvenile) ./ sum(df.adult)
     )
 end
 
 using DataFramesMeta, StatsPlots, Plots.Measures
 using DEBBase.Figures
+
+sort!(popdata, :t)
 
 begin
     fig2 = plot(xlabel = "time [d]", legendtitle = "Temperature [°C]", layout = (1,3), size = (1000,500), bottommargin = 5mm, leftmargin = 5mm)
@@ -70,8 +74,8 @@ begin
         @df @subset(popdata, :T .== T) plot!(
             fig2, subplot = 1,
             :t, :N_tot, group = :replicate, color = i, 
-            xlabel = "time [d]", 
-            ylabel = "total population size [#]", 
+            xlabel = "Time [d]", 
+            ylabel = "Total population size [#]", 
             linealpha = 0.5, 
             label = "", title = "Abundance"
             )
@@ -79,8 +83,8 @@ begin
         @df @subset(popdata, :T .== T) plot!(
             fig2, subplot = 2,
             :t, :W_tot, group = :replicate, color = i, 
-            xlabel = "time [d]", 
-            ylabel = "median structural mass [μg C]", 
+            xlabel = "Time [d]", 
+            ylabel = "Total population mass [μg C]", 
             linealpha = 0.5, 
             label = "", title = "Biomass"
             )
@@ -88,10 +92,10 @@ begin
         @df @subset(popdata, :T .== T) plot!(
             fig2, subplot = 3,
             :t, :freq_juv, group = :replicate, color = i, 
-            xlabel = "time [d]", 
-            ylabel = "proportion of juveniles", 
+            xlabel = "Time [d]", 
+            ylabel = "Amount of resource [μg C]", 
             linealpha = 0.5, 
-            label = "", title = "Population structure"
+            label = "", title = "Resource abundance"
             )
     end
 
@@ -100,8 +104,26 @@ begin
         subplot = 1, 
         :t, :N_tot, :T, 
         lw = 2, fillalpha = .25, palette = palette(:default)[1:length(Tvec)], 
-        label = hcat(unique(:T)...), leg = true
+        label = hcat(unique(:T) .- 273.15...), leg = true
         )
+
+        
+    @df popdata groupedlineplot!(
+        fig2, 
+        subplot = 2, 
+        :t, :W_tot, :T, 
+        lw = 2, fillalpha = .25, palette = palette(:default)[1:length(Tvec)], 
+        label = hcat(unique(:T) .- 273.15...), leg = false
+        )
+
+    @df popdata groupedlineplot!(
+        fig2, 
+        subplot = 3, 
+        :t, :X_p_median, :T,
+        lw = 2, fillalpha = .25, palette = palette(:default)[1:length(Tvec)], 
+        label = hcat(unique(:T) .- 273.15...), leg = false
+        )    
+
 
     savefig(plot(fig2, dpi = 300), "paper/fig2.png")
     fig2
