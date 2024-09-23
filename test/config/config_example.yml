@@ -1,0 +1,14 @@
+# example for a parameter configuration file
+# modifying this may cause tests to fail
+
+glb: 
+  t_max: 365
+  N0: 10
+  Xdot_in: 30e3
+  k_V: 0.1
+  V_patch: 0.5
+
+spc:
+  Z: Truncated(Normal(1.33, 0.133), 0, Inf) # some parameters are distributions
+  K_X_0: 10e3 # some parameters are scalar values
+  drc_functs_G: [DoseResponse.NEC2neg] # some parameters are vectors of functions

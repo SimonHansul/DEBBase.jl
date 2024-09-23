@@ -11,7 +11,8 @@ using StaticArrays
 using StatsBase
 using NamedTupleTools
 using Base.Threads
-using Setfield
+using Random
+using YAML
 
 module ParamStructs
     
@@ -27,14 +28,18 @@ module Utils
     using OrdinaryDiffEq
     using ComponentArrays
     using StatsBase
+    using YAML
+    using Distributions
+    using ..DoseResponse
 
     # functions from sister modules have to be imported explictly
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
-    
+
     include("Utils/utils.jl")
     export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin, sol_to_df, sol_to_mat
 
     include("Utils/ioutils.jl")
+    export load_config
 
     include("Utils/inputprocessing.jl")
     export into!, into, isolate_pmoas!, isolate_pmoas, set_equal!, getstat, C2K
@@ -59,7 +64,7 @@ module DEBODE
     using StaticArrays
     using StatsBase
     using Base.Threads
-    using SetField
+
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
     using ..DoseResponse: LL2, LL2M, LL2h
     using ..Utils: sol_to_df, sol_to_mat
@@ -95,6 +100,8 @@ module AgentBased
     using NamedTupleTools
     using DataFrames
     using Base.Threads
+    using Random
+
 
     using ..DEBODE: AgentParams, GlobalParams, SpeciesParams, Params # import ODE params
     using ..DEBODE: DEBODE_global!, DEBODE_agent_IA! # import ODE derivatives

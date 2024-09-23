@@ -170,8 +170,6 @@ begin
     @df simODE plot!(:t, :R, subplot = 3)
 
     #hline!([DEBODE.calc_S_max(p.spc)^(2/3) * p.spc.Idot_max_rel_0], subplot = 5)
-
-    display(plt)
 end
 
 using BenchmarkTools
@@ -219,11 +217,10 @@ using DEBBase.Figures
 using DEBBase.DEBODE
 
 p.glb.t_max = 56.
-VSCodeServer.@profview treplicates(AgentBased.simulator, p, 6);
 
 begin
     @info "Generating output plot for ABM with defaults"
-    @time sim = treplicates(
+    @time "Computation time using 10 threaded replicates of the ABM with t_max=$(p.glb.t_max):" sim = treplicates(
         AgentBased.simulator, p, 3; saveat = 1
         )
     sort!(sim, :t);
@@ -242,31 +239,13 @@ begin
     using StatsBase
     sim.cause_of_death |> countmap
 
-    plot(
+    plot( # show a trajectory for each cohort
         [
             groupedlineplot(sim_agg.t, sim_agg[:,y], sim_agg.cohort, ylabel = y) 
             for y in [:N_tot, :W_tot, :S_mean, :R_mean, :fX_mean, :Xp_mean]]...,
                 size = (800,500),
-                xlabel = "t"
-        ) |> display
-end
-
-struct ImmAgent
-    u::ComponentVector
-end
-
-using Parameters
-using Setfield
-
-@with_kw struct SomeStruct
-    x::Float64 = 1.
+                xlabel = "t", 
+        )
 end
 
 
-
-
-a1 = ImmAgent(ComponentVector(x = 1.))
-a1.u.x = 2.
-
-using Setfield
-@set! a1.u = ComponentVector(x = 1., y = 2.)

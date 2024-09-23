@@ -30,23 +30,19 @@ using Pkg; Pkg.add("https:/github.com/simonhansul/debbase.jl")
 The following Code will simulate the DEB model based on the given default parameters:
 
 ```Julia
-using DEBBase
-params = Params()
-out = DEBBase.simulator(Params())
+using DEBBase.DEBODE
+p = Params()
+sim = DEBODE.simulator(Params())
 ```
 
 `params` will be a nested mutable struct containing a set of default parameters. <br>
-The only purpose of the default parameters is to provide a place to get started and a reference during development.<br>
-Check the [documentation](docs/build/index.html) for details on all implemented functions. 
-(Note that within the documentation of each function, you can click on `source` to inspect the corresponding source code.) 
-You can also inspect the test scripts for more simulation examples.
+The main purpose of the default parameters is to provide a place to get started and a reference during development.<br>
 
 ## Earmarked future features (road to v1.0.0)
 
 - Simulation of time-variable exposure
 - Using callbacks for life stage transitions
-- Integration of the individual-based implementation of the base model
-- Integration with ModellingToolkit.jl
+- Better integration of DEBODE with ModellingToolkit.jl
 
 ## Acknowledgements 
 

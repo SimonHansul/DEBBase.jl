@@ -1,0 +1,71 @@
+spc:
+  e_R:
+    - 167.0
+  f_Xthr: 0.5
+  e_G:
+    - 1.0e10
+  drc_functs_G:
+    - LL2
+  eta_SA: 0.8
+  e_M:
+    - 1.0e10
+  X_emb_int_0: 19.42
+  T_A: 8000.0
+  b_h:
+    - 1.0e10
+  drc_functs_M:
+    - LL2M
+  H_p_0: 0.3333333333333333
+  s_min: 0.25
+  k_D_h:
+    - 0.0
+  Idot_max_rel_emb_0: 22.9
+  eta_IA_0: 0.33
+  e_A:
+    - 1.0
+  propagate_zoom: @NamedTuple{Idot_max_rel_0, Idot_max_rel_emb_0, X_emb_int_0::Bool, H_p_0::Bool, K_X_0::Bool}((true, true, true, true, true))
+  tau_R: 2.0
+  kappa_0: 0.539
+  k_M_0: 0.59
+  drc_functs_R:
+    - LL2
+  Z: LogNormal{Float64}(μ=1.0, σ=1.0)
+  eta_AS_0: 0.8
+  T_ref: 293.15
+  K_X_0: 10000.0
+  k_J_0: 0.504
+  b_R:
+    - 0.93
+  k_D_A:
+    - 0.5
+  b_G:
+    - 1.0e10
+  eta_AR_0: 0.95
+  k_D_M:
+    - 0.0
+  e_h:
+    - 1.0e10
+  k_D_R:
+    - 0.0
+  k_D_G:
+    - 0.0
+  Idot_max_rel_0: 22.9
+  drc_functs_h:
+    - LL2h
+  b_A:
+    - 2.0
+  b_M:
+    - 1.0e10
+  a_max: Truncated(Normal{Float64}(μ=60.0, σ=6.0); lower=0.0, upper=Inf)
+  drc_functs_A:
+    - LL2
+agn: {}
+glb:
+  T: 293.15
+  C_W:
+    - 1.0
+  Xdot_in: 30000.0
+  N0: 10
+  t_max: 56.0
+  k_V: 0.1
+  V_patch: 0.5

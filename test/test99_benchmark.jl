@@ -13,10 +13,8 @@ DEBODE.treplicates
 
 @benchmark DEBODE.treplicates(DEBODE.simulator, Params(), 20)
 
-16.1 / 20
-
 #using ProfileView
-VSCodeServer.@profview [DEBODE.simulator(Params())  for _ in 1:100]
+#VSCodeServer.@profview [DEBODE.simulator(Params())  for _ in 1:100]
 
 using DEBBase.AgentBased
 @benchmark yhat = AgentBased.simulator(Params())

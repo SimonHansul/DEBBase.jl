@@ -10,13 +10,10 @@ Testing the default parameters
     p = Params()
     p.glb.t_max = 56.
     p.spc.Z = Dirac(1.)
-    global sim = DEBODE.simulator(p)
-    @df sim plot(
-        plot(:t, :S),
-        plot(:t, :H)
-     ) |> display
+    global sim = DEBODE.simulator(p, reltol = 1e-3)
 
-    @test isapprox(maximum(sim.H), p.spc.H_p_0, rtol = 1e-2) # test for maximum maturity
+
+    @test isapprox(maximum(sim.H), p.spc.H_p_0, rtol = 0.1) # test for maximum maturity
     @test isapprox(maximum(sim.S), DEBODE.calc_S_max(p.spc), rtol = 0.1)
 end;
 

@@ -161,11 +161,12 @@ case presented here. <br>
 It is not the goal of `DEBBase.jl` to provide the same range of functionality as for example found in the Matlab tool `DEBtool` (**citation needed**). <br>
 However, some additional functions and adaptations are worth considering. 
 For example, a minimal TK model is currently hard-coded into the base model. <br>
-We will consider to allow for user-adjustable feedbacks within the TK component, as suggested by Jager (2020). <br>
+We will consider to allow for user-adjustable feedbacks within the TK component, as suggested by Jager (2020), as well as adding functions to support time-variable exposure. <br>
 
 In contrast, the dose-response functions for chemical effects are currently not hard-coded, but can be changed through the species parameters. 
 We opted for this variant despite a potential loss in performance, because we want to facilitate 
 the comparison of dose-response functions when fitting the model to data. 
 Future versions might explore ways to allow for flexible definition of dose-response functions 
-without sacrificing performance too much, or opt towards hard-coding the dose-response functions. <br>
-
+without sacrificing performance too much. <br>
+An explicit spatial component is currently not implemented, and may also be added in future iterations. 
+An adequate implementation of space and movement is however highly species-specific, and any generic implementation will therefore resort to a simplistic spatial scenario.

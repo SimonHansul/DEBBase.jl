@@ -12,24 +12,15 @@
 end
 
 """
-`SpeciesParams` contain population means of DEB and TKTD parameters. 
-Default values are roughly reproduce life-history of Daphnia minda (model currency mass carbon in μgC) exposued to Azoxystrobin (mg/L). \\
-DEBBase.jl uses a hierarchical modelling approach where the `SpeciesParams` are  parameters which are common across all agents of a species, 
-and `AgentParams` contain parameters which are specific for an individual. \\
-Variability is given by the zoom factor `Z::Distribution`, which is always applied to the surface-area specific ingestion rates 
-and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`. \\
-`Z` is `Dirac(1)` by default, i.e. there is no agent variability in the default parameters. \\
+`SpeciesParams` contain the species-level DEB and TKTD parameters. 
+The default species parameters can be initialized using `SpeciesParams()`. 
+
+The default parameters define an organism whose life-history is similar to 
+*D. magna*.
 """
 @with_kw mutable struct SpeciesParams <: AbstractSpeciesParams
     Z::Distribution = Dirac(1.) # agent variability is accounted for in the zoom factor. This can be set to a Dirac distribution if a zoom factor should be applied without introducing agent variability.
-    propagate_zoom::@NamedTuple{
-        Idot_max_rel_0, 
-        Idot_max_rel_emb_0, 
-        X_emb_int_0::Bool, 
-        H_p_0::Bool, 
-        # Parameters to which Z will be propagated
-        # individual_variability! will take care of appropriate scaling
-        K_X_0::Bool} = ( 
+    propagate_zoom::NamedTuple = ( 
             Idot_max_rel_0 = true, 
             Idot_max_rel_emb_0 = true,
             X_emb_int_0 = true,
@@ -49,7 +40,7 @@ and can optionally propagate to parameters indicated in `propagate_zoom::NTuple`
     eta_AR_0::Float64 = 0.95 # reproduction efficiency [-]
     k_M_0::Float64 = 0.59 # somatic maintenance rate constant [d^-1]
     k_J_0::Float64 = 0.504 # maturity maintenance rate constant [d^-1]
-    H_p_0::Float64 = 100. # maturity at puberty [μgC]
+    H_p_0::Float64 = 1/3 #100. # maturity at puberty [μgC]
     
     k_D_G::Vector{Float64} = [0.00] # toxicokinetic rate constants | PMoA growth efficiency
     k_D_M::Vector{Float64} = [0.00] # toxicokinetic rate constants | PMoA maintenance costs
@@ -151,7 +142,8 @@ Implementing a custom model might require to modify `AgentParams` if individual
 end
 
 """
-A `Params` contains global parameters `glb` and spc parameters `spc` (including TKTD-parameters). \\
+A `Params` object contains global parameters `glb` and species parameters `spc` 
+(including TKTD-parameters). \\
 Initialize the default parameter collection with `Params()`.
 """
 @with_kw mutable struct Params <: AbstractParamCollection

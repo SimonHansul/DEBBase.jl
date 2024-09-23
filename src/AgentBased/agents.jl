@@ -1,11 +1,11 @@
 abstract type AbstractDEBAgent end
 
-const CAUSE_OF_DEATH = Dict(
+CAUSE_OF_DEATH = Dict(
     0 => "none",
     1 => "age"
 )
 
-@with_kw struct DEBAgent <: AbstractDEBAgent
+@with_kw mutable struct DEBAgent <: AbstractDEBAgent
     id::Int
     age::Real
     cause_of_death::Int
@@ -23,33 +23,34 @@ const CAUSE_OF_DEATH = Dict(
         global_statevars::ComponentVector, 
         id::Int, 
         AgentParamType::DataType; 
-        cohort = 0
+        cohort::Int = 0
         )
+        
         a = new() # create empty agent instance
 
-        @set! a.p = Params( # agent holds its own parameter object
+        a.p = Params( # agent holds its own parameter object
             glb = p.glb, # global params
             spc = p.spc, # species params
             agn = AgentParamType(p.spc) # agent parameters
         ) # a.p
         
         # vcat does not seem to work on more than two component arrays (returns Vector instead), hence the pipe syntax
-        @set! a.u = vcat(
+        a.u = vcat(
             global_statevars,
             initialize_agent_statevars(a.p)
         )
 
-        @set! a.global_statevar_indices = findall(x -> x in keys(global_statevars), keys(a.u))
+        a.global_statevar_indices = findall(x -> x in keys(global_statevars), keys(a.u))
 
-        @set! a.du = similar(a.u)
-        @set! a.du .= 0.
+        a.du = similar(a.u)
+        a.du .= 0.
 
-        @set! a.id = id
-        @set! a.cohort = cohort
-        @set! a.age = 0.
-        @set! a.cause_of_death = 0
-        @set! a.time_since_last_repro = 0.
-        @set! a.cum_offspring = 0.
+        a.id = id
+        a.cohort = cohort
+        a.age = 0.
+        a.cause_of_death = 0
+        a.time_since_last_repro = 0.
+        a.cum_offspring = 0.
         
         return a
     end
