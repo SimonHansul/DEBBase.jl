@@ -167,5 +167,5 @@ In contrast, the dose-response functions for chemical effects are currently not 
 We opted for this variant despite a potential loss in performance, because we want to facilitate 
 the comparison of dose-response functions when fitting the model to data. 
 Future versions might explore ways to allow for flexible definition of dose-response functions 
-without sacrificing performance too much. <br>
+without sacrificing performance too much, or opt towards hard-coding the dose-response functions. <br>
 

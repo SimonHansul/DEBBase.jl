@@ -34,7 +34,7 @@ mutable struct ABM <: AbstractDEBABM
         dt = 1/24, 
         saveat = 1, 
         record_agents::Bool = true,
-        AgentParamType::DataType = AgentParamType
+        AgentParamType::DataType = AgentParams
         )::ABM
 
         m = new()
@@ -49,13 +49,14 @@ mutable struct ABM <: AbstractDEBABM
         m.saveat = saveat
         m.idcount = 0
 
+        m.AgentParamType = AgentParamType
         m.record_agents = record_agents
         m.agent_record = ComponentVector[]
 
         # initialize agents
         for i in 1:p.glb.N0
             m.idcount += 1
-            m.agents[i] = DEBAgent(p, m.u, m.idcount, AgentParamType)
+            m.agents[i] = DEBAgent(p, m.u, m.idcount, m.AgentParamType)
         end
 
         m.agent_statevar_names = Symbol[keys(initialize_agent_statevars(m.agents[1].p))...]

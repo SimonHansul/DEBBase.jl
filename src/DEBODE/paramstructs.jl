@@ -111,7 +111,7 @@ function individual_variability!(agn::Union{AbstractParams,NamedTuple}, spc::Uni
     end 
 end
 
-abstract type AbstractAgentParams <: Abstractparams end
+abstract type AbstractAgentParams <: AbstractParams end
 
 """
     AgentParams(spc::Union{AbstractParams,NamedTuple}) <: AbstractAgentParams

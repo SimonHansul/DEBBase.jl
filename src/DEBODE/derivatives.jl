@@ -64,7 +64,7 @@ end
         )::Nothing
         
 
-Calculate ingestion rate. 
+Calculation of ingestion rate. 
 Embryos (`X_emb <= 0`) take up resources from the vitellus `X_emb`. 
 Juveniles and adults (`X_emb > 0`) feed on the external resource `X_p`. 
 
@@ -92,7 +92,13 @@ As this includes structure, the ingestion rate scales with the structural mass `
 end
 
 """
-Assimilation flux
+    dA!(
+        du::ComponentArray,
+        u::ComponentArray,
+        p::Union{AbstractParamCollection,NamedTuple},
+        t::Real)::Nothing
+
+Calculation of assimilation flux.
 """
 @inline function dA!(
     du::ComponentArray,
@@ -106,7 +112,13 @@ Assimilation flux
 end
 
 """
-Somatic maintenance flux
+    function dM!(
+        du::ComponentArray,
+        u::ComponentArray,
+        p::Union{AbstractParamCollection,NamedTuple},
+        t::Real)::Nothing
+
+Calculation of somatic maintenance flux
 """
 @inline function dM!(
     du::ComponentArray,
@@ -120,8 +132,14 @@ Somatic maintenance flux
 end
 
 """
-Maturity maintenance flux
+    dJ!(
+        du::ComponentArray,
+        u::ComponentArray,
+        p::Union{AbstractParamCollection,NamedTuple},
+        t::Real
+        )::Nothing
 
+Calculation of maturity maintenance flux.
 """
 @inline function dJ!(
     du::ComponentArray,
@@ -403,7 +421,7 @@ with dose-response functions - this is rarely done but, imho, would be a useful 
     u.y_A = 1.
     u.y_R = 1.
     u.h_z = 0. # reset hazard rate
-    
+
     for z in eachindex(u.C_W) # for each stressor
         u.y_G *= p.spc.drc_functs_G[z](u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) # caclulate relative responses
         u.y_M *= p.spc.drc_functs_M[z](u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z]))

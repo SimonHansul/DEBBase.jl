@@ -41,7 +41,7 @@ begin
     p = (glb = glb, spc = spc, agn = agn)
 end;
 
-a = DEBAgent(p, DEBODE.initialize_global_statevars(p), 1)
+a = DEBAgent(p, DEBODE.initialize_global_statevars(p), 1, AgentParams)
 @test a isa AbstractDEBAgent
 m = AgentBased.ABM(p);
 @test m isa AbstractDEBABM
@@ -130,9 +130,7 @@ using DataFrames, DataFramesMeta
 using Chain
 
 sim = AgentBased.simulator(p) 
-simODE = DEBODE.simulator(Params())
-
-sim
+simODE = DEBODE.simulator(Params(spc = SpeciesParams(tau_R = Inf)))
 
 eval_df = @chain sim, simODE begin
     [@select(x, :t, :S, :R, :H) for x in _]
@@ -220,9 +218,12 @@ end;
 using DEBBase.Figures
 using DEBBase.DEBODE
 
+p.glb.t_max = 56.
+VSCodeServer.@profview treplicates(AgentBased.simulator, p, 6);
+
 begin
     @info "Generating output plot for ABM with defaults"
-    @time sim = DEBODE.treplicates(
+    @time sim = treplicates(
         AgentBased.simulator, p, 3; saveat = 1
         )
     sort!(sim, :t);
@@ -250,3 +251,11 @@ begin
         ) |> display
 end
 
+struct ImmAgent
+    u::ComponentVector
+end
+
+a1 = ImmAgent(ComponentVector(x = 1.))
+a1.u.x = 2.
+
+using Setfield

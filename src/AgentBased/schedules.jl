@@ -79,7 +79,7 @@ function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
     end
 
     # reproduction, assuming a constant reproduction period
-
+    
     # reproduction only occurs if the reproduction period has been exceeded
     if a.time_since_last_repro >= a.p.spc.tau_R 
         # if that is the case, calculate the number of offspring, 
@@ -92,8 +92,7 @@ function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
                     m.u, 
                     m.idcount, 
                     m.AgentParamType; 
-                    cohort = a.cohort + 1, 
-                    AgentParamType = m.AgentParamType)
+                    cohort = a.cohort + 1)
                 )
                 a.u.R -= a.u.X_emb_int # decrease reproduction buffer
             end
