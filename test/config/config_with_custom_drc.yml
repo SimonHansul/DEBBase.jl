@@ -14,7 +14,7 @@ spc:
   b_h:
     - 1.0e10
   drc_functs_M:
-    - LL2M
+    - newdrc
   H_p_0: 0.3333333333333333
   s_min: 0.25
   k_D_h:
@@ -29,7 +29,7 @@ spc:
   k_M_0: 0.59
   drc_functs_R:
     - LL2
-  Z: "LogNormal{Float64}(1.0, 1.0, )"
+  Z: "Dirac{Float64}(1.0, )"
   eta_AS_0: 0.8
   T_ref: 293.15
   K_X_0: 10000.0

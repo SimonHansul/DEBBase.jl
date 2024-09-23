@@ -33,6 +33,8 @@ module Utils
     using ComponentArrays
     using StatsBase
     using YAML
+    using NamedTupleTools
+    #using DataStructures
     using Distributions
     using ..DoseResponse
 
@@ -43,7 +45,7 @@ module Utils
     export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin, sol_to_df, sol_to_mat
 
     include("Utils/ioutils.jl")
-    export load_config
+    export load_config, save_config
 
     include("Utils/inputprocessing.jl")
     export into!, into, isolate_pmoas!, isolate_pmoas, set_equal!, getstat, C2K

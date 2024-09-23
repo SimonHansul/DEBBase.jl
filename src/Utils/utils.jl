@@ -1,19 +1,7 @@
-
-"""
-Skip inifite values. 
-"""
 skipinf(x::Array) = x[isfinite.(x)]
 
-"""
-Parse String to Vector of Floats.
-"""
 vectify(x) = parse.(Float64, split(split(split(x, "[")[end], "]")[1]," "))
 
-"""
-Identify element of `possibilities` occuring in `x`. \\
-E.g., which_in("I like apples", ["apples", "bananas"]) returns "apples". \\
-If multiple possibilities occur, first detection is returned. 
-"""
 function which_in(x::String, possibilities::Vector{String}; none_found_return_val="") 
     idxs = findall(z->occursin(z, x), possibilities)
     if length(idxs)>0
@@ -60,7 +48,6 @@ function fround(x; sigdigits=2)
 end
 
 
-
 """
     drop_na(df::AbstractDataFrame; verbose=false)::DataFrame
 
@@ -76,26 +63,6 @@ function drop_na(df::AbstractDataFrame; verbose=false)::DataFrame
     return df2
 end
 
-"""
-    drop_na!(df::DataFrame)::Nothing
-
-Mutating version of drop_na
-"""
-function drop_na!(df::DataFrame)::Nothing
-    df = drop_na(df)
-
-    return nothing
-end
-
-"""
-    replace_na!(
-        df::AbstractDataFrame,
-        cols::Vector{Symbol};
-        replace_val = 0.0
-        )
-
-Replace all missing values in DataFrame with `replace_val`.
-"""
 function replace_na!(
     df::AbstractDataFrame,
     cols::Vector{Symbol};
@@ -107,12 +74,7 @@ function replace_na!(
     return df
 end
 
-"""
-    get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::Array{Symbol,1})
-
-Infer treatment types (categorical), levels (ordinal) and names (type + level) from Array of exposure concentrations.
-"""
-function get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::Array{Symbol,1})
+function get_treatment_names(exposure::Vector{Vector{N}}, stressor_names::Array{Symbol,1}) where N <: Number
     treatment_type = ["co"]
     treatment_level = [0]
     treatment = ["co"]
@@ -134,22 +96,10 @@ function get_treatment_names(exposure::Vector{Vector{Float64}}, stressor_names::
     return treatment_type, treatment_level, treatment
 end
 
-
-"""
-    lab(v::Vector{R}; kwargs...) where R <: Real
-
-Create legend labels from Vector of numeric Values. 
-Kwargs are handed down to fround. 
-"""
 function lab(v::Vector{R}; kwargs...) where R <: Real
     return hcat(unique(fround.(v; kwargs...))...)
 end
 
-"""
-    wrappend(file::String, data::DataFrame, step::Int64)
-
-Write DataFrames to disc during loop. Will overwrite existing file if step == 1 and append if step > 1.
-"""
 function wrappend(file::String, data::DataFrame, step::Int64)
     if (isfile(file)==false)&(step>1)
         error("Attempt to append to non-existing file: step>1 but file does not exist.")
@@ -161,24 +111,6 @@ function wrappend(file::String, data::DataFrame, step::Int64)
     end
 end
 
-"""
-    read_W3C(file_path::AbstractString; kwargs...)::DataFrame
-
-Read a csv including W3C-formatted metadata. Each line with metadata starts with a hashtag (`#`). For example:
-
-```
-#t: time in days
-#W: wet weight in grams
-
-t,W
-0,0.1
-1,0.2
-2,0.3
-```
-
-Additional kwargs are handed down to `CSV.File`.
-The function currently returns just the core data.
-"""
 function read_W3C(file_path::AbstractString; kwargs...)::DataFrame
     meta = []
     core_data = []
@@ -203,10 +135,6 @@ function read_W3C(file_path::AbstractString; kwargs...)::DataFrame
     return core_data_table
 end
 
-"""
-Get positions of minimum values as BitVector.
-
-"""
 function ismin(x::Vector{R}) where R <: Real
     return x .== minimum(x)
 end

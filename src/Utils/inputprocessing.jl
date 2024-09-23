@@ -1,13 +1,3 @@
-"""
-Set parameters with common prefix to the value of a reference parameter. 
-E.g. 
-
-```
-set_equal!(spc, :Idot_max_rel, :lrv)
-```
-
-sets all parameters whose names start with `Idot_max_rel` equal to `Idot_max_rel_lrv`.
-"""
 function set_equal!(spc::AbstractParams, prefix::SS, ref_suffix::SS) where SS <: Union{Symbol,String}
     prefix = String(prefix)
     ref_suffix = String(ref_suffix)
@@ -27,10 +17,10 @@ end
 """
     into!(sink::AbstractParams, source::AbstractParams)::Nothing
 
-Put values from `source` into `sink`. 
+Put values from `source` into `sink`, modifying `sink`.
 
-- `source::AbstractParams`: A param struct from which we want to extract all parameters.
-- `sink::AbstractParams`: All values from `sink` will be assigned to corresponding fields of `sink`.
+- `source`: A param struct from which we want to extract all parameters.
+- `sink`: All values from `source` will be assigned to corresponding fields of `sink`.
 """
 function into!(sink::AbstractParams, source::AbstractParams)::Nothing
     skippedfields = Symbol[]
@@ -50,14 +40,14 @@ end
 
 
 """ 
-    into!(sink::AbstractParams, source::AbstractParams)
+    into(Sink::DataType, source::AbstractParams)::Sink
 
-Put values from `source` into `sink`. 
+Put values from `source` into a new instance of `Sink`.
 
-- `source::AbstractParams`: A param struct from which we want to extract all parameters.
-- `Sink::DataType`: All values from `sink` will be assigned to a new instance of type `Sink`, assuming that a constructor `Sink()` exists.
+- `source`: A param struct from which we want to extract all parameters.
+- `Sink`: All values from `sink` will be assigned to a new instance of type `Sink`, assuming that a constructor `Sink()` exists.
 """
-function into(Sink::DataType, source::AbstractParams)
+function into(Sink::DataType, source::AbstractParams)::Sink
 
     sink_instance = Sink()
     into!(sink_instance, source)
@@ -70,8 +60,10 @@ end
 
 Trim TKTD parameters to the smallest number of stressors indicated for any PMoA.
 For example `k_D_G = [1., 0.], k_D_M = [1.]` will be trimmed to `k_D_G = [1.], k_D_M = [1.]`.
+
+- `spc`: An instance of a species params type
 """
-function trim!(spc::AbstractParams)
+function trim!(spc::AbstractSpeciesParams)
 
     num_stressors = min(
         length(spc.k_D_G),
@@ -107,6 +99,27 @@ end
 Isolate the indicated PMoAs for chemical stressor `z`. 
 That means, turn off all PMoAs (including lethal effects `h`) except for those indicated in `pmoas`-Vector. 
 This is done through the toxicokinetic rate constant.
+
+- `spc`: species params
+- `pmoas`: Vector of PMoAs we want to keep active
+- `z`: Index of chemical stressor we want to be affected
+
+---
+## Example
+
+
+```Julia
+
+p = Params()
+p.k_d_G = [1., 1.]
+p.k_d_M = [1., 1.]
+p.k_d_M = [1., 1.]
+
+p.spc = isolate_pmoas(p, ["G"], 1) # -> for the first stressor, all k_D-values but k_d_G will be 0, second stressor remains untouched
+
+```
+
+
 """
 function isolate_pmoas(spc::AbstractParams, pmoas::Vector{String}, z::Int64)::AbstractParams
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
@@ -120,6 +133,11 @@ function isolate_pmoas(spc::AbstractParams, pmoas::Vector{String}, z::Int64)::Ab
     return spc
 end
 
+"""
+    isolate_pmoas(spc::AbstractParams, pmoas::Vector{String})::AbstractParams
+
+Isolates the given PMoAs for all stressors.
+"""
 function isolate_pmoas(spc::AbstractParams, pmoas::Vector{String})::AbstractParams
     deactivate = filter(x -> !(x in pmoas), ["G", "M", "A", "R", "h"])
     for j in deactivate
@@ -132,6 +150,9 @@ function isolate_pmoas(spc::AbstractParams, pmoas::Vector{String})::AbstractPara
     return spc
 end
 
+"""
+Mutating version if isolate_pmoas.
+"""
 function isolate_pmoas!(spc::AbstractParams, pmoas::Vector{String}, z::Int64)::Nothing
     spc = isolate_pmoas(spc, pmoas, z)
     return nothing
@@ -145,12 +166,6 @@ end
 isolate_pmoas!(p::Union{NamedTuple,AbstractParamCollection}, pmoas::Vector{String}) = isolate_pmoas!(p.spc, pmoas)
 isolate_pmoas!(p::Union{NamedTuple,AbstractParamCollection}, pmoas::Vector{String}, z::Int64) = isolate_pmoas!(p.spc, pmoas, z)
 
-"""
-    getstat(data::Vector{DataFrame}, statistic::String)
-
-Retrieve the mean of a statistic from a data frame with columns 
-"statistic" (listing different kinds of summary statistics) and "value".
-"""
 function getstat(data::DataFrame, statistic::String)
     return data[data.statistic .== statistic,:].value |> mean
 end
@@ -159,7 +174,5 @@ function getstat(data::Vector{DataFrame}, statistic::String)
     return getstat(data[2], statistic)
 end
 
-"""
-Convert degrees Celsius to Kelvin.
-"""
+
 C2K(T_C::Float64) = T_C + 273.15

@@ -1,16 +1,7 @@
-
-
-"""
-    sol_to_mat(sol::O)::Matrix{Float64}
-Convert ODE solution object to matrix.
-"""
 function sol_to_mat(sol::O)::Matrix{Float64} where O <: ODESolution
     return hcat(sol.t, hcat(sol.u...)')
 end
 
-"""
-Convert ODE solution object to output data frame.
-"""
 function sol_to_df(sol::O)::DataFrame where O <: ODESolution
     simout = DataFrame(
         sol_to_mat(sol), # ODE output converted to matrix
@@ -19,9 +10,6 @@ function sol_to_df(sol::O)::DataFrame where O <: ODESolution
     return simout
 end
 
-"""
-Calculate relative response, given scalar values.
-"""
 function rr(x::R, x_ref::R)::Float64 where R <: Real
     if x_ref == 0.
         return 1.
@@ -45,15 +33,40 @@ function robustmean(x)
 end
 
 """
-Calculate the relative responses. \n
-Positional arguments: 
+    relative_response(
+        sim::D, 
+        response_vars::Vector{Symbol},
+        treatment_var::Symbol; 
+        groupby_vars::Vector{Symbol} = Symbol[],
+        identify_control = minimum
+        ) where D <: AbstractDataFrame
+
+Calculate relative responses. \n
+
+args:
+
 - `sim::AbstractDataFrame`: results
 - `response_vars::Vector{Symbol}`: response variables for which to calculate the relative responses
 - `treatment_var::Symbol`: Column indicating the treatment. Column values can be numerical or categorical, but `identify_control` kwarg has to be specified in the latter case
 
-Keyword arguments: 
+kwargs:
+
 - `groupby_vars::Vector{Symbol}`: relative response will be conditioned on these variables (e.g. time, separate experiments...). Empty by default.
 - `identify_control`: function used to identify reference values from `treatment_var`. By default, this is `minimum()` (assuming that column values in `treatment_var` are numerical).
+
+---
+
+## Example 
+
+```Julia@f
+using DEBBase.DEBODE, DEBBase.Utils
+
+simfunct(x) = @replicates DEBODE.simulator(x) 10
+
+sim = exposure(simfunct, Params(), [0., 100., 200.]) |>
+x -> relative_response(x, [:S, :H, :R]) # -> data frame will contain columns y_S, y_H, y_R for control-normalized values
+```
+
 """
 function relative_response(
     sim::D, 
@@ -90,20 +103,12 @@ function relative_response(
     return sim
 end
 
-"""
-    idcol!(sim::AbstractDataFrame, col::Symbol, val)
 
-Add identifier column with name `col` and value `val` to results DataFrame `sim`
-"""
 function idcol!(sim::AbstractDataFrame, col::Symbol, val)
     sim[!,col] .= val
 end
 
-"""
-    idcol!(sim::Any, col::Symbol, val)
 
-Add identifier column to a results object `sim`, assuming that `sim` is some collection of `DataFrame`s (e.g. Tuple, Vector).
-"""
 function idcol!(sim::Any, col::Symbol, val)
     for df in sim
         idcol!(df, col, val)
