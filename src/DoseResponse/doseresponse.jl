@@ -7,18 +7,18 @@ This way we deal with domain errors which might occur if `x` or `p[1]` temporari
 Negative values should theoretically be impossible, but very small values of `x` (`<= 1e-20`) might occur during ODE solving. 
 In this case, the returned real part of the expression evaluates to 1, which is in turn the expected behaviour.  
 """
-function LL2(x::Float64, p::NTuple{2,Float64})
+@inline function LL2(x::Float64, p::NTuple{2,Float64})
     return (1 / (1 + Complex(x / p[1]) ^ p[2])).re
 end
 
 """
 Cumulative hazard function of the log-logistic distribution. Mainly used for application in GUTS.
 """
-function LL2h(x::Float64, p::NTuple{2,Float64})
-    -log(LL2(x, p))
+@inline function LL2h(x::Float64, p::NTuple{2,Float64})
+    -log((1 / (1 + Complex(x / p[1]) ^ p[2])).re)
 end
 
-function LL2h(x::Vector{Float64}, p::NTuple{2,Float64})
+@inline function LL2h(x::Vector{Float64}, p::NTuple{2,Float64})
     [LL2h(xi, p) for xi in x]
 end
 
@@ -26,13 +26,12 @@ end
 Two-parameter log-logistic function transformed to increasing function 
 for application to PMoA maintenance costs.
 """
-function LL2M(x::Float64, p::NTuple{2,Float64})
+@inline function LL2M(x::Float64, p::NTuple{2,Float64})
     1 + (x/p[1])^p[2]
 end
 
-"""
-"""
-function LL2M(x::Vector{Float64}, p::NTuple{2,Float64})
+
+@inline function LL2M(x::Vector{Float64}, p::NTuple{2,Float64})
     [LL2M(xi, p) for xi in x]
 end
 
@@ -54,11 +53,11 @@ end
 """
 Two-parameter Weibull function.
 """
-function WB2(x::Float64, p::NTuple{2,Float64})
+@inline function WB2(x::Float64, p::NTuple{2,Float64})
     return exp(-exp(p[2]*(log(x)-log(p[1]))))
 end
 
-function WB2(x::Vector{Float64}, p::NTuple{2,Float64})
+@inline function WB2(x::Vector{Float64}, p::NTuple{2,Float64})
     return [WB2(xi, p) for xi in x]
 end
 
@@ -72,26 +71,28 @@ Arguments:
     - `p4` = beta_2
     - `p5` = breakpoint = relative response at which second phase starts
 """
-function LLBP5(x::Float64, p::NTuple{5,Float64})
+@inline function LLBP5(x::Float64, p::NTuple{5,Float64})
     y1 = p[5] / ( 1 +(x / p[1])^p[2]) # first-phase response
     y2 = p[5] / (1 + (x / p[3])^p[4]) # second-phase response
     y = y1 + y2 # total response
     return y
 end
 
-function LLBP5(x::Vector{Float64}, p::NTuple{5,Float64})
+@inline function LLBP5(x::Vector{Float64}, p::NTuple{5,Float64})
     return [LLBP5(xi, p) for xi in x]
 end
 
 
 """
+    LLAS3(x::Float64, p::NTuple{3,Float64})
+
 Asymmetric log-logistic function with additional slope parameter.
 Arguments:
-    - `p1` = EC50
-    - `p2` = beta
-    - `p3` = beta_2
+    - `p[1]` = EC50
+    - `p[2]` = beta
+    - `p[3]` = beta_2
 """
-function LLAS3(x::Float64, p::NTuple{3,Float64})
+@inline function LLAS3(x::Float64, p::NTuple{3,Float64})
     return 1 / ((1 + ((x / p[1])^p[2]))^p[3])
 end
 
@@ -99,7 +100,12 @@ function LLAS3(x::Vector{Float64}, p::NTuple{3,Float64})
     return [LLAS3(xi, p) for xi in x]
 end
 
-function LL3(x::Float64, p::NTuple{3,Float64})
+"""
+    LL3(x::Float64, p::NTuple{3,Float64})
+
+Three-parameter log-logistic function, where `p[3]` is the upper limit. 
+"""
+@inline function LL3(x::Float64, p::NTuple{3,Float64})
     return p[3] / (1 + (x / p[1])^p[2])
 end
 
@@ -107,16 +113,19 @@ end
 """
 Cedergreend-Ritz-Streibig model. \\
 Parameters are \\
-- p[1] = α = rate of hormetic increase
-- p[2] = b = quasi-slope
-- p[3] = c = lower limit
-- p[4] = d = response in the control
-- p[5] = e = inflection point
-- p[6] = f = hormesis parameter
+
+- `p[1]` = α = rate of hormetic increase
+- `p[2]` = b = quasi-slope
+- `p[3]` = c = lower limit
+- `p[4]` = d = response in the control
+- `p[5]` = e = inflection point
+- `p[6]` = f = hormesis parameter
 """
 CRS6(x::Float64, p::NTuple{6,Float64}) = @.(p[3] + ((p[4] - p[3] + p[6]*exp(-1 / (x^p[1]))) / (1 + exp(p[2] * (log(x) - log(p[5]))))))
 
 """
+    CRS4(x::Float64, p::NTuple{4,Float64}) 
+
 4-parameter CRS model. Lower limit and response in the control are fixed to 0 and 1, respectively.
 """
 CRS4(x::Float64, p::NTuple{4,Float64}) = @.(((1 + p[4]*exp(-1 / (x^p[1]))) / (1 + exp(p[2] * (log(x) - log(p[3]))))))

@@ -44,18 +44,30 @@ Reproduction is assumed to occur in fixed time intervals, according to `spc.tau_
 function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
     a.age += m.dt 
 
+    #### life-stage transitions
+    # here, we re-use the continuous callback functions defined in DEBODE
+    # it happens to be the case that we can treat the agent as an integrator in the callback functions
+
+    # check for transition from embryo to juvenile 
     if condition_juvenile(a.u, m.t, a) <= 0
         effect_juvenile!(a)
     end
 
+    # check for transition from juvenile to adult
     if condition_adult(a.u, m.t, a) <= 0
         effect_adult!(a)
     end
 
+    # aging is implemented in a non-mechanistic manner 
+    # individuals die when they exceed their maximum age a_max
+    # a_max is subject to individual variability
     if a.age >= a.p.agn.a_max
         a.cause_of_death = 1
     end
     
+    # for starvation mortality, we assume that mortality can occur as soon as the scaled functional response falls below a threshold value f_Xthr
+    # below that threshold value, survival probability s_f decreases
+    # by calling sig(), we express this if/else statement as a continuous function
     let s_f = sig(
         a.u.f_X, a.p.spc.f_Xthr, 
         (1 - a.p.spc.s_min) * a.u.f_X / a.p.spc.f_Xthr + a.p.spc.s_min,
@@ -66,23 +78,30 @@ function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
         end
     end
 
-    #if (a.u.S / a.u.S_max_hist) < 0.66
-    #    if rand() < exp(-0.7 * m.dt)
-    #        a.cause_of_death = 2
-    #    end
-    #end
+    # reproduction, assuming a constant reproduction period
 
-    if a.time_since_last_repro >= a.p.spc.tau_R
+    # reproduction only occurs if the reproduction period has been exceeded
+    if a.time_since_last_repro >= a.p.spc.tau_R 
+        # if that is the case, calculate the number of offspring, 
+        # based on the reproduction buffer and the dry mass of an egg
         let num_offspring = trunc(a.u.R / a.u.X_emb_int)
             for _ in 1:num_offspring
-                m.idcount += 1
-                push!(m.agents, DEBAgent(a.p, m.u, m.idcount; cohort = a.cohort + 1))
-                a.u.R -= a.u.X_emb_int
+                m.idcount += 1 # increment individual counter
+                push!(m.agents, DEBAgent( # create new agent and push to agents vector
+                    a.p, 
+                    m.u, 
+                    m.idcount, 
+                    m.AgentParamType; 
+                    cohort = a.cohort + 1, 
+                    AgentParamType = m.AgentParamType)
+                )
+                a.u.R -= a.u.X_emb_int # decrease reproduction buffer
             end
-            a.time_since_last_repro = 0.
+            a.time_since_last_repro = 0. # reset reproduction period
         end
+    # if reproduction period has not been exceeded,
     else
-        a.time_since_last_repro += m.dt
+        a.time_since_last_repro += m.dt # track reproduction period
     end
 
     return nothing

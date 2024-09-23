@@ -28,12 +28,13 @@ function simulator(
     p::Union{NamedTuple,AbstractParamCollection}; 
     dt = 1/24, 
     saveat = 1,
+    AgentParamType::DataType = AgentParams,
     showinfo::Number = Inf
     )::DataFrame
 
     showinfo < Inf ? @info("Running ABM simulation with t_max=$(p.glb.t_max)") : nothing
     
-    m = ABM(p; dt = dt, saveat = saveat)
+    m = ABM(p; dt = dt, saveat = saveat, AgentParamType = AgentParams)
 
     while !(m.t > m.p.glb.t_max)
         if showinfo < Inf && isapprox(m.t % showinfo, 0, atol = m.dt)

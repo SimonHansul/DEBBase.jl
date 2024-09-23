@@ -21,7 +21,8 @@ CAUSE_OF_DEATH = Dict(
     function DEBAgent(
         p::Union{AbstractParamCollection,NamedTuple}, 
         global_statevars::ComponentVector, 
-        id; 
+        id::Int, 
+        AgentParamType::DataType; 
         cohort = 0
         )
         a = new() # create empty agent instance
@@ -29,7 +30,7 @@ CAUSE_OF_DEATH = Dict(
         a.p = Params( # agent holds its own parameter object
             glb = p.glb, # global params
             spc = p.spc, # species params
-            agn = AgentParams(p.spc) # agent parameters
+            agn = AgentParamType(p.spc) # agent parameters
         ) # a.p
         
         # vcat does not seem to work on more than two component arrays (returns Vector instead), hence the pipe syntax

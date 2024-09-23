@@ -111,18 +111,27 @@ function individual_variability!(agn::Union{AbstractParams,NamedTuple}, spc::Uni
     end 
 end
 
-"""
-    AgentParams(spc::Union{AbstractParams,NamedTuple})
+abstract type AbstractAgentParams <: Abstractparams end
 
-AgentParams are subject to agent variability. 
+"""
+    AgentParams(spc::Union{AbstractParams,NamedTuple}) <: AbstractAgentParams
+
+DEBBase defines parameters on three levels: Global, species-level and agent-level. 
+
+Users typically do not need to interact with `AgentParams`. 
+However, if you are building a modification of the base model and you wish to change 
+how individual variability is treated, 
+you need to define your own `AbstractAgentParams`. 
+Note that `DEBODE.simulator` also accepts an `AgentParamType` as keyword argument.
+
+AgentParams holds the parameters which are subject to agent variability. 
 This is in contrast to SpeciesParams, which define parameters on the species-level.
 
-Users of implemented models typically do not need to interact with `AgentParams`.
 
 Implementing a custom model might require to modify `AgentParams` if individual 
     variability should occur in other variables.
 """
-@with_kw mutable struct AgentParams <: AbstractParams
+@with_kw mutable struct AgentParams <: AbstractAgentParams
     Z::Float64
     Idot_max_rel_0::Float64
     Idot_max_rel_emb_0::Float64

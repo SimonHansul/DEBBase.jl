@@ -375,7 +375,21 @@ Minimal toxicokinetics for scaled damage dynamics, assuming no enviornmental upt
 end
 
 """
-Response to chemical stressors, assuming independent action for mixtures.
+    y_z_IA!(
+        du::ComponentVector,
+        u::ComponentVector,
+        p::Union{AbstractParamCollection,NamedTuple},
+        t::Real
+        )::Nothing 
+
+Response to chemical stressors, assuming independent action for mixtures. 
+The dose-response function for each PMoA is treated as a species parameter. 
+
+This comes at some performance loss, and the dose-response function might become 
+hard-coded in the future if it turns out that this is necessary to achieve satisfiable performance.
+
+As for now, we leave the choice open to make it easier to perform model selections 
+with dose-response functions - this is rarely done but, imho, would be a useful thing to do more often.
 """
 @inline function y_z_IA!(
     du::ComponentVector,
@@ -388,14 +402,14 @@ Response to chemical stressors, assuming independent action for mixtures.
     u.y_M = 1.
     u.y_A = 1.
     u.y_R = 1.
-    u.h_z = 0. # reset hazard rate 
-
+    u.h_z = 0. # reset hazard rate
+    
     for z in eachindex(u.C_W) # for each stressor
-        @inbounds u.y_G *= LL2(u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) # caclulate relative responses
-        @inbounds u.y_M *= LL2M(u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z]))
-        @inbounds u.y_A *= LL2(u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) 
-        @inbounds u.y_R *= LL2(u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) 
-        @inbounds u.h_z += LL2h(u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) # calculate hazard rate
+        u.y_G *= p.spc.drc_functs_G[z](u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) # caclulate relative responses
+        u.y_M *= p.spc.drc_functs_M[z](u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z]))
+        u.y_A *= p.spc.drc_functs_A[z](u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) 
+        u.y_R *= p.spc.drc_functs_R[z](u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) 
+        u.h_z += p.spc.drc_functs_h[z](u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) # calculate hazard rate
     end
 
     return nothing
@@ -420,11 +434,11 @@ function y_z_DamageAddition!(
     t::Real
     )::Nothing 
     
-    u.y_G = p.spc.drc_functs_G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
-    u.y_M = p.spc.drc_functs_G(sum(u.D_M), (p.spc.e_M[z], p.spc.b_M[1]))
-    u.y_A = p.spc.drc_functs_G(sum(u.D_A), (p.spc.e_A[z], p.spc.b_A[1]))
-    u.y_R = p.spc.drc_functs_G(sum(u.D_R), (p.spc.e_R[z], p.spc.b_R[1]))
-    u.h_z = p.spc.drc_functs_G(sum(u.D_z), (p.spc.e_z[z], p.spc.b_z[1]))
+    u.y_G = p.spc.drc_functs__G(sum(u.D_G), (p.spc.e_G[z], p.spc.b_G[1]))
+    u.y_M = p.spc.drc_functs__M(sum(u.D_M), (p.spc.e_M[z], p.spc.b_M[1]))
+    u.y_A = p.spc.drc_functs__A(sum(u.D_A), (p.spc.e_A[z], p.spc.b_A[1]))
+    u.y_R = p.spc.drc_functs__R(sum(u.D_R), (p.spc.e_R[z], p.spc.b_R[1]))
+    u.h_z = p.spc.drc_functs__z(sum(u.D_z), (p.spc.e_z[z], p.spc.b_z[1]))
 
     return nothing
 end

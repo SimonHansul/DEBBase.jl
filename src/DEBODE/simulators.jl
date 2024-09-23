@@ -138,7 +138,28 @@ function replicates(simulator::Function, params::Union{NamedTuple,AbstractParamC
     sim
 end
 
-function threaded_replicates(
+"""
+    treplicates(
+        simulator::Function, 
+        params::Union{NamedTuple,AbstractParamCollection}, 
+        nreps::Int64; 
+        kwargs...)
+
+Multi-threaded version of `replicates`. 
+
+Only useful if Julia has been started with multiple threads. 
+    
+To check the number of threads, run 
+```using Base.Threads; Threads.nthreads()```.
+
+In VSCode, you can use the entry "julia.NumThreads" in settings.json to set the default number of threads 
+(searching for "julia threads" in the preferences will lead you there). 
+
+Check the [Multi-threading documentation](https://docs.julialang.org/en/v1/manual/multi-threading/) 
+for more information.
+
+"""
+function treplicates(
     simulator::Function, 
     params::Union{NamedTuple,AbstractParamCollection}, 
     nreps::Int64; 

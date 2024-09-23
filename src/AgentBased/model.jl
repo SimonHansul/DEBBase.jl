@@ -14,6 +14,7 @@ mutable struct ABM <: AbstractDEBABM
     global_statevar_indices::Vector{Int64}
     agent_statevar_names::Vector{Symbol}
     agent_statevar_indices::Vector{Int64}
+    AgentParamType::DataType
 
     record_agents::Bool
 
@@ -28,7 +29,14 @@ mutable struct ABM <: AbstractDEBABM
     kwargs
         - `dt`: Model time step [t]
     """
-    function ABM(p::Union{AbstractParamCollection,NamedTuple}; dt = 1/24, saveat = 1, record_agents::Bool = true)::ABM
+    function ABM(
+        p::Union{AbstractParamCollection,NamedTuple}; 
+        dt = 1/24, 
+        saveat = 1, 
+        record_agents::Bool = true,
+        AgentParamType::DataType = AgentParamType
+        )::ABM
+
         m = new()
         m.agents = Vector{DEBAgent}(undef, p.glb.N0)
         m.u = initialize_global_statevars(p)
@@ -47,7 +55,7 @@ mutable struct ABM <: AbstractDEBABM
         # initialize agents
         for i in 1:p.glb.N0
             m.idcount += 1
-            m.agents[i] = DEBAgent(p, m.u, m.idcount)
+            m.agents[i] = DEBAgent(p, m.u, m.idcount, AgentParamType)
         end
 
         m.agent_statevar_names = Symbol[keys(initialize_agent_statevars(m.agents[1].p))...]

@@ -82,11 +82,11 @@ $$
 $$
 
 A key aspect of this model variant is that all major state variables, including structure, have the same dimension, which is assumed to represent a mass or energy pool (e.g. given in $g\ dry\ mass$, $\mu g\ C$, $J$). To retrieve a prediction of organism length, a weight-length relationship should be applied externally to the ODE. <br>
-A consequence of this model formulation is the dimensionless parameter growth efficiency ($\eta_{AS}$), which replaces the volume-specific costs for growth. <br>
-Surface area scaling is done through the scaling factor $S^{2/3}$, where $S$ is structural mass. 
-This also leads to a different dimension of the specific ingestion rate $\{ \dot{I} \}_{max}$. 
+Surface area scaling is done through the scaling factor $S^{2/3}$, where $S$ is structural mass. This replaces the structural surface area $V^{2/3}$ found in other models. We can make this change without affecting the dynamics of the model 
+because the conversion from $S$ to $V$ is constant and linear. <br>
+Using $S^{2/3}$ instead of $V^{2/3}$ for surface area-scaling however leads to a different dimension of the specific ingestion rate $\{ \dot{I} \}_{max}$. 
 For example, if state variables are given in $g\ dry\ mass$, 
-the unit of $\{ \dot{I} \}_{max}$ is $g\ g^{2/3}\ d^{-1}$, or $\sqrt[3]{g}\ d^{-1}$. 
+the unit of $\{ \dot{I} \}_{max}$ is $g\ g^{2/3}\ d^{-1}$, or $\sqrt[3]{g}\ d^{-1}$. <br>
 
 The zoom factor $Z$ is often used to perform corrections of DEB parameters on the basis of maximum length (**citation needed**). <br>
 In line with the philosophy of using a single model currency, we define the zoom factor $Z_M$ on the basis of the model currency. 

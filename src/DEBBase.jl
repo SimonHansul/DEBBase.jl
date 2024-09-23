@@ -11,6 +11,7 @@ using StaticArrays
 using StatsBase
 using NamedTupleTools
 using Base.Threads
+using LoopVectorization
 
 module ParamStructs
     
@@ -58,6 +59,7 @@ module DEBODE
     using StaticArrays
     using StatsBase
     using Base.Threads
+    using LoopVectorization
 
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
     using ..DoseResponse: LL2, LL2M, LL2h
@@ -75,7 +77,7 @@ module DEBODE
     include("DEBODE/events.jl")
 
     include("DEBODE/simulators.jl")
-    export @replicates, replicates, exposure
+    export @replicates, replicates, treplicates, exposure
 
     include("DEBODE/traits.jl")
 

@@ -45,47 +45,21 @@ using efficient solvers provided by `OrdinaryDiffEq.jl`,
 or be integrated into an agent-based model (ABM).
 
 Performing extrapolations from the individual level to the population level (or higher) often requires to switch between modelling platforms, or to perform 
-individual-level simulations in highly specialized agent-based modelling platforms which are not designed for the efficient solving of ODEs. <br>
-`DEBBase.jl` provides a common API to simulate the ODE and ABM and data types
+individual-level simulations in highly specialized agent-based modelling platforms which are not designed for the efficient solving of ODEs. To close this gap, `DEBBase.jl` provides a common API to simulate the ODE and ABM, as well as data types
 to organize and configure the large amounts of parameters which can be necessary in an DEB-ABM. <br>
 
-`DEBBase.jl` aims to fill this gap by providing a more efficient workflow to simulate the same DEB model on different levels of biological organization. 
-
-## Uncertainty propagation
-
-As an additional feature, `DEBBase.jl` an implementation of a likelihood-free Bayesian parameter 
+Since parameter inference from data is a common task in DEB-TKTD modelling, `DEBBase.jl` includes an implementation of a likelihood-free Bayesian parameter 
 inference algorithm (**citation needed**), which can be used for relatively straightforward propagation of parameter uncertainties across levels of organization.
-
-## Julia ecosystem
-
-An appeal to implementing dynamic models in Julia is it's extensive scientific package ecosystem and 
-good performance. As of now, there is no well-established Julia package for DEB-TKTD/DEB-ABM modelling, 
-which is part of why we implemented `DEBBase.jl`.
-
-
-## Comparison with other available software
-
-The `debtool` package written in Matlab provides far more extensive functionality than `DEBBase.jl`, 
-but does (to our best knowledge) not support agent-based simulations and is not designed for use 
-with Bayesian parameter inference methods. <br>
-
-The same can be said about the `byom`/`debtox` tool, also implemented in matlab. <br>
-An agent-based implementation is available in Netlogo (**citation needed**). 
-Netlogo does not have a package ecosystem which would be comparable to more general-purpose languages 
-like Julia or Python. 
-
-The Python package `mempyDEB` has a range of functionality which is similar to `DEBBase.jl`, 
-but at poorer performance, especially for the ABM. 
-Also, the ODE and ABM model variations by `mempyDEB` are independent. Changes made to the ODE system 
-in `mempyDEB` need to be manually translated to the ABM to simulate a comparable system. 
-This is not the case in `DEBBase.jl`.
+However, users can also make use of Julia's extensive package ecosystem to perform tasks like parameter inference or sensitvity analysis.<br>
+Julia's good performance is another aspects which makes Julia an attractive platform 
+for DEB-TKTD and DEB-ABM modelling. As of now, there is no well-established Julia package for DEB-TKTD/DEB-ABM modelling.
 
 
 ## Methods 
 
 ### Model description 
 
-A detailed description of the model is given in `SI_modeldescription`. <br>
+A detailed description of the provided default model is given in `SI_modeldescription`. <br>
 In short `DEBBase.jl` provides a base model which is based on the DEBkiss model (**citation needed**). 
 The base model includes a toxicokinetic-toxicodynamic (TKTD) component which allows to 
 simulate an arbitrary number of chemical stressors in mixture, assuming combined effects 
@@ -114,7 +88,7 @@ modified values were given as keyword arguments.
 `agn` stands for *agent* and contains agent-specific parameters. These are used to induce individual variability, either in repeated simulations of the ODE or during simulation of population dynamics with the ABM. <br> 
 Upon initialization of a parameter structure, `agn` has the value `nothing`. Users typically do not need to interact with `agn` directly, as this field is set internally upon initializaton of an agent.
 
-## Running the base model
+### Example simulations of the ODE
 
 To run the base model, one can start by initializing the default parameters. <br>
 
@@ -147,7 +121,8 @@ The output is visualized in Figure 1.
 
 ![fig1](fig1.png)
 **Figure 1: Example simulation of the ODE system. Growth and reproduction are simulated at three temperatures for a hypothetical organism, using the default parameters and code provided in the main text.**
-
+ 
+### Example simulations of the ABM
 
 To take this to the population-level, in principle only need to change the simulator. 
 Instead of `DEBODE.simulator`, we call `AgentBased.simulator`. <br>
@@ -176,3 +151,21 @@ end
 
 ![fig2](fig2.png)
 **Figure 2: Example simulation of the DEB-ABM. Population dynamics of a hypothetical organism are simulated at three temperatures , based on the default parameters. Thin lines represent individual simulations. Thick lines and ribbons show averages and the 5th to 95th percentile, respectively.**
+
+### Discussion & Outlook
+
+In its current form, `DEBBase.jl` provides a ready-to-use platform for DEB-TKTD modelling, which 
+can be easily adapted to model the idiosyncracies of specific organisms, rather than the generic 
+case presented here. <br>
+
+It is not the goal of `DEBBase.jl` to provide the same range of functionality as for example found in the Matlab tool `DEBtool` (**citation needed**). <br>
+However, some additional functions and adaptations are worth considering. 
+For example, a minimal TK model is currently hard-coded into the base model. <br>
+We will consider to allow for user-adjustable feedbacks within the TK component, as suggested by Jager (2020). <br>
+
+In contrast, the dose-response functions for chemical effects are currently not hard-coded, but can be changed through the species parameters. 
+We opted for this variant despite a potential loss in performance, because we want to facilitate 
+the comparison of dose-response functions when fitting the model to data. 
+Future versions might explore ways to allow for flexible definition of dose-response functions 
+without sacrificing performance too much. <br>
+

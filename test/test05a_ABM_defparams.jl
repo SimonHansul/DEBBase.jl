@@ -1,4 +1,6 @@
-# script to test the DEB-ABM on the default parameter set
+# script to test the DEB-ABM on the default parameter set 
+# the most critical test here is a comparison between the ODE and ABM output
+
 using Pkg; Pkg.activate("test")
 using Parameters
 using NamedTupleTools
@@ -64,8 +66,6 @@ end
     m.agents[1].u.C_W .+= 1
     @test m.agents[1].u.C_W != m.u.C_W
 end
-
-p isa NamedTuple
 
 @testset begin 
     @info "Update agent statevars using Euler!()"
@@ -222,7 +222,7 @@ using DEBBase.DEBODE
 
 begin
     @info "Generating output plot for ABM with defaults"
-    @time sim = DEBODE.threaded_replicates(
+    @time sim = DEBODE.treplicates(
         AgentBased.simulator, p, 3; saveat = 1
         )
     sort!(sim, :t);
