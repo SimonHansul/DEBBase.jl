@@ -22,8 +22,8 @@ spc:
   Idot_max_rel_emb_0: 22.9
   eta_IA_0: 0.33
   e_A:
-    - 1.0
-  propagate_zoom: @NamedTuple{Idot_max_rel_0, Idot_max_rel_emb_0, X_emb_int_0::Bool, H_p_0::Bool, K_X_0::Bool}((true, true, true, true, true))
+    - 1.0e10
+  propagate_zoom: (Idot_max_rel_0 = true, Idot_max_rel_emb_0 = true, X_emb_int_0 = true, H_p_0 = true, K_X_0 = true)
   tau_R: 2.0
   kappa_0: 0.539
   k_M_0: 0.59
@@ -37,7 +37,7 @@ spc:
   b_R:
     - 0.93
   k_D_A:
-    - 0.5
+    - 0.0
   b_G:
     - 1.0e10
   eta_AR_0: 0.95
@@ -46,14 +46,14 @@ spc:
   e_h:
     - 1.0e10
   k_D_R:
-    - 0.0
+    - 0.38
   k_D_G:
     - 0.0
   Idot_max_rel_0: 22.9
   drc_functs_h:
     - LL2h
   b_A:
-    - 2.0
+    - 1.0e10
   b_M:
     - 1.0e10
   a_max: Truncated(Normal{Float64}(μ=60.0, σ=6.0); lower=0.0, upper=Inf)
@@ -63,9 +63,9 @@ agn: {}
 glb:
   T: 293.15
   C_W:
-    - 1.0
-  Xdot_in: 30000.0
-  N0: 10
-  t_max: 56.0
-  k_V: 0.1
-  V_patch: 0.5
+    - 0.0
+  Xdot_in: 1200.0
+  N0: 1
+  t_max: 21.0
+  k_V: 0.0
+  V_patch: 0.05

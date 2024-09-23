@@ -28,6 +28,7 @@ extract_colnames(sol::ODESolution)::Vector{Symbol} = vcat([:t], extract_colnames
 
 ymlparse(x::String) = Meta.parse(x) |> eval
 ymlparse(x::Vector{String}) = @. Meta.parse(x) |> eval
+ymlparse(x::Vector{N}) where N <: Number = x
 
 """
     load_config(ParamsType::DataType, path_to_config::String)::ParamsType

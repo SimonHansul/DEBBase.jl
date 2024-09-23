@@ -12,3 +12,4 @@ spc:
   Z: Truncated(Normal(1.33, 0.133), 0, Inf) # some parameters are distributions
   K_X_0: 10e3 # some parameters are scalar values
   drc_functs_G: [DoseResponse.NEC2neg] # some parameters are vectors of functions
+  e_G: [(1., 2.)] # some parameters are vectors of tuples 

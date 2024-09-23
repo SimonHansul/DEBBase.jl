@@ -14,11 +14,15 @@ using Base.Threads
 using Random
 using YAML
 
+ # definition of type hierarchy for parameter structures 
 module ParamStructs
-    
-    include("ParamStructs/paramstructs.jl") # definition of type hierarchy for parameter structures
-    
+    include("ParamStructs/paramstructs.jl")
     export AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
+end
+
+module DoseResponse
+    include("DoseResponse/doseresponse.jl")
+    export LL2, LL2h, LL2M
 end
 
 module Utils
@@ -48,10 +52,7 @@ module Utils
     export relative_response, idcol!
 end
 
-module DoseResponse
-    include("DoseResponse/doseresponse.jl")
-    export LL2, LL2h, LL2M
-end
+
 
 module DEBODE
 
