@@ -33,7 +33,7 @@ p = Params()
 sim = DEBODE.simulator(Params())
 ```
 
-`params` will be a nested mutable struct containing a set of default parameters. <br>
+`p` will be a nested mutable struct containing a set of default parameters. <br>
 The main purpose of the default parameters is to provide a place to get started and a reference during development.<br>
 
 ## Earmarked future features (road to v1.0.0)
