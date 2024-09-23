@@ -1,29 +1,7 @@
-#"""
-#Composes an ODE system from a vector of global and species-specific derivatives, respectively. 
-#This brings two advantages: 
-#
-#- Function definitions can be recycled in different simulation contexts (e.g. ODE-based and IBM)
-#- Function vectors can be combined to facilitate modular modelling: Coupling two modules is equivalent to concatenating the function vectors and adding an adapter
-#
-#A potential pitfall of this approach is to split up the model into too many small functions, making the model less readable. 
-#
-#Users generally don't need to call with `compositemodel`, this function is used internally in `simulator`.
-#"""
-#function compositemodel!(du, u, p, t)::Nothing
-#
-#    for func! in p.glb.odefuncs # calculate the global derivatives
-#        func!(du, u, p, t) 
-#    end
-#
-#    for func! in p.spc.odefuncs # calculate the species-specific derivatives
-#        func!(du, u, p, t)
-#    end
-#
-#    return nothing
-#end
-
 
 """
+    lifestage_callbacks()
+
 We use callbacks to keep track of the current life stage, avoiding if/else statements in 
 the derivatives. 
 Each life stage is associated with an identically named auxiliary variable, 
@@ -38,16 +16,16 @@ function lifestage_callbacks()
 end
 
 """
-simulator(
-    p::Union{AbstractParamCollection,NamedTuple}; 
-    model = DEBODE!,
-    alg = Tsit5(),
-    saveat = 1,
-    reltol = 1e-6,
-    AgentParamType::DataType = AgentParams,
-    kwargs...)::DataFrame
+    simulator(
+        p::Union{AbstractParamCollection,NamedTuple}; 
+        model = DEBODE!,
+        alg = Tsit5(),
+        saveat = 1,
+        reltol = 1e-6,
+        AgentParamType::DataType = AgentParams,
+        kwargs...)::DataFrame
 
-Run an ODE-based model. 
+Run the model as ODE system. 
 
 **args**:
 
