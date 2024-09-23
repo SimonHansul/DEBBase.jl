@@ -1,6 +1,6 @@
 # DEBBase.jl: A basis for Dynamic Energy Budget modelling in Julia
 
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://simonhansul.github.io/DEBBase.jl)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://simonhansul.github.io/)
 
 This is a Julia package to define and run DEB-TKTD models, including mixture effects. <br>
 The purpose of DEBBase is to provide a simple base model for DEB-TKTD modelling and provide 
