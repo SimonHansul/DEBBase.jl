@@ -42,11 +42,12 @@ when they lose a given fraction of their structural mass.
 Reproduction is assumed to occur in fixed time intervals, according to `spc.tau_R`.
 """
 function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
-    a.age += m.dt 
+    @set! a.age += m.dt 
 
     #### life-stage transitions
     # here, we re-use the continuous callback functions defined in DEBODE
-    # it happens to be the case that we can treat the agent as an integrator in the callback functions
+    # it happens to be the case that we can treat the agent as an integrator in the callback functions, 
+    # since "u" is a field of the agent, just like for integrators
 
     # check for transition from embryo to juvenile 
     if condition_juvenile(a.u, m.t, a) <= 0
@@ -62,7 +63,7 @@ function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
     # individuals die when they exceed their maximum age a_max
     # a_max is subject to individual variability
     if a.age >= a.p.agn.a_max
-        a.cause_of_death = 1
+        @set! a.cause_of_death = 1
     end
     
     # for starvation mortality, we assume that mortality can occur as soon as the scaled functional response falls below a threshold value f_Xthr
@@ -74,7 +75,7 @@ function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
         1.)^m.dt
 
         if rand() > s_f
-            a.cause_of_death = 2.
+            @set! a.cause_of_death = 2.
         end
     end
 
@@ -96,11 +97,11 @@ function agent_step_rulebased!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
                 )
                 a.u.R -= a.u.X_emb_int # decrease reproduction buffer
             end
-            a.time_since_last_repro = 0. # reset reproduction period
+            @set! a.time_since_last_repro = 0. # reset reproduction period
         end
     # if reproduction period has not been exceeded,
     else
-        a.time_since_last_repro += m.dt # track reproduction period
+        @set! a.time_since_last_repro += m.dt # track reproduction period
     end
 
     return nothing
@@ -157,7 +158,6 @@ end
 
 """
     record_agent!(a::AbstractDEBAgent, m::AbstractDEBABM)::Nothing
-
 
 Pushes the agent state variables to `m.agent_record` in fixed time intervals, according to `m.saveat`.
 """

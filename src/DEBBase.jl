@@ -11,7 +11,7 @@ using StaticArrays
 using StatsBase
 using NamedTupleTools
 using Base.Threads
-using LoopVectorization
+using Setfield
 
 module ParamStructs
     
@@ -59,8 +59,7 @@ module DEBODE
     using StaticArrays
     using StatsBase
     using Base.Threads
-    using LoopVectorization
-
+    using SetField
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
     using ..DoseResponse: LL2, LL2M, LL2h
     using ..Utils: sol_to_df, sol_to_mat

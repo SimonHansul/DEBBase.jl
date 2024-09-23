@@ -255,7 +255,18 @@ struct ImmAgent
     u::ComponentVector
 end
 
+using Parameters
+using Setfield
+
+@with_kw struct SomeStruct
+    x::Float64 = 1.
+end
+
+
+
+
 a1 = ImmAgent(ComponentVector(x = 1.))
 a1.u.x = 2.
 
 using Setfield
+@set! a1.u = ComponentVector(x = 1., y = 2.)
