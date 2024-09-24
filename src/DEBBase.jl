@@ -13,6 +13,7 @@ using NamedTupleTools
 using Base.Threads
 using Random
 using YAML
+using DataStructures
 
  # definition of type hierarchy for parameter structures 
 module ParamStructs
@@ -34,8 +35,9 @@ module Utils
     using StatsBase
     using YAML
     using NamedTupleTools
-    #using DataStructures
+    using DataStructures
     using Distributions
+
     using ..DoseResponse
 
     # functions from sister modules have to be imported explictly

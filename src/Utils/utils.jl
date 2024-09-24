@@ -2,7 +2,7 @@ skipinf(x::Array) = x[isfinite.(x)]
 
 vectify(x) = parse.(Float64, split(split(split(x, "[")[end], "]")[1]," "))
 
-function which_in(x::String, possibilities::Vector{String}; none_found_return_val="") 
+function which_in(x::AbstractString, possibilities::Vector{String}; none_found_return_val="") 
     idxs = findall(z->occursin(z, x), possibilities)
     if length(idxs)>0
         return possibilities[idxs[1]]

@@ -1,32 +1,27 @@
 # example for a data config file
+# data is divided into time-resolved and scalar
+# the minimum information required for each entry is a name and path
+# paths are given relative to the project directory root
+
 time_resolved:
   - name: "dmagna_growth"
-    description: "D. magna length over time at two food input rates"
-    independent_vars:
-      - name: t_day
-        label: "Time since birth (d)"
-      - name: rep
-        label: "Replicate"
-      - name: food
-        label: "Food input rate (mg/d)"
-    response_vars:
-      - name: Length
-        label: "Carapace length (cm)"
-    URL: https://figshare.com/articles/journal_contribution/Mechanistic_modelling_of_metal_Cu_Ni_Zn_toxicity_across_Daphnia_species_The_roles_of_uncertainty_propagation_and_combined_mechanisms/22930694?file=41038238 
-    path: "test/data/dm1_test_data_growth_controls_dead.csv"
+    path: "test/data/dp3_test_data_growth_tidied_agg.csv"
+    meta:
+      - description: "Daphnia pulex growth at two food levels, aggregated over individuals"
+      - source: "Hansul et al. (2024) Environ. Toxicol. Chem."
   - name: "dmagna_repro"
-    description: "D. magna cumulative reproduction over time at two food input rates"
-        independent_vars:
-      - name: t_day
-        label: "Time since birth (d)"
-      - name: replicate
-        label: "Replicate"
-      - name: food
-        label: "Food input rate (mg/d)"
-    response_vars:
-      - name: Length
-        label: "Rep (cm)"
-    URL: URL: https://figshare.com/articles/journal_contribution/Mechanistic_modelling_of_metal_Cu_Ni_Zn_toxicity_across_Daphnia_species_The_roles_of_uncertainty_propagation_and_combined_mechanisms/22930694?file=41038238 
-    path: "test/data/dm1_test_data_repro_controls_dead.csv"
+    path: "test/data/dp3_test_data_reproduction_tidied_agg.csv"
+    meta:
+      - description: "Daphnia pulex reproduction at two food levels, aggregated over individuals"
 scalar:  
-
+  - name: "dmagna_growth_stats"
+    path: "test/data/dp3_test_data_growth_stats_agg.csv"
+    meta:
+      - description: "Additional growth statistics derived from the time-resolved data, aggregated over individuals"
+  - name: "dmagna_repro_stats"
+    path: "test/data/dp3_test_data_repro_stats_agg.csv"
+      - description: "Additional repro statistics derived from the time-resolved data, aggregated over individuals"
+  - name: "dmagna_general"
+    path: "test/data/dpulex_stats.csv"
+    meta:
+      - description: "General life-history traits for Daphnia pulex"

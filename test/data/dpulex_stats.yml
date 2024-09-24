@@ -1,0 +1,9 @@
+dpulex_stats:
+  age_at_birth:
+    - value: 2
+    - unit: d
+    - source: guess
+  egg_drymass:
+    - value: 5e-3
+    - unit: mg
+    - source: estimated from Martin-Creuzburg et al (2018) Figure 5 (https://doi.org/10.3389/fevo.2018.00089)
