@@ -176,3 +176,68 @@ end
 
 
 C2K(T_C::Float64) = T_C + 273.15
+
+
+abstract type AbstractDataset end
+
+"""
+    struct Dataset <: AbstractDataset
+
+Datatype to store calibration data, consisting of `time_resolved` and `scalar_data`. 
+This is most useful if data from different sources and/or of different types is pulled 
+together for calibration.
+
+What goes into a `Dataset` instance is best defined through a config file 
+(cf `test/config/data_config_example.yml`.)
+
+Time-resolved data is assumed to be stored as `csv` file and will be parsed as data frame. 
+Scalar data can be stored as `csv` (parsed as data frame) or `yml` (parsed as dict).
+"""
+@with_kw struct Dataset <: AbstractDataset
+    time_resolved::OrderedDict{String,DataFrame} = OrderedDict()
+    scalar::OrderedDict{String,Union{DataFrame,Dict}} = OrderedDict()
+end
+
+
+function read_from_path(path::AbstractString)
+
+    file_extension = split(path, ".")[end]
+
+    @assert file_extension in ["csv", "yml"] "Unknown file extension $(file_extension), expecting csv or yml"
+
+    if file_extension == "csv"
+        return CSV.read(path, DataFrame)
+    end
+
+    if file_extension == "yml"
+        return YAML.load_file(path)
+    end
+end
+
+function load_time_resolved_data!(data::AbstractDataset, config::Dict)::Nothing
+
+    for ts_data in config["time_resolved"]
+        df = CSV.read(ts_data["path"], DataFrame)
+        data.time_resolved[ts_data["name"]] = df
+    end
+
+    return nothing
+end
+
+function load_scalar_data!(data::AbstractDataset, config::Dict)::Nothing
+    for sc_data in config["scalar"]
+        data.scalar[sc_data["name"]] = read_from_path(sc_data["path"])
+    end
+
+    return nothing
+end
+
+function data_from_config(path_to_config::AbstractString; datatype::DataType = Dataset)::datatype
+    config = YAML.load_file(path_to_config)
+    data = datatype()
+    load_time_resolved_data!(data, config)
+    load_scalar_data!(data, config)
+
+    return data
+end
+

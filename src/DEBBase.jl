@@ -37,6 +37,7 @@ module Utils
     using NamedTupleTools
     using DataStructures
     using Distributions
+    using Parameters
 
     using ..DoseResponse
 

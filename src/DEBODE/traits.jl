@@ -26,3 +26,6 @@ function k_J!(spc::Union{AbstractSpeciesParams,NamedTuple})::Nothing
 
     return nothing
 end
+
+robustmin(x) = length(x)>0 ? minimum(x) : Inf
+age_at_birth(sim::AbstractDataFrame) = @subset(sim, :X_emb .<= 0).t |> robustmin

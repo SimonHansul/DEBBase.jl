@@ -1,32 +1,41 @@
 # example for a data config file
 # data is divided into time-resolved and scalar
 # the minimum information required for each entry is a name and path
+# the basic structure is 
+# time_resolved:
+#   - name: 
+#     path
+#   ...
+# scalar:
+#   - name: 
+#   - path:
+# ...
 # paths are given relative to the project directory root
 
 time_resolved:
-  - name: daphnia_pulex_growth
-    type: time_resolved
-    path: test/data/dp3_test_data_growth_tidied_agg.csv
+  - name: growth_agg
+    path: test/data/dp3_test_data_growth_tidy_agg.csv
     meta:
       - description: Daphnia pulex growth at two food levels, aggregated over individuals
       - source: Hansul et al. (2024) Environ. Toxicol. Chem.
-  - name: daphnia_pulex_repro
-    path: test/data/dp3_test_data_reproduction_tidied_agg.csv
+  - name: repro_agg
+    path: test/data/dp3_test_data_repro_tidy_agg.csv
     meta:
       - description: Daphnia pulex reproduction at two food levels, aggregated over individuals
       - source: Hansul et al. (2024) Environ. Toxicol. Chem.
 scalar:  
-  - name: dpulex_growth_stats
+  - name: growth_stats_agg
     path: test/data/dp3_test_data_growth_stats_agg.csv
     meta:
-      - description: Additional growth statistics derived from the time-resolved data, aggregated over individuals
+      - description: Growth statistics at two food levels, derived from the time-resolved data, aggregated over individuals
       - source: Derived from raw data Hansul et al. (2024) Environ. Toxicol. Chem.
-  - name: dpulex_repro_stats
+  - name: repro_stats_agg
     path: test/data/dp3_test_data_repro_stats_agg.csv
     meta:
-      - description: Additional repro statistics derived from the time-resolved data, aggregated over individuals
+      - description: Repro statistics at two food levels, derived from the time-resolved data, aggregated over individuals
       - source: Derived from raw data by Hansul et al. (2024) Environ. Toxicol. Chem.
-  - name: dpulex_general
-    path: test/data/daphnia_pulex_stats.csv
+  - name: misc_traits
+    path: test/data/dpulex_stats.yml
     meta:
       - description: General life-history traits for Daphnia pulex
+      - source: Cf. source file

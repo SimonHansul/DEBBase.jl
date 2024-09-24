@@ -18,7 +18,7 @@
 
 @with_kw mutable struct SMCResult
     accepted::AbstractDataFrame = DataFrame()
-    defaultparams::Any = []
+    params::Any = []
     priors::Union{Priors,Tuple{Priors,DataFrame}} = Priors()
     simulator = nothing
     distance = nothing
@@ -38,7 +38,7 @@ end
 """
 initialize(
     n_pop::Int64, 
-    defaultparams::Union{AbstractParams,AbstractParamCollection}, 
+    params::Union{AbstractParams,AbstractParamCollection}, 
     priors::Priors,
     simulator,
     distance,
@@ -49,13 +49,13 @@ Initialization of a population if the priors are purely parameteric priors.
 """
 function initialize_threaded(
     n_pop::Int64, 
-    defaultparams::Union{AbstractParams,AbstractParamCollection}, 
+    params::Union{AbstractParams,AbstractParamCollection}, 
     priors::Priors,
     simulator,
     distance,
     data::Any
     )
-    particles = Vector{Vector{Float64}}(undef, n_pop) #[copy(defaultparams) for _ in 1:n_pop] # predefine vector of parameter samples
+    particles = Vector{Vector{Float64}}(undef, n_pop) #[copy(params) for _ in 1:n_pop] # predefine vector of parameter samples
     distances = Vector{Float64}(undef, n_pop)
     weights = ones(n_pop) |> x -> x ./ sum(x)
 
@@ -63,7 +63,7 @@ function initialize_threaded(
 
     @threads for i in eachindex(particles)
         particles[i] = [rand(p) for p in priors.priors] 
-        prediction = simulator(defaultparams, priors.params, particles[i])
+        prediction = simulator(params, priors.params, particles[i])
         distances[i] = distance(prediction, data)
     end
 
@@ -73,7 +73,7 @@ end
 """
     initialize(
         n_pop::Int64, 
-        defaultparams::AbstractParams, 
+        params::AbstractParams, 
         priors::Tuple{Priors,DataFrame},
         simulator,
         distance,
@@ -86,7 +86,7 @@ For the parameters which also appear in the dataframe of accepted values
 """
 function initialize_threaded(
     n_pop::Int64, 
-    defaultparams::Union{AbstractParams,AbstractParamCollection}, 
+    params::Union{AbstractParams,AbstractParamCollection}, 
     priors::Tuple{Priors,DataFrame},
     simulator,
     distance,
@@ -111,7 +111,7 @@ function initialize_threaded(
             end
         end
 
-        prediction = simulator(defaultparams, priors[1].params, particles[i])
+        prediction = simulator(params, priors[1].params, particles[i])
         distances[i] = distance(prediction, data)
     end
 
@@ -309,7 +309,7 @@ end
 
 function evaluate_threaded(
     particles::Vector{Vector{Float64}},
-    defaultparams::Union{AbstractParams,AbstractParamCollection},
+    params::Union{AbstractParams,AbstractParamCollection},
     simulator,
     distance,
     priors::Priors,
@@ -321,7 +321,7 @@ function evaluate_threaded(
 
     @threads for i in eachindex(particles)
         particle = particles[i]
-        prediction = simulator(defaultparams, priors.params, particle)
+        prediction = simulator(params, priors.params, particle)
         dist = distance(prediction, data)
         distances[i] = dist
     end
@@ -332,7 +332,7 @@ end
 
 function evaluate_threaded(
     particles::Vector{Vector{Float64}},
-    defaultparams::Union{AbstractParams,AbstractParamCollection},
+    params::Union{AbstractParams,AbstractParamCollection},
     simulator,
     distance,
     priors::Tuple{Priors,DataFrame},
@@ -341,7 +341,7 @@ function evaluate_threaded(
 
     return evaluate_threaded(
         particles,
-        defaultparams,
+        params,
         simulator,
         distance,
         priors[1],
@@ -363,7 +363,6 @@ end
 get_par_names(priors::Priors) = priors.params # get parameter names from a parametric oject
 get_par_names(priors::Tuple{Priors,DataFrame}) = unique(vcat([Symbol.(get_par_names(p)) for p in priors]...)) # get parameter names if a dataframe of accepted values is also supplied
 
-@enum ParallelizationType sequential threaded distributed
 
 """
     SMC(
@@ -374,12 +373,13 @@ get_par_names(priors::Tuple{Priors,DataFrame}) = unique(vcat([Symbol.(get_par_na
         data::Any;
         n_pop::Int64 = 1000,
         q_eps::Float64 = 0.2,
-        k_max::Int64 = 3,
-        convergence_eps::Float64 = 0.1,
-        paralellization_type = threaded,
-        savetag = "smc",
-        saveto::Union{String,False} = ""
+        k_max::Int64 = 3
         )
+
+args
+
+- `priors`: A priors object
+- `defaultparams`: A default parameter object. The SMC function will create a single copy of this object, making it available in `simulator` to be modified for each sample evaluation.
 
 kwargs 
 
@@ -396,13 +396,11 @@ function SMC(
     data::Any;
     n_pop::Int64 = 1000,
     q_eps::Float64 = 0.2,
-    k_max::Int64 = 3,
-    convergence_eps::Float64 = 0.1,
-    paralellization_type = threaded,
-    savetag = "smc",
-    saveto::Union{String,Bool} = ""
+    k_max::Int64 = 3
     )
-    
+
+    params = deepcopy(defaultparams)
+
 
     @info("Executing SMC with $((k_max+1) * n_pop) samples on $(Threads.nthreads()) threads.")
     start = now() # record computation time
@@ -411,18 +409,14 @@ function SMC(
         accepted_weights::Vector{Float64}, 
         k = 0, 
         converged = false,
-        distance_schedule = Vector{Float64}(undef, k_max) # record the distance schedule
+        distance_schedule = Float64[] # record the distance schedule
       
         param_names = get_par_names(priors)
         num_params = length(param_names)
-        
-        if paralellization_type == threaded
-            particles, distances, weights = initialize_threaded(
-                n_pop, defaultparams, priors, simulator, distance, data
-                )
-        else
-            error("Paralellization types other than threaded yet to be implemented")
-        end
+
+        particles, distances, weights = initialize_threaded(
+            n_pop, params, priors, simulator, distance, data
+            )
 
         accepted_particles, accepted_distances, accepted_weights, epsilon = reject(
             particles, distances, weights, q_eps
@@ -438,29 +432,19 @@ function SMC(
                 accepted_particles, accepted_distances, accepted_weights, priors, n_pop, param_names, num_params
                 )
 
-            if paralellization_type == threaded
-                weights = calculateweights_threaded(
-                    particles, priors, param_names, accepted_particles, idcs, accepted_weights, scales
-                    )
-            else
-                error("Paralellization types other than threaded yet to be implemented")
-            end
-    
+            weights = calculateweights_threaded(
+                particles, priors, param_names, accepted_particles, idcs, accepted_weights, scales
+                )
 
-            if paralellization_type == threaded
-                distances = evaluate_threaded(
-                    particles, defaultparams, simulator, distance, priors, data
-                    )
-            else
-                error("Paralellization types other than threaded yet to be implemented")
-            end
+            distances = evaluate_threaded(
+                particles, params, simulator, distance, priors, data
+                )
         
             accepted_particles, accepted_distances, accepted_weights, epsilon = reject(
                 particles, distances, weights, q_eps
                 )
             
-            distance_schedule[k] = epsilon
-            #converged = check_convergence(k, distance_schedule, convergence_eps)
+            push!(distance_schedule, epsilon)
         end
 
         @info("SMC reached k_max")
@@ -477,7 +461,7 @@ function SMC(
 
         fit = SMCResult(
             accepted = accepted,
-            defaultparams = defaultparams,
+            params = params,
             priors = priors,
             simulator = simulator,
             distance = distance,
@@ -491,20 +475,6 @@ function SMC(
             distance_schedule = distance_schedule,
             converged = converged
             )
-
-        if saveto != false
-            CSV.write(joinpath("$saveto", "$(savetag)_accepted.csv"), accepted)
-            CSV.write(joinpath("$saveto", "$(savetag)_info.csv"), DataFrame(
-                defaultparams = defaltaparams,
-                priors = priors,
-                n_pop = n_pop,
-                q_eps = q_eps,
-                k_max = k_max,
-                time_of_execution = start,
-                comptime = fit.comptime
-
-            ))
-        end
 
         return fit
     end
