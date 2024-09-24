@@ -4,24 +4,29 @@
 # paths are given relative to the project directory root
 
 time_resolved:
-  - name: "dmagna_growth"
-    path: "test/data/dp3_test_data_growth_tidied_agg.csv"
+  - name: daphnia_pulex_growth
+    type: time_resolved
+    path: test/data/dp3_test_data_growth_tidied_agg.csv
     meta:
-      - description: "Daphnia pulex growth at two food levels, aggregated over individuals"
-      - source: "Hansul et al. (2024) Environ. Toxicol. Chem."
-  - name: "dmagna_repro"
-    path: "test/data/dp3_test_data_reproduction_tidied_agg.csv"
+      - description: Daphnia pulex growth at two food levels, aggregated over individuals
+      - source: Hansul et al. (2024) Environ. Toxicol. Chem.
+  - name: daphnia_pulex_repro
+    path: test/data/dp3_test_data_reproduction_tidied_agg.csv
     meta:
-      - description: "Daphnia pulex reproduction at two food levels, aggregated over individuals"
+      - description: Daphnia pulex reproduction at two food levels, aggregated over individuals
+      - source: Hansul et al. (2024) Environ. Toxicol. Chem.
 scalar:  
-  - name: "dmagna_growth_stats"
-    path: "test/data/dp3_test_data_growth_stats_agg.csv"
+  - name: dpulex_growth_stats
+    path: test/data/dp3_test_data_growth_stats_agg.csv
     meta:
-      - description: "Additional growth statistics derived from the time-resolved data, aggregated over individuals"
-  - name: "dmagna_repro_stats"
-    path: "test/data/dp3_test_data_repro_stats_agg.csv"
-      - description: "Additional repro statistics derived from the time-resolved data, aggregated over individuals"
-  - name: "dmagna_general"
-    path: "test/data/dpulex_stats.csv"
+      - description: Additional growth statistics derived from the time-resolved data, aggregated over individuals
+      - source: Derived from raw data Hansul et al. (2024) Environ. Toxicol. Chem.
+  - name: dpulex_repro_stats
+    path: test/data/dp3_test_data_repro_stats_agg.csv
     meta:
-      - description: "General life-history traits for Daphnia pulex"
+      - description: Additional repro statistics derived from the time-resolved data, aggregated over individuals
+      - source: Derived from raw data by Hansul et al. (2024) Environ. Toxicol. Chem.
+  - name: dpulex_general
+    path: test/data/daphnia_pulex_stats.csv
+    meta:
+      - description: General life-history traits for Daphnia pulex

@@ -23,7 +23,7 @@ function rr(x::R, x_ref::Missing)::Missing where R <: Real
 end
 
 function robustmean(x)
-    xfilt = filter(xi -> isfinite(xi), x)
+    xfilt = filter(xi -> isfinite(xi) & !ismissing(xi), x)
 
     if length(xfilt)==0
         return NaN
