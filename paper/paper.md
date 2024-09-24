@@ -125,14 +125,14 @@ The output is visualized in Figure 1.
 ### Example simulations of the ABM
 
 To take this to the population-level, in principle only need to change the simulator. 
-Instead of `DEBODE.simulator`, we call `AgentBased.simulator`. <br>
+Instead of `DEBODE.simulator`, we call `DEBABM.simulator`. <br>
 
 For simulations of population dynamics we will tpyically want to include individual variability, which is done through the zoom factor `Z` (see model description for details). <br>
 In addition, we might want to adjust some global parameters (longer simulation timespan and higher food input rate), by modify the `glb`-entries. <br>
 Since the ABM is always stochastic, it is also a good idea to run repeated simulations. This can be done by manually writing a for loop, or with the `@replicates` macro.
 
 ```
-using DEBBase.AgentBased, DataFrames, Distributions
+using DEBBase.DEBABM, DataFrames, Distributions
 
 p = Params()
 p.glb.t_max = 56 # adjust simulated timespan 
@@ -143,7 +143,7 @@ Tvec = [17.5, 20., 22.5] # simulate these ambient temperatures
 sim = DataFrame() # initialize output data frame
 for (i,T) in enumerate(Tvec) # iterate over temepratures
     p.glb.T = 273.15 + T # update temperature in Kelvin
-    sim_i = @replicates AgentBased.simulator(p) 10 # generate predictions
+    sim_i = @replicates DEBABM.simulator(p) 10 # generate predictions
     sim_i[!,:T] .= p.glb.T # add column indicating temperature
     append!(sims, sim_i) # add result to output data frame
 end

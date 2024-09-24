@@ -9,7 +9,7 @@ using Revise
 @time using DEBBase.DEBODE
 using DEBBase.ParamStructs
 using DEBBase.DoseResponse
-using DEBBase.AgentBased
+using DEBBase.DEBABM
 using DEBBase.Utils
 
 begin # parameter settings
@@ -30,7 +30,7 @@ begin # parameter settings
 end
 
 @time sim = exposure(
-    x -> replicates(AgentBased.simulator, p, 3),
+    x -> replicates(DEBABM.simulator, p, 3),
     p,
     [0., 0.5, 1.]
 )

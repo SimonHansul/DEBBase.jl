@@ -26,7 +26,7 @@ fig1 = @df sim plot(
 savefig(plot(fig1, dpi = 300), "paper/fig1.png")
 
 
-using DEBBase.AgentBased, Distributions
+using DEBBase.DEBABM, Distributions
 using Base.Threads
 using ProgressMeter
  
@@ -44,7 +44,7 @@ Tvec = [17.5, 20., 22.5] # simulate three ambient temperatures
 sim = DataFrame()
 @showprogress for (i,T) in enumerate(Tvec)  
     p.glb.T = 273.15 + T # apply temperature in Kelvin =
-    sim_i = @replicates AgentBased.simulator(p) 10 # generate the predidction
+    sim_i = @replicates DEBABM.simulator(p) 10 # generate the predidction
     sim_i[!,:T] .= p.glb.T # add column indicating temperature
     append!(sim, sim_i)
 end

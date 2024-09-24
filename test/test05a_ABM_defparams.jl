@@ -12,7 +12,7 @@ using Revise
 @time using DEBBase.DEBODE
 using DEBBase.ParamStructs
 using DEBBase.DoseResponse
-using DEBBase.AgentBased
+using DEBBase.DEBABM
 
 # first we extend the species parameters to include additional params needed for the ABM
 begin
@@ -43,7 +43,7 @@ end;
 
 a = DEBAgent(p, DEBODE.initialize_global_statevars(p), 1, AgentParams)
 @test a isa AbstractDEBAgent
-m = AgentBased.ABM(p);
+m = DEBABM.ABM(p);
 @test m isa AbstractDEBABM
 
 @testset begin 
@@ -61,7 +61,7 @@ end
     @info "Transfer global statevars from model to agent"
     @info "Independency of agent statevars from global statevars"
     m.u.C_W = [rand()]
-    AgentBased.get_global_statevars!(m.agents[1], m)
+    DEBABM.get_global_statevars!(m.agents[1], m)
     @test m.agents[1].u.C_W == m.u.C_W
     m.agents[1].u.C_W .+= 1
     @test m.agents[1].u.C_W != m.u.C_W
@@ -69,17 +69,17 @@ end
 
 @testset begin 
     @info "Update agent statevars using Euler!()"
-    m = AgentBased.ABM(p)
+    m = DEBABM.ABM(p)
     a = m.agents[1]
     S0 = a.u.S
     DEBODE.DEBODE_IA!(a.du, a.u, a.p, m.t)
-    AgentBased.Euler!(a.u, a.du, m.dt, collect(eachindex(a.u)))
+    DEBABM.Euler!(a.u, a.du, m.dt, collect(eachindex(a.u)))
     @test a.u.S > S0
 end
 
 @test begin
     @info "Run model_step! without err"
-    AgentBased.model_step!(m)
+    DEBABM.model_step!(m)
     true
 end
 
@@ -88,8 +88,8 @@ default(leg = false)
 
 @info "Execute model step"
 @test begin 
-    m = AgentBased.ABM(p)
-    AgentBased.model_step!(m)
+    m = DEBABM.ABM(p)
+    DEBABM.model_step!(m)
     true
 end
 
@@ -125,11 +125,11 @@ using StatsPlots
 using DEBBase.Utils
 default(leg = false)
 
-using DEBBase.AgentBased
+using DEBBase.DEBABM
 using DataFrames, DataFramesMeta
 using Chain
 
-sim = AgentBased.simulator(p) 
+sim = DEBABM.simulator(p) 
 simODE = DEBODE.simulator(Params(spc = SpeciesParams(tau_R = Inf)))
 
 eval_df = @chain sim, simODE begin
@@ -174,13 +174,13 @@ end
 
 using BenchmarkTools
 @info "Comparing simulation times of ODE and ABM: We expect ODE to be faster than ABM"
-b = @benchmark AgentBased.simulator(p)
+b = @benchmark DEBABM.simulator(p)
 bmedian_agentbased = median(b.times)
 bODE = @benchmark DEBODE.simulator(Params())
 bmedian_ODE = median(bODE.times)
 @info("ODE is $(round(bmedian_agentbased/bmedian_ODE, sigdigits = 2)) times faster than ABM") 
 
-using DEBBase.AgentBased
+using DEBBase.DEBABM
 begin
     glb = GlobalParams(
         t_max = 365,
@@ -221,7 +221,7 @@ p.glb.t_max = 56.
 begin
     @info "Generating output plot for ABM with defaults"
     @time "Computation time using 10 threaded replicates of the ABM with t_max=$(p.glb.t_max):" sim = treplicates(
-        AgentBased.simulator, p, 3; saveat = 1
+        DEBABM.simulator, p, 3; saveat = 1
         )
     sort!(sim, :t);
 

@@ -96,7 +96,7 @@ module DEBODE
     end
 end
 
-module AgentBased
+module DEBABM
 
     using Parameters
     using ComponentArrays
@@ -114,12 +114,12 @@ module AgentBased
     using ..DoseResponse: LL2h, LL2
     using ..ParamStructs: AbstractParamCollection, AbstractParams # import paramstructs
 
-    include("AgentBased/paramstructs.jl")
+    include("DEBABM/paramstructs.jl")
     export ABMParamCollection
-    include("AgentBased/agents.jl")
-    include("AgentBased/model.jl")
-    include("AgentBased/schedules.jl")
-    include("AgentBased/simulators.jl")
+    include("DEBABM/agents.jl")
+    include("DEBABM/model.jl")
+    include("DEBABM/schedules.jl")
+    include("DEBABM/simulators.jl")
 
     export AbstractDEBAgent, AbstractDEBABM, DEBAgent, DEBABM, agent_record_to_df
 end
