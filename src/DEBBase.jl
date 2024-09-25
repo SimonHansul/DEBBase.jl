@@ -132,7 +132,7 @@ Submodule for parameter estimation using approximate bayesian computation.
 """
 module ABC
 
-    using DataFrames
+    using DataFrames, DataStructures
     using StatsBase
     using KernelDensity
     using Distributions
@@ -143,7 +143,7 @@ module ABC
     using Dates
     using Random
 
-    using ..Utils: fround
+    using ..Utils: fround, AbstractDataset
     using ..ParamStructs: AbstractParams, AbstractParamCollection
 
     include("ABC/priors.jl")
@@ -154,6 +154,8 @@ module ABC
 
     include("ABC/smc.jl") # parameter estimation using sequential monte carlo approximate bayesian computation
     export SMC, SMCResult
+
+    include("ABC/loss.jl")
 
     include("ABC/sampling.jl")
     export rand!, posterior_sample!

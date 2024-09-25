@@ -7,33 +7,26 @@ This way we deal with domain errors which might occur if `x` or `p[1]` temporari
 Negative values should theoretically be impossible, but very small values of `x` (`<= 1e-20`) might occur during ODE solving. 
 In this case, the returned real part of the expression evaluates to 1, which is in turn the expected behaviour.  
 """
-@inline function LL2(x::Float64, p::NTuple{2,Float64})
+@inline function LL2(x::Real, p::NTuple{2,Float64})
     return (1 / (1 + Complex(x / p[1]) ^ p[2])).re
 end
 
 """
 Cumulative hazard function of the log-logistic distribution. Mainly used for application in GUTS.
 """
-@inline function LL2h(x::Float64, p::NTuple{2,Float64})
+@inline function LL2h(x::Real, p::NTuple{2,Float64})
     -log((1 / (1 + Complex(x / p[1]) ^ p[2])).re)
 end
 
-@inline function LL2h(x::Vector{Float64}, p::NTuple{2,Float64})
-    [LL2h(xi, p) for xi in x]
-end
 
 """
 Two-parameter log-logistic function transformed to increasing function 
 for application to PMoA maintenance costs.
 """
-@inline function LL2M(x::Float64, p::NTuple{2,Float64})
+@inline function LL2M(x::Real, p::NTuple{2,Float64})
     1 + (x/p[1])^p[2]
 end
 
-
-@inline function LL2M(x::Vector{Float64}, p::NTuple{2,Float64})
-    [LL2M(xi, p) for xi in x]
-end
 
 
 """

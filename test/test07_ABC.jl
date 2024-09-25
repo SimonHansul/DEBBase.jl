@@ -11,14 +11,11 @@ using DEBBase.DEBODE
 using DEBBase.ABC
 using DEBBase.Figures
 
-
 #=
 ## Loading a data config file
 =# 
 
 data = Utils.data_from_config("test/config/data_config_example.yml")
-
-data.independent_
 
 # For easier access while developing this code, we can as well create aliases for some of the entries 
 # in the dataset. 
@@ -68,7 +65,7 @@ Comparing the prediction of the initial guess with the observed values, we shoul
 begin
     Z = maximum(data.time_resolved["growth_agg"].drymass_mean) / DEBODE.calc_S_max(SpeciesParams())
 
-    intguess = Utils.params_from_config(Params, "test/config/abc_test_config.yml") # loads a config file containing the global settings. we could as well enter the values here, but the config file can help with reproducibility
+    intguess = Utils.params_from_config(Params, "test/config/param_config_abctest.yml") # loads a config file containing the global settings. we could as well enter the values here, but the config file can help with reproducibility
 
     spc = intguess.spc
     spc.Idot_max_rel_0 *= Z^(1/3)#
@@ -94,19 +91,24 @@ The second portion of `simulate_data` therefore processes the simulation output,
 =#
 
 using DEBBase.ParamStructs
+using DataStructures
+
+
 
 function simulate_data(
     params::AbstractParamCollection, 
     parnames::Vector{Symbol}, # names of estimated parameters
     parvals::Vector{R}; # samples parameter values
     food_levels = [0.1, 0.4], # simulated food levels
-    return_raw = false # optionally return the raw simulation output
+    return_raw = false, # optionally return the raw simulation output
     ) where R <: Real
 
     # assigning parameter samples
     for (par,val) in zip(parnames,parvals)
         eval(:(params.spc.$par = $val))
     end
+
+    params.spc.k_J_0 = ((1 - params.spc.kappa_0) / params.spc.kappa_0) * params.spc.k_M_0
 
     # generating the simulation output
     sim = DataFrame()
@@ -165,20 +167,26 @@ function simulate_data(
         end
     end
 
-    yhat.scalar["misc_traits"] = Dict(
-        "age_at_birth" => DEBODE.age_at_birth(@subset(sim, :food_level .== maximum(:food_level))),
-        "egg_drymass" => params.spc.X_emb_int_0
+    yhat.scalar["misc_traits"] = OrderedDict(
+        "age_at_birth" => Dict("value" => DEBODE.age_at_birth(@subset(sim, :food_level .== maximum(:food_level)))),
+        "egg_drymass" => Dict("value" => params.spc.X_emb_int_0)
     )
 
     return yhat
 end
+
 simulate_data(params::AbstractParamCollection; kwargs...) = simulate_data(params, Symbol[], Real[]; kwargs...)
 
-sim = simulate_data(intguess; return_raw = true) # this would return the raw ODE output
-yhat = simulate_data(intguess) # this returns the simulated dataset
+@testset begin
+    @info "Simulating a Dataset"
 
+    sim = simulate_data(intguess; return_raw = true) # this would return the raw ODE output
+    yhat = simulate_data(intguess) # this returns the simulated dataset
 
-yhat
+    @test sim isa DataFrame
+    @test yhat isa ABC.AbstractDataset
+end
+
 
 #=
 ## Defining the distance function
@@ -189,51 +197,67 @@ That means, the symmetric bounded loss is applied to each part of the dataset,
 then combined to calculate the total distance.
 =#
 
-function symmetric_bounded_loss(
-    predicted::AbstractVector,
-    observed::AbstractVector;
-    weights::Union{AbstractVector,Real} = 1
-    )
+using Test
 
-    isa(weights, Real) ? weights = repeat([weights], length(predicted)) : nothing
+observed = data
+predicted = yhat
 
-    let n = length(predicted)
-        return sum(@. (weights/n) * (( (observed - predicted)^2 ) / ( observed^2 + predicted^2 )))
-    end
+@testset begin
+    @info "Computing loss for time-resolved data"
+
+    observed.time_resolved["repro_agg"]
+    predicted.time_resolved["repro_agg"]
+
+    loss = ABC.compute_time_resolved_loss(predicted, observed)
+    @test isfinite(loss)
 end
 
-using BenchmarkTools
+@testset begin
+    @info "Computing loss for scalar data in tabular format"
+    name = "growth_stats_agg"
 
-growth_ts_loss = @chain data.time_resolved["growth_agg"] begin
-    leftjoin(
-        yhat.time_resolved["growth_agg"], 
-        on = [:t_birth, :food_level], 
-        makeunique = true, 
-        renamecols = "_observed" => "_predicted"
-        )
-    @select(:t_birth, :food_level, :drymass_mean_observed, :drymass_mean_predicted)
-    symmetric_bounded_loss(_.drymass_mean_observed, _.drymass_mean_predicted)
+    observed_df = observed.scalar[name]
+    predicted_df = predicted.scalar[name]
+    grouping_vars = observed.grouping_vars["scalar"][name]
+    response_vars = observed.response_vars["scalar"][name]
+
+    loss = ABC.compute_scalar_loss(predicted_df, observed_df, response_vars, grouping_vars)
+
+    @test isfinite(loss)
 end
 
-repro_ts_loss = @chain data.time_resolved["growth_agg"] begin
-    leftjoin(
-        yhat.time_resolved["growth_agg"], 
-        on = [:t_birth, :food_level], 
-        makeunique = true, 
-        renamecols = "_observed" => "_predicted"
-        )
-    @select(:t_birth, :food_level, :drymass_mean_observed, :drymass_mean_predicted)
-    symmetric_bounded_loss(_.drymass_mean_observed, _.drymass_mean_predicted)
+@testset begin
+    @info "Computing loss for scalar data in dict format"
+    name = "misc_traits"
+
+    observed_dict = observed.scalar[name]
+    predicted_dict = predicted.scalar[name]
+    grouping_vars = observed.grouping_vars["scalar"][name]
+    response_vars = observed.response_vars["scalar"][name]
+
+    println(grouping_vars)
+
+    loss = ABC.compute_scalar_loss(predicted_dict, observed_dict)
+
+    @test isfinite(loss)
+end
+
+
+@testset begin
+    @info "Computing total loss"
+
+    loss = ABC.compute_loss(predicted, observed)
+    @test isfinite(loss)
 end
 
 
 
-yhat.time_resolved["growth_agg"][:,[:t_birth, :food_level, :drymass_mean]] |> 
-x -> rightjoin(x, data.time_resolved["growth_agg"], on = [:t_birth, :food_level], makeunique = true)
+fitted_params = [
+    :Idot_max_rel_emb,
+    :Idot_max_rel,
+    :kappa_0,
+    :k_M_0,
 
+]
 
-yhat.scalar["repro_stats_agg"]
-yhat.scalar["growth_stats_agg"]
-yhat.scalar["misc_traits"]
-
-
+# parameters may be linked through an expression

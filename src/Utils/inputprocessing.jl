@@ -203,7 +203,7 @@ Fields:
 """
 @with_kw struct Dataset <: AbstractDataset
     time_resolved::OrderedDict{String,DataFrame} = OrderedDict()
-    scalar::OrderedDict{String,Union{DataFrame,Dict}} = OrderedDict()
+    scalar::OrderedDict{String,Union{DataFrame,OrderedDict}} = OrderedDict()
     time_vars::Dict = Dict()
     grouping_vars::Dict = Dict("time_resolved" => Dict(), "scalar" => Dict())
     response_vars::Dict = Dict("time_resolved" => Dict(), "scalar" => Dict())
@@ -213,7 +213,6 @@ end
 function read_from_path(path::AbstractString)
 
     file_extension = split(path, ".")[end]
-
     @assert file_extension in ["csv", "yml"] "Unknown file extension $(file_extension), expecting csv or yml"
 
     if file_extension == "csv"
@@ -221,7 +220,7 @@ function read_from_path(path::AbstractString)
     end
 
     if file_extension == "yml"
-        return YAML.load_file(path)
+        return OrderedDict(YAML.load_file(path))
     end
 end
 
@@ -237,7 +236,7 @@ function load_time_resolved_data!(data::AbstractDataset, config::Dict)::Nothing
         @assert "grouping_vars" in keys(ts_data) "Independent variables entry missing for time-resolved data in config file"
         @assert "response_vars" in keys(ts_data) "Response variables entry missing for time-resolved data in config file"
         
-        data.time_vars[ts_data["name"]] = ts_data["time_var"]
+        data.time_vars[ts_data["name"]] = Symbol(ts_data["time_var"])
 
         data.grouping_vars["time_resolved"][ts_data["name"]] = Symbol.(
             ts_data["grouping_vars"]
@@ -254,7 +253,6 @@ end
 function load_scalar_data!(data::AbstractDataset, config::Dict)::Nothing
     for sc_data in config["scalar"]
 
-        
         data.scalar[sc_data["name"]] = read_from_path(sc_data["path"])
         
         # grouping_vars are optional here
@@ -265,7 +263,7 @@ function load_scalar_data!(data::AbstractDataset, config::Dict)::Nothing
                 sc_data["grouping_vars"]
             )
         else
-            data.intependent_vars["sclar"][sc_data["name"]] = Symbol[]
+            data.grouping_vars["scalar"][sc_data["name"]] = Symbol[]
         end
 
         data.response_vars["scalar"][sc_data["name"]] = Symbol.(
@@ -276,7 +274,19 @@ function load_scalar_data!(data::AbstractDataset, config::Dict)::Nothing
     return nothing
 end
 
+
+"""
+    data_from_config(path_to_config::AbstractString; datatype::DataType = Dataset)::datatype
+
+Load a dataset from data config file. 
+
+```Julia
+usng DEBBase.Utils
+data = Utils.data_from_config("path/to/config.yml")
+```
+"""
 function data_from_config(path_to_config::AbstractString; datatype::DataType = Dataset)::datatype
+
     config = YAML.load_file(path_to_config)
     data = datatype()
     load_time_resolved_data!(data, config)

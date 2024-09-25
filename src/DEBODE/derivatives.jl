@@ -5,18 +5,18 @@
 """
 Clip negative values.
 """
-function clipneg(x::Float64)
+function clipneg(x::Real)::Real
     return sig(x, 0., 0., x)
 end
 
 """
 function sig(
-    x::Float64, 
-    x_thr::Float64,
-    y_left::Float64, 
-    y_right::Float64; 
-    beta::Float64 = 1e16
-    )::Float6
+    x::Real, 
+    x_thr::Real,
+    y_left::Real, 
+    y_right::Real; 
+    beta::Real = 30
+    )::Real
 
 Sigmoid switch function. 
 This can be useful to replace simple if-statements with a continuous function. 
@@ -25,12 +25,12 @@ This can be useful to replace simple if-statements with a continuous function.
 
 """
 @inline function sig(
-    x::Float64, 
-    x_thr::Float64,
-    y_left::Float64, 
-    y_right::Float64; 
-    beta::Float64 = 1e16
-    )::Float64
+    x::Real, 
+    x_thr::Real,
+    y_left::Real, 
+    y_right::Real; 
+    beta::Real = 30
+    )::Real
 
     return 1 / (1 + exp(-beta*(x - x_thr))) * (y_right - y_left) + y_left
 end
@@ -41,7 +41,7 @@ end
         u::ComponentArray,
         p::AbstractParamCollection,
         t::Real
-        )::Float64
+        )::Real
         
 Compute scaled functional response `f_X`, assuming a Holling Type II relationship.
 """
@@ -50,7 +50,7 @@ Compute scaled functional response `f_X`, assuming a Holling Type II relationshi
     u::ComponentArray,
     p::Union{AbstractParamCollection,NamedTuple},
     t::Real
-    )::Float64
+    )::Real
 
     return (u.X_p / p.glb.V_patch) / ((u.X_p / p.glb.V_patch) + u.K_X) # calculate type II functional response
 end
@@ -161,7 +161,7 @@ Positive somatic growth.
     u::ComponentArray,
     p::Union{AbstractParamCollection,NamedTuple},
     t::Real
-    )::Float64
+    )::Real
 
     return u.eta_AS * (u.kappa * du.A - du.M)
 end
@@ -174,7 +174,7 @@ Negative somatic growth, assuming that the residual ``\\kappa``-assimiliation fl
     u::ComponentArray,
     p::Union{AbstractParamCollection,NamedTuple},
     t::Real
-    )::Float64 
+    )::Real
 
     return -(du.M / p.spc.eta_SA - u.kappa * du.A)
 end
@@ -188,7 +188,7 @@ function Sdot(
     u::ComponentArray,
     p::Union{AbstractParamCollection,NamedTuple},
     t::Real
-    )::Float64 
+    )::Real
 
     return sig(
         u.kappa * du.A, # growth depends on maintenance coverage
@@ -490,14 +490,14 @@ end
 
 
 """
-    Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
+    Hbj(H::Real, X_emb::Real, H_b::Real, H_j::Real, p_b::Real, p_j::Real)::Real
 
 Mautrity-driven metabolic acceleration from birth to maturity threshold `H_j` (metamorphosis). 
 We assume that some baseline parameter `p` has value `p_b` at birth and `p_j` at metamorphosis.
 Between birth and metamorphosis, the current value of `p` is the maturity-weighted mean of `p_b` and `p_j`. 
 Not used in the base model.
 """
-function Hbj(H::Float64, X_emb::Float64, H_b::Float64, H_j::Float64, p_b::Float64, p_j::Float64)::Float64
+function Hbj(H::Real, X_emb::Real, H_b::Real, H_j::Real, p_b::Real, p_j::Real)::Real
     w_b = (H_j - H) / (H_j - H_b) # weight for p_b
     w_j = 1 - w_b # weight for p_j
     p_bj = mean([p_b, p_j], Weights([w_b, w_j])) # p_bj, i.e. value between birth and maturity
