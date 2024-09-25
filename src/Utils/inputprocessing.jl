@@ -192,10 +192,21 @@ What goes into a `Dataset` instance is best defined through a config file
 
 Time-resolved data is assumed to be stored as `csv` file and will be parsed as data frame. 
 Scalar data can be stored as `csv` (parsed as data frame) or `yml` (parsed as dict).
+
+Fields:
+
+- time_resolved: Dictionary of time-resolved (tabular) data
+- scalar: Dictionary of scalar data (tabular or in dict-form)
+- time_vars: Dictionary indicating the time-column for each time-resolved dataset
+- grouping_vars: Dictionary indicating additional grouping variables for time-resolved and scalar datasets
+- response_vars: Dictionary indicating response variables for time-resolved and scalar datasets
 """
 @with_kw struct Dataset <: AbstractDataset
     time_resolved::OrderedDict{String,DataFrame} = OrderedDict()
     scalar::OrderedDict{String,Union{DataFrame,Dict}} = OrderedDict()
+    time_vars::Dict = Dict()
+    grouping_vars::Dict = Dict("time_resolved" => Dict(), "scalar" => Dict())
+    response_vars::Dict = Dict("time_resolved" => Dict(), "scalar" => Dict())
 end
 
 
@@ -219,6 +230,22 @@ function load_time_resolved_data!(data::AbstractDataset, config::Dict)::Nothing
     for ts_data in config["time_resolved"]
         df = CSV.read(ts_data["path"], DataFrame)
         data.time_resolved[ts_data["name"]] = df
+        
+        # add entries for response and independent vars
+        println(keys(ts_data))
+
+        @assert "grouping_vars" in keys(ts_data) "Independent variables entry missing for time-resolved data in config file"
+        @assert "response_vars" in keys(ts_data) "Response variables entry missing for time-resolved data in config file"
+        
+        data.time_vars[ts_data["name"]] = ts_data["time_var"]
+
+        data.grouping_vars["time_resolved"][ts_data["name"]] = Symbol.(
+            ts_data["grouping_vars"]
+        )
+
+        data.response_vars["time_resolved"][ts_data["name"]] = Symbol.(
+            ts_data["response_vars"]
+        )
     end
 
     return nothing
@@ -226,7 +253,24 @@ end
 
 function load_scalar_data!(data::AbstractDataset, config::Dict)::Nothing
     for sc_data in config["scalar"]
+
+        
         data.scalar[sc_data["name"]] = read_from_path(sc_data["path"])
+        
+        # grouping_vars are optional here
+        @assert "response_vars" in keys(sc_data) "Response variables entry missing for scalar data in config file"
+
+        if "grouping_vars" in keys(sc_data)
+            data.grouping_vars["scalar"][sc_data["name"]] = Symbol.(
+                sc_data["grouping_vars"]
+            )
+        else
+            data.intependent_vars["sclar"][sc_data["name"]] = Symbol[]
+        end
+
+        data.response_vars["scalar"][sc_data["name"]] = Symbol.(
+            sc_data["response_vars"]
+        )
     end
 
     return nothing

@@ -92,11 +92,11 @@ function summarize_accepted(
 end
 
 """
-    ppc(defaultparams::AbstractParams, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
+    ppc(defaultparams::Any, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
 
 Compute posterior predictions for posterior predictive check.
 
-- `defaultparam::AbstractParams`: default parameters used in simulator
+- `defaultparam::Any`: default parameters used in simulator
 - `simulator`: simulator function with signature `simulator(defaultparams, priors.params, sample)`, where 
 - `accepted::AbstractDataFrame`: accepted particles as returned by SMC
 
@@ -106,7 +106,7 @@ kwargs
 
 - `n_samples = 1000`: number of samples from `accepted_particles` to evaluate
 """
-function ppc(defaultparams::Union{AbstractParams,AbstractParamCollection}, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
+function ppc(defaultparams::Any, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
     @info("Running posterior predictive check with $n_samples samples on $(Threads.nthreads()) threads")
     sim = Vector{DataFrame}(undef, n_samples) # predictions
 

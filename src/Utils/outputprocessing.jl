@@ -22,6 +22,8 @@ function rr(x::R, x_ref::Missing)::Missing where R <: Real
     return missing
 end
 
+robustmin(x) = length(x)>0 ? minimum(x) : Inf
+
 function robustmean(x)
     xfilt = filter(xi -> isfinite(xi) & !ismissing(xi), x)
 

@@ -48,7 +48,7 @@ module Utils
     export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin, sol_to_df, sol_to_mat
 
     include("Utils/ioutils.jl")
-    export load_config, save_config
+    export params_from_config, save_config
 
     include("Utils/inputprocessing.jl")
     export into!, into, isolate_pmoas!, isolate_pmoas, set_equal!, getstat, C2K
@@ -73,7 +73,7 @@ module DEBODE
 
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
     using ..DoseResponse: LL2, LL2M, LL2h
-    using ..Utils: sol_to_df, sol_to_mat
+    using ..Utils: sol_to_df, sol_to_mat, ismin, robustmin
 
     include("DEBODE/paramstructs.jl")
     export AbstractABM, GlobalParams, GlobalBaseStatevars, SpeciesParams, Params, AgentParams

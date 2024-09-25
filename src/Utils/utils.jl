@@ -135,7 +135,7 @@ function read_W3C(file_path::AbstractString; kwargs...)::DataFrame
     return core_data_table
 end
 
-function ismin(x::Vector{R}) where R <: Real
+function ismin(x::AbstractVector)
     return x .== minimum(x)
 end
 

@@ -19,7 +19,7 @@ d = Truncated(Normal(1, 1), 0, Inf)
 @test Utils.deserialize(d) == "Truncated(Normal{Float64}(1.0, 1.0, ), 0.0, Inf)"
 
 @info "Loading a config file and checking values"
-pload = load_config(Params, "test/config/save_config_example.yml")
+pload = params_from_config(Params, "test/config/save_config_example.yml")
 @test pload.spc.Z == LogNormal(1, 1) 
 
 
@@ -31,4 +31,4 @@ pload = load_config(Params, "test/config/save_config_example.yml")
 #p.spc.drc_functs_M = [newdrc]
 #save_config("./test/config/config_with_custom_drc.yml", p)
 #
-#load_config(Params, "./test/config/config_with_custom_drc.yml")
+#params_from_config(Params, "./test/config/config_with_custom_drc.yml")

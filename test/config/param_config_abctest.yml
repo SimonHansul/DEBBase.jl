@@ -1,0 +1,4 @@
+glb: 
+  t_max: 22
+  V_patch: 0.05
+  Xdot_in: 0.4

@@ -9,7 +9,7 @@ using Test
 
 @testset begin
     @info "Trying to load the example configuration file "
-    p = load_config(Params, "test/config/config_example.yml")
+    p = params_from_config(Params, "test/config/config_example.yml")
     @info "Checking return type"
     @test p isa Params
     @info "Checking values of the returned object"

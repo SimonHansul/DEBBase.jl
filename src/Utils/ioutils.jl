@@ -21,7 +21,7 @@ ymlparse(x::Vector{String}) = @. Meta.parse(x) |> eval
 ymlparse(x::Vector{N}) where N <: Number = x
 
 """
-    load_config(ParamType::DataType, path_to_config::String)::ParamType
+    params_from_config(ParamType::DataType, path_to_config::String)::ParamType
 
 Load a configuration file and return an instance of type `P`, which is assumed to be a parameter collection.
 
@@ -33,11 +33,11 @@ Load a configuration file and return an instance of type `P`, which is assumed t
 ## Example: 
 
 ```Julia
-stored_params = load_config(Params, "config/my_config_file.yml")
+stored_params = params_from_config(Params, "config/my_config_file.yml")
 ```
 
 """
-function load_config(ParamType::DataType, path_to_config::String)::ParamType
+function params_from_config(ParamType::DataType, path_to_config::String)::ParamType
     config = YAML.load_file(path_to_config)
     p = ParamType()
 

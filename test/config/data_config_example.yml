@@ -5,37 +5,66 @@
 # time_resolved:
 #   - name: 
 #     path
+#     time_var:
+#     grouping_vars:
+#        - [list column names of indepdendent variables here]
+#     response_vars:
+#        - [list column names of response variables here]
 #   ...
 # scalar:
 #   - name: 
-#   - path:
-# ...
+#     path
+#     independent_vars:
+#        - [list column names of indepdendent variables here] --> can be empty for scalar data
+#     response_vars:
+#        - [list column names of response variables here]
+#   ...
 # paths are given relative to the project directory root
 
 time_resolved:
   - name: growth_agg
     path: test/data/dp3_test_data_growth_tidy_agg.csv
-    meta:
-      - description: Daphnia pulex growth at two food levels, aggregated over individuals
-      - source: Hansul et al. (2024) Environ. Toxicol. Chem.
+    time_var: t_birth
+    grouping_vars:
+      - food_level
+    response_vars:
+      - drymass_mean
+    description: Daphnia pulex growth at two food levels, aggregated over individuals
+    source: Hansul et al. (2024) Environ. Toxicol. Chem.
   - name: repro_agg
     path: test/data/dp3_test_data_repro_tidy_agg.csv
+    time_var: t_birth
+    grouping_vars:
+      - food_level
+    response_vars:
+      - cum_repro_mean
     meta:
       - description: Daphnia pulex reproduction at two food levels, aggregated over individuals
       - source: Hansul et al. (2024) Environ. Toxicol. Chem.
 scalar:  
   - name: growth_stats_agg
     path: test/data/dp3_test_data_growth_stats_agg.csv
+    grouping_vars:
+      - food_level
+    response_vars:
+      - max_drymass_mean
+      - drymass_at_birth_mean
     meta:
       - description: Growth statistics at two food levels, derived from the time-resolved data, aggregated over individuals
       - source: Derived from raw data Hansul et al. (2024) Environ. Toxicol. Chem.
   - name: repro_stats_agg
     path: test/data/dp3_test_data_repro_stats_agg.csv
+    grouoing_vars:
+      - food_level
+    response_vars:
+      - birth_to_first_hatch_mean
+      - final_cum_repro_mean
     meta:
       - description: Repro statistics at two food levels, derived from the time-resolved data, aggregated over individuals
       - source: Derived from raw data by Hansul et al. (2024) Environ. Toxicol. Chem.
   - name: misc_traits
     path: test/data/dpulex_stats.yml
-    meta:
-      - description: General life-history traits for Daphnia pulex
-      - source: Cf. source file
+    response_vars:
+      - 
+    description: General life-history traits for Daphnia pulex
+    source: Various, listed in source file
