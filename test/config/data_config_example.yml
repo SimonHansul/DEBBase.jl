@@ -29,6 +29,7 @@ time_resolved:
       - food_level
     response_vars: 
       - drymass_mean
+    weight: 1
     description: Daphnia pulex growth at two food levels, aggregated over individuals # optional 
     source: Hansul et al. (2024) Environ. Toxicol. Chem. # optional
   - name: repro_agg
@@ -49,6 +50,7 @@ scalar:
     response_vars:
       - max_drymass_mean
       - drymass_at_birth_mean
+    weight: 1
     meta:
       - description: Growth statistics at two food levels, derived from the time-resolved data, aggregated over individuals
       - source: Derived from raw data Hansul et al. (2024) Environ. Toxicol. Chem.
@@ -67,5 +69,6 @@ scalar:
     response_vars:
       - age_at_birth
       - egg_drymass
+    weight: 1
     description: General life-history traits for Daphnia pulex
     source: Various, listed in source file

@@ -141,6 +141,7 @@ function compute_time_resolved_loss(
     name::AbstractString,
     predicted::AbstractDataset, 
     observed::AbstractDataset; 
+    weight = 1,
     inner_loss_function = symmetric_bounded_loss_with_penalty,
     return_all = false
     )
@@ -170,6 +171,7 @@ function compute_time_resolved_loss(
                 loss = inner_loss_function(
                     df[:,col_predicted],
                     df[:,col_observed],
+                    weight = weight
                     )
                 append!(losses, DataFrame(response = response, loss = loss))
             end # for response
@@ -197,6 +199,7 @@ Computes loss values for all time-resolved data entries.
 function compute_time_resolved_loss(
     predicted::AbstractDataset,
     observed::AbstractDataset;
+    weight = 1,
     return_all = false,
     inner_loss_function = symmetric_bounded_loss_with_penalty
     )
@@ -205,7 +208,12 @@ function compute_time_resolved_loss(
     time_resolved_losses = Union{Missing,Float64}[]
 
     for (i,name) in enumerate(datanames)
-        loss = ABC.compute_time_resolved_loss(name, predicted, observed; inner_loss_function = inner_loss_function)
+        loss = ABC.compute_time_resolved_loss(
+            name, predicted, 
+            observed; 
+            inner_loss_function = inner_loss_function, 
+            weight = observed.weight["time_resolved"][name]
+            )
         push!(time_resolved_losses, loss)
     end
 
@@ -240,6 +248,7 @@ function compute_scalar_loss(
     observed::AbstractDataFrame,
     response_vars, 
     grouping_vars;
+    weight = 1,
     inner_loss_function = symmetric_bounded_loss_with_penalty,
     return_all = false
     )
@@ -270,7 +279,8 @@ function compute_scalar_loss(
                 
                 loss = inner_loss_function(
                     df[:,col_observed], 
-                    df[:,col_predicted]
+                    df[:,col_predicted],
+                    weight = weight
                     )
                 append!(losses, DataFrame(
                     response = response, 
@@ -303,6 +313,7 @@ function compute_scalar_loss(
     observed::OrderedDict,
     response_vars,
     grouping_vars;
+    weight = 1,
     inner_loss_function = symmetric_bounded_loss_with_penalty,
     return_all = false
     )
@@ -314,7 +325,8 @@ function compute_scalar_loss(
             scalar_losses, 
             inner_loss_function(
                 [predicted[key]["value"]],
-                [observed[key]["value"]]
+                [observed[key]["value"]],
+                weight = weight
                 ))
     end
 
@@ -342,6 +354,7 @@ function compute_scalar_loss(
                 observed.scalar[name],
                 observed.response_vars["scalar"][name],
                 observed.grouping_vars["scalar"][name];
+                weight = observed.weight["scalar"][name],
                 inner_loss_function = inner_loss_function
             )
         )

@@ -261,8 +261,8 @@ Below we define the priors as truncated Normal distributions with a constant CV 
 begin 
 
     fitted_params = [
-        #:X_emb_int_0,
-        #:Idot_max_rel_emb_0,
+        :X_emb_int_0,
+        :Idot_max_rel_emb_0,
         :K_X_0,
         :Idot_max_rel_0,
         :kappa_0,
@@ -272,12 +272,12 @@ begin
     ]
 
     cvs = fill(1.0, length(fitted_params))
-    #cvs[1] = 0.1
-    #cvs[2] = 0.5
+    cvs[1] = 0.1
+    cvs[2] = 0.5
 
     upper_limits = [
-        #Inf,
-        #Inf, 
+        Inf,
+        Inf, 
         Inf, 
         Inf, 
         1,
@@ -312,9 +312,9 @@ begin
         simulate_data,
         ABC.compute_loss,
         data;
-        n_pop = 1_000, 
-        q_eps = 0.1,
-        k_max = 10
+        n_pop = 25_000, 
+        q_eps = 0.2,
+        k_max = 5
     )
 
     bestfit = deepcopy(intguess)
@@ -349,9 +349,8 @@ begin
     f(x) = simulate_data(intguess, priors.params, x) |>     # minimization function
     x -> ABC.compute_loss(x, data)
 
-
     x0 = [mean(p) for p in priors.priors]    # initial guessses
-    optim = optimize(f, x0, SimulatedAnnealing())    # performing the optimization
+    optim = optimize(f, x0, NelderMead())    # performing the optimization
 
     bestfit = optim.minimizer   # retrieving the estimates
     yhat_bestfit = simulate_data(intguess, priors.params, bestfit)   # plotting the prediction
@@ -360,3 +359,7 @@ begin
     @df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level, lw = 2, color = :gray, linstyle = [:dash :solid])
     display(plt_bestfit)
 end
+
+
+data.scalar["misc_traits"]
+yhat_bestfit.scalar["misc_traits"]

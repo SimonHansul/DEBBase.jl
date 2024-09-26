@@ -207,6 +207,7 @@ Fields:
     time_vars::Dict = Dict()
     grouping_vars::Dict = Dict("time_resolved" => Dict(), "scalar" => Dict())
     response_vars::Dict = Dict("time_resolved" => Dict(), "scalar" => Dict())
+    weights::Dict = Dict("time_resolved" => Dict(), "sclar" => Dict())
 end
 
 
@@ -231,7 +232,6 @@ function load_time_resolved_data!(data::AbstractDataset, config::Dict)::Nothing
         data.time_resolved[ts_data["name"]] = df
         
         # add entries for response and independent vars
-        println(keys(ts_data))
 
         @assert "grouping_vars" in keys(ts_data) "Independent variables entry missing for time-resolved data in config file"
         @assert "response_vars" in keys(ts_data) "Response variables entry missing for time-resolved data in config file"
@@ -245,6 +245,8 @@ function load_time_resolved_data!(data::AbstractDataset, config::Dict)::Nothing
         data.response_vars["time_resolved"][ts_data["name"]] = Symbol.(
             ts_data["response_vars"]
         )
+
+        data.weights["time_resolved"][ts_data["name"]] = ts_data["weight"]
     end
 
     return nothing
@@ -269,6 +271,8 @@ function load_scalar_data!(data::AbstractDataset, config::Dict)::Nothing
         data.response_vars["scalar"][sc_data["name"]] = Symbol.(
             sc_data["response_vars"]
         )
+
+        data.weights["scalar"][sc_data["name"]] = sc_data["weight"]
     end
 
     return nothing
