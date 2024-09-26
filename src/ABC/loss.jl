@@ -105,10 +105,10 @@ function symmetric_bounded_loss_with_penalty(
         return missing
     end
 
-    let n = length(obs_filt), o = obs_filt ./ maximum(obs_filt), p = pred_filt ./ maximum(obs_filt)
+    let w = weights_filt, n = length(obs_filt), d = obs_filt, p = pred_filt
         pᵢ = (sum(p)/n)^2
-        oᵢ = (sum(o)/n)^2
-        loss = sum(@. (weights_filt/n) * ( ( (o - p)^2 ) / ( pᵢ + oᵢ)) )
+        dᵢ = (sum(d)/n)^2
+        loss = sum(@. (w/n) * ( ( (d - p)^2 ) / ( pᵢ + dᵢ)) )
         #loss = sum( (obs_filt ./ maximum(obs_filt)).^2 - (pred_filt ./ maximum(obs_filt)).^2)/n
 
         return loss * penalty_factor

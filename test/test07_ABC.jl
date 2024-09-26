@@ -312,7 +312,7 @@ begin
     simulate_data,
     ABC.compute_loss,
     data;
-    n_pop = 1_000, 
+    n_pop = 5_000, 
     q_eps = 0.1,
     k_max = 0
 )
