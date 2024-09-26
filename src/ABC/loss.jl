@@ -54,9 +54,9 @@ args
 
 kwargs
 
-- weights: Vector of weights for each datapoint, or Real value to assign same weight to all datapoints
+- weight: A single weight value
 - penalty_for_nans: how to calculate the penalty for non-finited predicted values. `proportional` or `infinite`.
-- transform: transformation applied to predicted and observed values. Default is `robust_log_transform` (ln(x+1)+1e-10)
+- transform: transformation applied to predicted and observed values. 
 ---
 
 ## Example
@@ -75,14 +75,12 @@ ABC.symmetric_bounded_loss_with_penalty(sim.S, pseudo_data)
 function symmetric_bounded_loss_with_penalty(
     predicted::AbstractVector,
     observed::AbstractVector;
-    weights::Union{AbstractVector,Real} = 1,
+    weight::Real = 1,
     penalty_for_nans = proportional,
     transform = x -> x + 1e-10
     )
 
     @assert length(predicted) == length(observed) "Got predicted and observed values of differing length: $(length(predicted)), $(length(observed))."
-
-    isa(weights, Real) ? weights = repeat([weights], length(predicted)) : nothing
 
     valid_idcs_pred = check_if_valid(predicted)
     valid_idcs = valid_idcs_pred .& check_if_valid(observed)
@@ -99,16 +97,15 @@ function symmetric_bounded_loss_with_penalty(
     # filter vectors to only include non-missing and finite values
     obs_filt = @. transform(observed[valid_idcs])
     pred_filt = @. transform(predicted[valid_idcs])
-    weights_filt = weights[valid_idcs]
 
     if isempty(pred_filt)
         return missing
     end
 
-    let w = weights_filt, n = length(obs_filt), d = obs_filt, p = pred_filt
+    let n = length(obs_filt), d = obs_filt, p = pred_filt
         pᵢ = (sum(p)/n)^2
         dᵢ = (sum(d)/n)^2
-        loss = sum(@. (w/n) * ( ( (d - p)^2 ) / ( pᵢ + dᵢ)) )
+        loss = sum(@. (weight/n) * ( ( (d - p)^2 ) / ( pᵢ + dᵢ)) )
         #loss = sum( (obs_filt ./ maximum(obs_filt)).^2 - (pred_filt ./ maximum(obs_filt)).^2)/n
 
         return loss * penalty_factor
@@ -212,7 +209,7 @@ function compute_time_resolved_loss(
             name, predicted, 
             observed; 
             inner_loss_function = inner_loss_function, 
-            weight = observed.weight["time_resolved"][name]
+            weight = observed.weights["time_resolved"][name]
             )
         push!(time_resolved_losses, loss)
     end
@@ -321,13 +318,12 @@ function compute_scalar_loss(
     scalar_losses = []
 
     for key in keys(observed)
-        push!(
-            scalar_losses, 
-            inner_loss_function(
-                [predicted[key]["value"]],
-                [observed[key]["value"]],
-                weight = weight
-                ))
+        loss = inner_loss_function(
+            [predicted[key]["value"]],
+            [observed[key]["value"]],
+            weight = weight
+            ) 
+        push!(scalar_losses, loss)
     end
 
     if return_all
@@ -354,7 +350,7 @@ function compute_scalar_loss(
                 observed.scalar[name],
                 observed.response_vars["scalar"][name],
                 observed.grouping_vars["scalar"][name];
-                weight = observed.weight["scalar"][name],
+                weight = observed.weights["scalar"][name],
                 inner_loss_function = inner_loss_function
             )
         )

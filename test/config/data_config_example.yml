@@ -10,6 +10,7 @@
 #        - [list column names of indepdendent variables here]
 #     response_vars:
 #        - [list column names of response variables here]
+#     weight: 1 
 #   ...
 # scalar:
 #   - name: 
@@ -18,6 +19,7 @@
 #        - [list column names of indepdendent variables here] --> can be empty for scalar data
 #     response_vars:
 #        - [list column names of response variables here]
+#     weight: 1
 #   ...
 # paths are given relative to the project directory root
 
@@ -39,6 +41,7 @@ time_resolved:
       - food_level
     response_vars:
       - cum_repro_mean
+    weight: 1
     meta:
       - description: Daphnia pulex reproduction at two food levels, aggregated over individuals
       - source: Hansul et al. (2024) Environ. Toxicol. Chem.
@@ -61,14 +64,16 @@ scalar:
     response_vars:
       - birth_to_first_hatch_mean
       - final_cum_repro_mean
+    weight: 1
     meta:
       - description: Repro statistics at two food levels, derived from the time-resolved data, aggregated over individuals
       - source: Derived from raw data by Hansul et al. (2024) Environ. Toxicol. Chem.
   - name: misc_traits
-    path: test/data/dpulex_stats.yml
-    response_vars:
+    path: test/data/dpulex_misc_traits.yml
+    response_vars: # if scalar data is given in a yml file, response_vars are nto strictly needed
       - age_at_birth
       - egg_drymass
+      - S_max_rel
     weight: 1
     description: General life-history traits for Daphnia pulex
     source: Various, listed in source file

@@ -17,6 +17,7 @@ using DEBBase.Figures
 
 data = Utils.data_from_config("test/config/data_config_example.yml")
 
+
 # For easier access while developing this code, we can as well create aliases for some of the entries 
 # in the dataset. 
 # This does by the way not allocate new memory.
@@ -93,6 +94,58 @@ The second portion of `simulate_data` therefore processes the simulation output,
 using DEBBase.ParamStructs
 using DataStructures
 
+# TODO: this can be done more generically, so we don't have to re-write the entire simulator every time
+function compute_growth_agg(sim::DataFrame)
+    return @chain sim begin
+        @select(:t_birth, :food_level, :S, :R)
+        @transform(:drymass_mean = @. :S)
+        unique
+    end
+end
+
+function compute_repro_agg(sim::DataFrame, params::AbstractParamCollection)
+    return @chain sim begin
+        @select(:t, :t_birth, :food_level, :R)
+        @transform(:cum_repro_mean = @. trunc(:R / params.spc.X_emb_int_0)) # NOTE: this is only valid if we don't simulate individual variability on X_emb
+        @transform(:t_birth = :t) # instead of shifting the repro values, we shift the time-values - since t_birth = t - age_at_birth and we shift by age_at_birth, we can just say t_birth = t
+        select(Not(:t)) # not needed anymore
+    end
+end
+
+function compute_growth_stats_agg(yhat::Utils.AbstractDataset)
+    @chain yhat.time_resolved["growth_agg"] begin
+        groupby(:food_level)
+        combine(_) do df
+            return DataFrame(
+                max_drymass_mean = maximum(df.drymass_mean),
+                drymass_at_birth_mean =  @subset(df, ismin(df.t_birth)).drymass_mean[1]
+            )
+        end
+    end
+end
+
+function compute_repro_stats_agg(yhat::Utils.AbstractDataset)
+    return @chain yhat.time_resolved["repro_agg"] begin
+        groupby(:food_level)
+        combine(_) do df
+            return DataFrame(
+                birth_to_first_hatch_mean = @subset(df, :cum_repro_mean .> 0).t_birth |> Utils.robustmin,
+                final_cum_repro_mean = @subset(df, :t_birth .== maximum(sim.t_birth)).cum_repro_mean |> x-> length(x)>0 ? x[1] : NaN
+            )
+        end
+    end
+end
+
+function compute_misc_traits(sim::DataFrame, params::AbstractParamCollection)
+    let S_max_theo = DEBODE.calc_S_max(params.spc)
+        return OrderedDict(
+            "age_at_birth" => Dict("value" => DEBODE.age_at_birth(@subset(sim, :food_level .== maximum(:food_level)))),
+            "egg_drymass" => Dict("value" => maximum(sim.X_emb)),
+            "S_max_rel" => Dict("value" => maximum(sim.S)/S_max_theo)
+        )
+    end
+end
+
  function simulate_data(
     defaultparams::AbstractParamCollection, 
     parnames::Vector{Symbol}, # names of estimated parameters
@@ -101,7 +154,7 @@ using DataStructures
     return_raw = false, # optionally return the raw simulation output
     ) where R <: Real
 
-    params = deepcopy(defaultparams)
+    params = deepcopy(defaultparams) # this is unfortunately still necessary if we use multithreading - might be easier to replace if we eventually switch to distributed computing
 
     # assigning parameter samples
     for (par,val) in zip(parnames,parvals)
@@ -132,45 +185,15 @@ using DataStructures
 
     # adding simulated time-resolved data
 
-    yhat.time_resolved["growth_agg"] = @chain sim begin
-        @select(:t_birth, :food_level, :S, :R)
-        @transform(:drymass_mean = @. :S)
-        unique
-    end
-
-    yhat.time_resolved["repro_agg"] = @chain sim begin
-        @select(:t, :t_birth, :food_level, :R)
-        @transform(:cum_repro_mean = @. trunc(:R / params.spc.X_emb_int_0)) # NOTE: this is only valid if we don't simulate individual variability on X_emb
-        @transform(:t_birth = :t) # instead of shifting the repro values, we shift the time-values - since t_birth = t - age_at_birth and we shift by age_at_birth, we can just say t_birth = t
-        select(Not(:t)) # not needed anymore
-    end
+    yhat.time_resolved["growth_agg"] = compute_growth_agg(sim)
+    yhat.time_resolved["repro_agg"] = compute_repro_agg(sim, params)
 
     # adding simulated scalar data
 
-    yhat.scalar["growth_stats_agg"] = @chain yhat.time_resolved["growth_agg"] begin
-        groupby(:food_level)
-        combine(_) do df
-            return DataFrame(
-                max_drymass_mean = maximum(df.drymass_mean),
-                drymass_at_birth_mean =  @subset(df, ismin(df.t_birth)).drymass_mean[1]
-            )
-        end
-    end
+    yhat.scalar["growth_stats_agg"] = compute_growth_stats_agg(yhat)
+    yhat.scalar["repro_stats_agg"] = compute_repro_stats_agg(yhat)
 
-    yhat.scalar["repro_stats_agg"] = @chain yhat.time_resolved["repro_agg"] begin
-        groupby(:food_level)
-        combine(_) do df
-            return DataFrame(
-                birth_to_first_hatch_mean = @subset(df, :cum_repro_mean .> 0).t_birth |> Utils.robustmin,
-                final_cum_repro_mean = @subset(df, :t_birth .== maximum(sim.t_birth)).cum_repro_mean |> x-> length(x)>0 ? x[1] : NaN
-            )
-        end
-    end
-
-    yhat.scalar["misc_traits"] = OrderedDict(
-        "age_at_birth" => Dict("value" => DEBODE.age_at_birth(@subset(sim, :food_level .== maximum(:food_level)))),
-        "egg_drymass" => Dict("value" => params.spc.X_emb_int_0)
-    )
+    yhat.scalar["misc_traits"] = compute_misc_traits(sim, params)
 
     return yhat
 end
@@ -198,7 +221,6 @@ That means, the symmetric bounded loss is applied to each part of the dataset,
 then combined to calculate the total distance.
 =#
 
-using Test
 
 observed = data
 predicted = yhat
@@ -210,8 +232,6 @@ predicted = yhat
 
     @test isfinite(loss)
 end
-
-predicted.time_resolved["repro_agg"]
 
 @testset begin
     @info "Computing loss for scalar data in tabular format"
@@ -266,14 +286,17 @@ begin
         :K_X_0,
         :Idot_max_rel_0,
         :kappa_0,
-        :k_M_0,
         :eta_AS_0,
+        :k_M_0,
         :H_p_0
     ]
 
-    cvs = fill(1.0, length(fitted_params))
-    cvs[1] = 0.1
-    cvs[2] = 0.5
+    σs = fill(1.0, length(fitted_params))
+
+    cvs[1] = 0.1 # we have a pretty good idea of the egg from data - narrowing this prior
+
+    lower_limits = fill(0., length(fitted_params))
+    lower_limits[3] = 0.1 # extremely low values of K_X can wreak havoc in the ODE solving. putting a lower limit
 
     upper_limits = [
         Inf,
@@ -281,20 +304,20 @@ begin
         Inf, 
         Inf, 
         1,
-        Inf,
         1,
+        Inf,
         Inf
     ]
 
     priors = Priors(
         fitted_params, 
         [
-            deftruncnorm(eval(:(intguess.spc.$param)), cv, u = upper) for (param,upper,cv) in zip(fitted_params,upper_limits,cvs)
+            deftruncnorm(eval(:(intguess.spc.$param)), sigma, u = upper) for (param,upper,sigma) in zip(fitted_params,upper_limits,σs)
         ]
     )
 
 
-    plot(priors, layout = (3, 3), size = (800,500), leg = false)
+    plot(priors, layout = (3, 3), size = (800,500), leg = false, ylabel = gridylabel("Density", 3, 3))
 end
 
 #=
@@ -305,16 +328,15 @@ This will give us an indiciation wether the loss function
 =#
 
 begin
-
     @time smc = SMC(
         priors,
         intguess,
         simulate_data,
         ABC.compute_loss,
         data;
-        n_pop = 25_000, 
-        q_eps = 0.2,
-        k_max = 5
+        n_pop = 1_000, 
+        q_eps = .5,
+        k_max = 1
     )
 
     bestfit = deepcopy(intguess)
@@ -325,41 +347,115 @@ begin
 
     yhat_bestfit = simulate_data(bestfit)
     sim_bestfit = simulate_data(bestfit, return_raw = true)
-    plt_bestfit = plot_data(data)
+
+    plt_bestfit = plot_data(data, size = (800,500), leg = [false :topleft])
     @df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level)
     @df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level)
     display(plt_bestfit)
 
 end
+         
 
-data.scalar["growth_stats_agg"]
-yhat_bestfit.scalar["growth_stats_agg"]
+#=
+## Plausability check
+=#
 
-@df sim plot(:t_birth, :f_X, group = :food_level)
+sim_bestfit = combine(groupby(sim_bestfit, :food_level)) do df
+    df[!,:dI] = diffvec(df.I)
+    return df
+end
+
+
+@df sim_bestfit plot(
+    plot(:t, :X_p, group = :food_level),
+    plot(:t, :f_X, group = :food_level, ylim = (0, 1.01)),
+    plot(:t, :dI, group = :food_level), 
+    scatter(:X_p ./ intguess.glb.V_patch, :f_X, xlim = (-1, 10)), 
+    lw = 2, 
+    ylabel = ["Xₚ" "fₓ" "dI" "fₓ"], 
+    xlabel = ["t" "t" "t" "[Xₚ]"]
+)
+
+
+
+@df yhat_bestfit.time_resolved["growth_agg"] plot(
+    :t_birth, :drymass_mean, group = :food_level
+    )
+
 
 
 #=
+
+## Model fitting with Nelder Mead
+
 Below is an example that uses the Optim package.
 =#
 
 using Optim
 
-begin
+data = Utils.data_from_config("test/config/data_config_example.yml")
 
+data.weights["time_resolved"]
+data.weights["scalar"]
+
+begin # adjusted weights to only fit to growth + misc traits
     f(x) = simulate_data(intguess, priors.params, x) |>     # minimization function
     x -> ABC.compute_loss(x, data)
 
     x0 = [mean(p) for p in priors.priors]    # initial guessses
-    optim = optimize(f, x0, NelderMead())    # performing the optimization
-
+    optim = optimize(  # performing the optimization
+        f, x0, NelderMead(), 
+        lower = fill(0, length(fitted_params)),
+        upper = upper_limits
+        )   
     bestfit = optim.minimizer   # retrieving the estimates
     yhat_bestfit = simulate_data(intguess, priors.params, bestfit)   # plotting the prediction
-    plt_bestfit = plot_data(data)
-    @df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level, lw = 2, color = :gray, linstyle = [:dash :solid])
-    @df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level, lw = 2, color = :gray, linstyle = [:dash :solid])
+
+    plt_bestfit = plot_data(data, size = (800, 350))
+    @df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level, lw = 2)
+    @df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level, lw = 2)
     display(plt_bestfit)
 end
 
 
 data.scalar["misc_traits"]
 yhat_bestfit.scalar["misc_traits"]
+
+
+#=
+## Model fitting with Bayesian optimization
+
+Another option is to use Bayesian optimization from the BayesianOptimization package.
+
+The code is adapted from the usage example on Github.
+=#
+
+using BayesianOptimization
+using GaussianProcesses, Distributions
+
+# Choose as a model an elastic GP with input dimensions 2.
+# The GP is called elastic, because data can be appended efficiently.
+model = ElasticGPE(length(fitted_params),# 2 input dimensions
+                   mean = BayesianOptimization.MeanConst(0.),         
+                   kernel = SEArd([0., 0.], 5.),
+                   logNoise = 0.,
+                   capacity = 3000)              # the initial capacity of the GP is 3000 samples.
+set_priors!(model.mean, [Normal(1, 2)])
+
+# Optimize the hyperparameters of the GP using maximum a posteriori (MAP) estimates every 50 steps
+modeloptimizer = MAPGPOptimizer(every = 50, noisebounds = [-4, 3],       # bounds of the logNoise
+                                kernbounds = [[-1, -1, 0], [4, 4, 10]],  # bounds of the 3 parameters GaussianProcesses.get_param_names(model.kernel)
+                                maxeval = 40)
+opt = BOpt(f,
+           model,
+           UpperConfidenceBound(),                   # type of acquisition
+           modeloptimizer,                        
+           fill(0, length(fitted_params)), upper_limits, # lowerbounds, upperbounds         
+           repetitions = 5,                          # evaluate the function for each input 5 times
+           maxiterations = 100,                      # evaluate at 100 input positions
+           sense = Min,                              # minimize the function
+           acquisitionoptions = (method = :LD_LBFGS, # run optimization of acquisition function with NLopts :LD_LBFGS method
+                                 restarts = 5,       # run the NLopt method from 5 random initial conditions each time.
+                                 maxtime = 0.1,      # run the NLopt method for at most 0.1 second each time
+                                 maxeval = 1000),    # run the NLopt methods for at most 1000 iterations (for other options see https://github.com/JuliaOpt/NLopt.jl)
+            verbosity = Progress)

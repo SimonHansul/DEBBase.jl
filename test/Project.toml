@@ -1,4 +1,5 @@
 [deps]
+BayesianOptimization = "4c6ed407-134f-591c-93fa-e0f7c164a0ec"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Chain = "8be319e6-bccf-4806-a6f7-6fae938471bc"
@@ -8,6 +9,7 @@ DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DataFramesMeta = "1313f7d8-7da2-5740-9ea0-a2ca25f37964"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+GaussianProcesses = "891a1506-143c-57d2-908e-e1f8e92e6de9"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"

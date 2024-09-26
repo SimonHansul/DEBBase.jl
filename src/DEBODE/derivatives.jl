@@ -2,12 +2,8 @@
 # A collection of derivative functions which is used to compose pre-defined models, and can be re-used for custom models.
 # Note that the ODE system itself is treated as a species parameter `odefunc`, where the derivatives are given as a Vector of Functions, in the order in which they are called.
 
-"""
-Clip negative values.
-"""
-function clipneg(x::Real)::Real
-    return sig(x, 0., 0., x)
-end
+#### helper functions
+
 
 """
 function sig(
@@ -34,6 +30,64 @@ This can be useful to replace simple if-statements with a continuous function.
 
     return 1 / (1 + exp(-beta*(x - x_thr))) * (y_right - y_left) + y_left
 end
+
+"""
+Clip negative values as a continuous function.
+"""
+function clipneg(x::Real)::Real
+    return sig(x, 0., 0., x)
+end
+
+#### global derivatives
+
+"""
+    dC_W!(
+        du::ComponentVector,
+        u::ComponentVector,
+        p::Union{AbstractParamCollection,NamedTuple},
+        t::Real
+        )::Nothing 
+
+Change in external concentrations. 
+Currently simply returns zeros because time-variable exposure is not yet implemented. 
+# TODO: extend to account for time-variable exposure.
+"""
+@inline function dC_W!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::Union{AbstractParamCollection,NamedTuple},
+    t::Real
+    )::Nothing 
+
+    du.C_W = zeros(length(u.C_W)) # constant exposure : derivative is 0
+
+    return nothing
+end
+
+"""
+Change in environmental resource abundance, simulating a chemostat.
+"""
+function dX_p!(
+    du::ComponentVector,
+    u::ComponentVector,
+    p::Union{AbstractParamCollection,NamedTuple},
+    t::Real
+    )::Nothing 
+
+    du.X_p = p.glb.Xdot_in - p.glb.k_V * u.X_p
+
+    return nothing
+end
+
+
+
+@inline function DEBODE_global!(du, u, p, t)
+    dC_W!(du, u, p, t) # external stressor concentration 
+    dX_p!(du, u, p, t) # resource abundance
+end
+
+
+#### individual-level derivatives
 
 """
     functional_response(
@@ -331,45 +385,6 @@ function dQ!(
     return nothing
 end
 
-"""
-    dC_W!(
-        du::ComponentVector,
-        u::ComponentVector,
-        p::Union{AbstractParamCollection,NamedTuple},
-        t::Real
-        )::Nothing 
-
-Change in external concentrations. 
-Currently simply returns zeros because time-variable exposure is not yet implemented. 
-# TODO: extend to account for time-variable exposure.
-"""
-@inline function dC_W!(
-    du::ComponentVector,
-    u::ComponentVector,
-    p::Union{AbstractParamCollection,NamedTuple},
-    t::Real
-    )::Nothing 
-
-    du.C_W = zeros(length(u.C_W)) # constant exposure : derivative is 0
-
-    return nothing
-end
-
-"""
-Change in environmental resource abundance, simulating a chemostat.
-"""
-function dX_p!(
-    du::ComponentVector,
-    u::ComponentVector,
-    p::Union{AbstractParamCollection,NamedTuple},
-    t::Real
-    )::Nothing 
-
-    du.X_p = p.glb.Xdot_in - p.glb.k_V * u.X_p
-
-    return nothing
-end
-
 
 """
 Minimal toxicokinetics for scaled damage dynamics, assuming no enviornmental uptake by embryos.
@@ -550,10 +565,6 @@ function apply_stressors!(du, u, p, t)
     u.Idot_max_rel_emb = p.agn.Idot_max_rel_emb_0 * u.y_T
 end
 
-@inline function DEBODE_global!(du, u, p, t)
-    dC_W!(du, u, p, t) # external stressor concentration 
-    dX_p!(du, u, p, t) # resource abundance
-end
 
 @inline function DEBODE_agent_IA!(du, u, p, t)
     

@@ -207,7 +207,7 @@ Fields:
     time_vars::Dict = Dict()
     grouping_vars::Dict = Dict("time_resolved" => Dict(), "scalar" => Dict())
     response_vars::Dict = Dict("time_resolved" => Dict(), "scalar" => Dict())
-    weights::Dict = Dict("time_resolved" => Dict(), "sclar" => Dict())
+    weights::Dict = Dict("time_resolved" => Dict(), "scalar" => Dict())
 end
 
 
