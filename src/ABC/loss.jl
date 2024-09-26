@@ -7,14 +7,21 @@
 @enum SetPenalty proportional infinite
 
 check_if_valid(x::AbstractVector) = @. isfinite(x) & !ismissing(x)
-robust_logtransform(x::Real) = log(x + 1) + 1e-10
+robust_log_transform(x::Real) = begin
+    if x>= 0
+        return (log(x + 1) + 1e-10)
+    else
+        return Inf
+    end
+end
+robust_log_backtransform(x::Real) = exp(x - 1e10) - 1
 
 # computes the kez
 @inline length_based_weights(a::AbstractVector, b::AbstractVector) = Weights(
     vcat(
         fill(length(a), sum(@. !ismissing(a))), 
-        fill(length(b), sum(@. !ismissing(b))))
-        )
+        fill(length(b), sum(@. !ismissing(b)))
+        ))
 
 # computes the weighted mean over two vectors, taking length differences into account
 length_weighted_mean(a::AbstractVector, b::AbstractVector) = mean(vcat(a, b), length_based_weights(a, b))
@@ -70,7 +77,7 @@ function symmetric_bounded_loss_with_penalty(
     observed::AbstractVector;
     weights::Union{AbstractVector,Real} = 1,
     penalty_for_nans = proportional,
-    transform = robust_logtransform
+    transform = robust_log_transform
     )
 
     @assert length(predicted) == length(observed) "Got predicted and observed values of differing length: $(length(predicted)), $(length(observed))."
@@ -92,13 +99,14 @@ function symmetric_bounded_loss_with_penalty(
     # filter vectors to only include non-missing and finite values
     obs_filt = @. transform(observed[valid_idcs])
     pred_filt = @. transform(predicted[valid_idcs])
+    weights_filt = weights[valid_idcs]
 
     if isempty(pred_filt)
         return missing
     end
 
-    let n = length(pred_filt)
-        loss = sum(@. (weights/n) * (( (obs_filt - pred_filt)^2 ) / ( obs_filt^2 + pred_filt^2 )))
+    let n = length(obs_filt)
+        loss = sum(@. (weights_filt/n) * (( (obs_filt - pred_filt)^2 ) / ( obs_filt^2 + pred_filt^2 )))
 
         return loss * penalty_factor
     end
@@ -140,6 +148,7 @@ function compute_time_resolved_loss(
     grouping_vars = observed.grouping_vars["time_resolved"][name]
     response_vars = observed.response_vars["time_resolved"][name]
 
+    # NOTE: this part causes most of the memory allocations in compute_loss, due to typeinf_ext_toplevel
     loss_per_response_var = observed_df |> 
     x -> leftjoin( # join predicted with observed 
         x, predicted_df, 
@@ -156,8 +165,8 @@ function compute_time_resolved_loss(
                 col_observed = String(response)*"_observed" |> Symbol
                 col_predicted = String(response)*"_predicted" |> Symbol
                 loss = inner_loss_function(
-                    df[:,col_observed], 
-                    df[:,col_predicted]
+                    df[:,col_predicted],
+                    df[:,col_observed],
                     )
                 append!(losses, DataFrame(response = response, loss = loss))
             end # for response

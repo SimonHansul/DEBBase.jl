@@ -74,7 +74,7 @@ begin
     spc.H_p_0 = 0.03
     spc.K_X_0 = 1.0 # guess for the half-saturation constant (mg/L)
 
-    yhat = DEBODE.simulator(intguess)
+    yhat = DEBODE.simulator(intguess; reltol = 1e-10)
 
     plot_data(data)
 
@@ -93,9 +93,7 @@ The second portion of `simulate_data` therefore processes the simulation output,
 using DEBBase.ParamStructs
 using DataStructures
 
-
-
-function simulate_data(
+ function simulate_data(
     params::AbstractParamCollection, 
     parnames::Vector{Symbol}, # names of estimated parameters
     parvals::Vector{R}; # samples parameter values
@@ -105,7 +103,8 @@ function simulate_data(
 
     # assigning parameter samples
     for (par,val) in zip(parnames,parvals)
-        eval(:(params.spc.$par = $val))
+        setproperty!(params.spc, par, val)
+        #eval(:(params.spc.$par = $val))
     end
 
     params.spc.k_J_0 = ((1 - params.spc.kappa_0) / params.spc.kappa_0) * params.spc.k_M_0
@@ -177,11 +176,12 @@ end
 
 simulate_data(params::AbstractParamCollection; kwargs...) = simulate_data(params, Symbol[], Real[]; kwargs...)
 
+using Test
 @testset begin
     @info "Simulating a Dataset"
 
-    sim = simulate_data(intguess; return_raw = true) # this would return the raw ODE output
-    yhat = simulate_data(intguess) # this returns the simulated dataset
+    global sim = simulate_data(intguess; return_raw = true) # this would return the raw ODE output
+    global yhat = simulate_data(intguess) # this returns the simulated dataset
 
     @test sim isa DataFrame
     @test yhat isa ABC.AbstractDataset
@@ -237,11 +237,13 @@ end
 
     println(grouping_vars)
 
-    loss = ABC.compute_scalar_loss(predicted_dict, observed_dict)
+    loss = ABC.compute_scalar_loss(
+        predicted_dict, observed_dict,
+        response_vars, grouping_vars
+        )
 
     @test isfinite(loss)
 end
-
 
 @testset begin
     @info "Computing total loss"
@@ -252,12 +254,69 @@ end
 
 
 
-fitted_params = [
-    :Idot_max_rel_emb,
-    :Idot_max_rel,
-    :kappa_0,
-    :k_M_0,
 
-]
+#=
+Below we define the priors as truncated Normal distributions with a constant CV of 1,000% around the initial guess.
+=#
 
-# parameters may be linked through an expression
+begin 
+
+    fitted_params = [
+        :X_emb_int_0,
+        :K_X_0,
+        :Idot_max_rel_0,
+        :Idot_max_rel_emb_0,
+        :kappa_0,
+        :k_M_0,
+        :eta_AS_0,
+        :H_p_0
+    ]
+
+    cv = fill(1., length(fitted_params))
+    cv[1] = 0.1
+    cv[2] = 0.5
+
+    upper_limits = [
+        Inf,
+        Inf, 
+        Inf, 
+        Inf, 
+        1,
+        Inf,
+        1,
+        Inf
+    ]
+
+    priors = Priors(
+        fitted_params, 
+        [
+            deftruncnorm(eval(:(intguess.spc.$param)), 1, u = upper) for (param,upper) in zip(fitted_params,upper_limits)
+        ]
+    )
+
+
+    plot(priors, layout = (3, 3), size = (800,500), leg = false)
+end
+
+
+@time smc = SMC(
+    priors,
+    intguess,
+    simulate_data,
+    ABC.compute_loss,
+    data;
+    n_pop = 1_000, 
+    q_eps = 0.2,
+    k_max = 3
+)
+
+
+bestfit = deepcopy(intguess)
+ABC.posterior_sample!(
+    bestfit.spc, 
+    @subset(smc.accepted, :distance .== minimum(:distance))
+)
+
+yhat_bestfit = simulate_data(bestfit)
+plot_data(data)
+@df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level)

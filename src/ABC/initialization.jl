@@ -21,7 +21,7 @@ end
 Define a truncated normal distribution based on the mode and σ. 
 The parameter μ is then calculated as ``\\mu = ln(mode) + \\sigma^2``.
 """
-function deflognorm(modus, sigma)
+function deflognorm(modus, sigma; l = 0, u = Inf)
     mu = log(modus) + sigma^2
-    return LogNormal(mu, sigma)
+    return Truncated(LogNormal(mu, sigma), l, u)
 end

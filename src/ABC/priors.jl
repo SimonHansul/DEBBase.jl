@@ -3,6 +3,8 @@ mutable struct Priors
     priors::Vector{Distribution}
 
     """
+        Priors(args::Pair...)
+        
     Initialize priors with a sequence of Symobl/Distribution pairs.
     """
     function Priors(args::Pair...)
@@ -17,15 +19,13 @@ mutable struct Priors
         return new(params, priors)
     end
 
-    function Priors(arg::Vector{Pair{Symbol,D}}) where D <: Distribution
-        params = Symbol[]
-        priors = Distribution[]
 
-        for pair in arg
-            push!(params, pair.first)
-            push!(priors, pair.second)
-        end
+    """
+        Priors(params, priors)
 
+    Initialize priors from a vector of parameter names and prior distributions, respectively.
+    """
+    function Priors(params, priors)
         return new(params, priors)
     end
 end

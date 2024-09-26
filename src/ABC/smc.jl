@@ -18,20 +18,12 @@
 
 @with_kw mutable struct SMCResult
     accepted::AbstractDataFrame = DataFrame()
-    params::Any = []
+    intermediate_dists::DataFrame = DataFrame()
     priors::Union{Priors,Tuple{Priors,DataFrame}} = Priors()
-    simulator = nothing
-    distance = nothing
-    data::Any = nothing
     n_pop::Int64 = 0
     q_eps::Float64 = NaN
     k_max::Int64 = 0
-    convergence_eps::Float64 = NaN
-    time_of_execution::Union{String,DateTime} = ""
-    comptime::Any = 0
     distance_schedule::Vector{Float64} = Float64[]
-    converged::Bool = false # TODO: remove this in v1.0 (keeping it for now to maintain backwards compatability for v<1)
-    errlog::DataFrame = DataFrame()
 end
 
 
@@ -61,7 +53,9 @@ function initialize_threaded(
 
     @info("...Evaluating initial population...")
 
-    @threads for i in eachindex(particles)
+    #@threads for i in eachindex(particles)
+    for i in eachindex(particles)
+    
         particles[i] = [rand(p) for p in priors.priors] 
         prediction = simulator(params, priors.params, particles[i])
         distances[i] = distance(prediction, data)
@@ -405,6 +399,8 @@ function SMC(
     @info("Executing SMC with $((k_max+1) * n_pop) samples on $(Threads.nthreads()) threads.")
     start = now() # record computation time
 
+    intermediate_dists = DataFrame()
+
     let accepted_particles::Vector{Vector{Float64}},
         accepted_weights::Vector{Float64}, 
         k = 0, 
@@ -445,6 +441,17 @@ function SMC(
                 )
             
             push!(distance_schedule, epsilon)
+
+            intermediate_dist = DataFrame(
+                [[particle[k] for k in eachindex(get_par_names(priors))] for particle in accepted_particles] |> x-> hcat(x...)',
+                param_names
+            )
+            intermediate_dist[!,:smc_step] .= k
+
+            append!(
+                intermediate_dists, 
+                intermediate_dist
+            )
         end
 
         @info("SMC reached k_max")
@@ -457,23 +464,15 @@ function SMC(
         accepted[!,:distance] .= accepted_distances # record associated distances
         accepted[!,:weight] .= accepted_weights # record SMC weights
 
-        # assemble metadata
 
         fit = SMCResult(
             accepted = accepted,
-            params = params,
+            intermediate_dists = intermediate_dists,
             priors = priors,
-            simulator = simulator,
-            distance = distance,
-            data = data,
             n_pop = n_pop,
             q_eps = q_eps,
             k_max = k_max,
-            convergence_eps = convergence_eps,
-            time_of_execution = start,
-            comptime = now() - start, 
-            distance_schedule = distance_schedule,
-            converged = converged
+            distance_schedule = distance_schedule
             )
 
         return fit
