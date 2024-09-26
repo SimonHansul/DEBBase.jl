@@ -306,29 +306,29 @@ This will give us an indiciation wether the loss function
 
 begin
 
-@time smc = SMC(
-    priors,
-    intguess,
-    simulate_data,
-    ABC.compute_loss,
-    data;
-    n_pop = 5_000, 
-    q_eps = 0.1,
-    k_max = 0
-)
+    @time smc = SMC(
+        priors,
+        intguess,
+        simulate_data,
+        ABC.compute_loss,
+        data;
+        n_pop = 1_000, 
+        q_eps = 0.1,
+        k_max = 10
+    )
 
-bestfit = deepcopy(intguess)
-ABC.posterior_sample!(
-    bestfit.spc, 
-    @subset(smc.accepted, :distance .== minimum(:distance))
-)
+    bestfit = deepcopy(intguess)
+    ABC.posterior_sample!(
+        bestfit.spc, 
+        @subset(smc.accepted, :distance .== minimum(:distance))
+    )
 
-yhat_bestfit = simulate_data(bestfit)
-sim_bestfit = simulate_data(bestfit, return_raw = true)
-plt_bestfit = plot_data(data)
-@df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level)
-@df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level)
-display(plt_bestfit)
+    yhat_bestfit = simulate_data(bestfit)
+    sim_bestfit = simulate_data(bestfit, return_raw = true)
+    plt_bestfit = plot_data(data)
+    @df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level)
+    @df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level)
+    display(plt_bestfit)
 
 end
 
@@ -336,3 +336,27 @@ data.scalar["growth_stats_agg"]
 yhat_bestfit.scalar["growth_stats_agg"]
 
 @df sim plot(:t_birth, :f_X, group = :food_level)
+
+
+#=
+Below is an example that uses the Optim package.
+=#
+
+using Optim
+
+begin
+
+    f(x) = simulate_data(intguess, priors.params, x) |>     # minimization function
+    x -> ABC.compute_loss(x, data)
+
+
+    x0 = [mean(p) for p in priors.priors]    # initial guessses
+    optim = optimize(f, x0, SimulatedAnnealing())    # performing the optimization
+
+    bestfit = optim.minimizer   # retrieving the estimates
+    yhat_bestfit = simulate_data(intguess, priors.params, bestfit)   # plotting the prediction
+    plt_bestfit = plot_data(data)
+    @df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level, lw = 2, color = :gray, linstyle = [:dash :solid])
+    @df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level, lw = 2, color = :gray, linstyle = [:dash :solid])
+    display(plt_bestfit)
+end
