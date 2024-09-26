@@ -272,9 +272,9 @@ begin
         :H_p_0
     ]
 
-    cv = fill(1., length(fitted_params))
-    cv[1] = 0.1
-    cv[2] = 0.5
+    cvs = fill(1.0, length(fitted_params))
+    cvs[1] = 0.1
+    cvs[2] = 0.5
 
     upper_limits = [
         Inf,
@@ -290,7 +290,7 @@ begin
     priors = Priors(
         fitted_params, 
         [
-            deftruncnorm(eval(:(intguess.spc.$param)), 1, u = upper) for (param,upper) in zip(fitted_params,upper_limits)
+            deftruncnorm(eval(:(intguess.spc.$param)), cv, u = upper) for (param,upper,cv) in zip(fitted_params,upper_limits,cvs)
         ]
     )
 
@@ -306,7 +306,7 @@ end
     ABC.compute_loss,
     data;
     n_pop = 1_000, 
-    q_eps = 0.2,
+    q_eps = 0.5,
     k_max = 3
 )
 
@@ -320,3 +320,6 @@ ABC.posterior_sample!(
 yhat_bestfit = simulate_data(bestfit)
 plot_data(data)
 @df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level)
+
+data.scalar["growth_stats_agg"]
+yhat_bestfit.scalar["growth_stats_agg"]

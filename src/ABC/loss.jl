@@ -77,7 +77,7 @@ function symmetric_bounded_loss_with_penalty(
     observed::AbstractVector;
     weights::Union{AbstractVector,Real} = 1,
     penalty_for_nans = proportional,
-    transform = robust_log_transform
+    transform = x -> x#robust_log_transform
     )
 
     @assert length(predicted) == length(observed) "Got predicted and observed values of differing length: $(length(predicted)), $(length(observed))."
@@ -373,5 +373,5 @@ function compute_loss(
         inner_loss_function = inner_loss_function
     )
 
-    return max(time_resolved_loss, scalar_loss)
+    return mean([time_resolved_loss, scalar_loss])
 end
