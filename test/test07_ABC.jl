@@ -94,12 +94,14 @@ using DEBBase.ParamStructs
 using DataStructures
 
  function simulate_data(
-    params::AbstractParamCollection, 
+    defaultparams::AbstractParamCollection, 
     parnames::Vector{Symbol}, # names of estimated parameters
     parvals::Vector{R}; # samples parameter values
     food_levels = [0.1, 0.4], # simulated food levels
     return_raw = false, # optionally return the raw simulation output
     ) where R <: Real
+
+    params = deepcopy(defaultparams)
 
     # assigning parameter samples
     for (par,val) in zip(parnames,parvals)
@@ -108,7 +110,6 @@ using DataStructures
     end
 
     params.spc.k_J_0 = ((1 - params.spc.kappa_0) / params.spc.kappa_0) * params.spc.k_M_0
-
     # generating the simulation output
     sim = DataFrame()
     for food_level in food_levels 
@@ -205,12 +206,12 @@ predicted = yhat
 @testset begin
     @info "Computing loss for time-resolved data"
 
-    observed.time_resolved["repro_agg"]
-    predicted.time_resolved["repro_agg"]
+    loss = ABC.compute_time_resolved_loss("repro_agg", predicted, observed)
 
-    loss = ABC.compute_time_resolved_loss(predicted, observed)
     @test isfinite(loss)
 end
+
+predicted.time_resolved["repro_agg"]
 
 @testset begin
     @info "Computing loss for scalar data in tabular format"
@@ -253,8 +254,6 @@ end
 end
 
 
-
-
 #=
 Below we define the priors as truncated Normal distributions with a constant CV of 1,000% around the initial guess.
 =#
@@ -262,10 +261,10 @@ Below we define the priors as truncated Normal distributions with a constant CV 
 begin 
 
     fitted_params = [
-        :X_emb_int_0,
+        #:X_emb_int_0,
+        #:Idot_max_rel_emb_0,
         :K_X_0,
         :Idot_max_rel_0,
-        :Idot_max_rel_emb_0,
         :kappa_0,
         :k_M_0,
         :eta_AS_0,
@@ -273,12 +272,12 @@ begin
     ]
 
     cvs = fill(1.0, length(fitted_params))
-    cvs[1] = 0.1
-    cvs[2] = 0.5
+    #cvs[1] = 0.1
+    #cvs[2] = 0.5
 
     upper_limits = [
-        Inf,
-        Inf, 
+        #Inf,
+        #Inf, 
         Inf, 
         Inf, 
         1,
@@ -298,6 +297,14 @@ begin
     plot(priors, layout = (3, 3), size = (800,500), leg = false)
 end
 
+#=
+Before we scale up the parameter inference, 
+we can try a small SMC run with a strict rejection threshold and fewer samples. 
+
+This will give us an indiciation wether the loss function 
+=#
+
+begin
 
 @time smc = SMC(
     priors,
@@ -306,10 +313,9 @@ end
     ABC.compute_loss,
     data;
     n_pop = 1_000, 
-    q_eps = 0.5,
-    k_max = 3
+    q_eps = 0.1,
+    k_max = 0
 )
-
 
 bestfit = deepcopy(intguess)
 ABC.posterior_sample!(
@@ -318,8 +324,15 @@ ABC.posterior_sample!(
 )
 
 yhat_bestfit = simulate_data(bestfit)
-plot_data(data)
+sim_bestfit = simulate_data(bestfit, return_raw = true)
+plt_bestfit = plot_data(data)
 @df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level)
+@df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level)
+display(plt_bestfit)
+
+end
 
 data.scalar["growth_stats_agg"]
 yhat_bestfit.scalar["growth_stats_agg"]
+
+@df sim plot(:t_birth, :f_X, group = :food_level)

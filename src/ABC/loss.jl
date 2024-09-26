@@ -77,7 +77,7 @@ function symmetric_bounded_loss_with_penalty(
     observed::AbstractVector;
     weights::Union{AbstractVector,Real} = 1,
     penalty_for_nans = proportional,
-    transform = x -> x#robust_log_transform
+    transform = x -> x + 1e-10
     )
 
     @assert length(predicted) == length(observed) "Got predicted and observed values of differing length: $(length(predicted)), $(length(observed))."
@@ -105,8 +105,11 @@ function symmetric_bounded_loss_with_penalty(
         return missing
     end
 
-    let n = length(obs_filt)
-        loss = sum(@. (weights_filt/n) * (( (obs_filt - pred_filt)^2 ) / ( obs_filt^2 + pred_filt^2 )))
+    let n = length(obs_filt), o = obs_filt ./ maximum(obs_filt), p = pred_filt ./ maximum(obs_filt)
+        pᵢ = (sum(p)/n)^2
+        oᵢ = (sum(o)/n)^2
+        loss = sum(@. (weights_filt/n) * ( ( (o - p)^2 ) / ( pᵢ + oᵢ)) )
+        #loss = sum( (obs_filt ./ maximum(obs_filt)).^2 - (pred_filt ./ maximum(obs_filt)).^2)/n
 
         return loss * penalty_factor
     end
@@ -194,6 +197,7 @@ Computes loss values for all time-resolved data entries.
 function compute_time_resolved_loss(
     predicted::AbstractDataset,
     observed::AbstractDataset;
+    return_all = false,
     inner_loss_function = symmetric_bounded_loss_with_penalty
     )
 
@@ -203,6 +207,10 @@ function compute_time_resolved_loss(
     for (i,name) in enumerate(datanames)
         loss = ABC.compute_time_resolved_loss(name, predicted, observed; inner_loss_function = inner_loss_function)
         push!(time_resolved_losses, loss)
+    end
+
+    if return_all
+        return time_resolved_losses
     end
 
     return mean(skipmissing(time_resolved_losses))
@@ -358,6 +366,7 @@ Used internally by `DEBBase.ABC`, but can be used for customized calibration rou
 function compute_loss(
     predicted::AbstractDataset,
     observed::AbstractDataset;
+    return_all = false,
     inner_loss_function = symmetric_bounded_loss_with_penalty
     )
 
@@ -372,6 +381,10 @@ function compute_loss(
         observed;
         inner_loss_function = inner_loss_function
     )
+    
+    if return_all
+        return time_resolved_loss, scalar_loss
+    end
 
     return mean([time_resolved_loss, scalar_loss])
 end

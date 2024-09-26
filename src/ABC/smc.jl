@@ -373,7 +373,7 @@ get_par_names(priors::Tuple{Priors,DataFrame}) = unique(vcat([Symbol.(get_par_na
 args
 
 - `priors`: A priors object
-- `defaultparams`: A default parameter object. The SMC function will create a single copy of this object, making it available in `simulator` to be modified for each sample evaluation.
+- `defaultparams`: A default parameter object. 
 
 kwargs 
 
@@ -393,9 +393,6 @@ function SMC(
     k_max::Int64 = 3
     )
 
-    params = deepcopy(defaultparams)
-
-
     @info("Executing SMC with $((k_max+1) * n_pop) samples on $(Threads.nthreads()) threads.")
     start = now() # record computation time
 
@@ -411,7 +408,7 @@ function SMC(
         num_params = length(param_names)
 
         particles, distances, weights = initialize_threaded(
-            n_pop, params, priors, simulator, distance, data
+            n_pop, defaultparams, priors, simulator, distance, data
             )
 
         accepted_particles, accepted_distances, accepted_weights, epsilon = reject(
@@ -433,7 +430,7 @@ function SMC(
                 )
 
             distances = evaluate_threaded(
-                particles, params, simulator, distance, priors, data
+                particles, defaultparams, simulator, distance, priors, data
                 )
         
             accepted_particles, accepted_distances, accepted_weights, epsilon = reject(
