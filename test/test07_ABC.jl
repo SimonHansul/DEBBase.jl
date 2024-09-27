@@ -1,7 +1,7 @@
 using Pkg; Pkg.activate("test")
 
 using Plots, StatsPlots, StatsBase
-default(legendtitlefontsize = 10)
+default(legendtitlefontsize = 10) 
 using DataFrames, DataFramesMeta, CSV, YAML
 
 using Revise
@@ -17,6 +17,10 @@ using DEBBase.Figures
 
 data = Utils.data_from_config("test/config/data_config_example.yml")
 
+# We only use the highest food level for this test to simplify the test a little
+
+data.time_resolved["growth_agg"] = @subset(data.time_resolved["growth_agg"], :food_level .== 0.4)
+data.time_resolved["repro_agg"] = @subset(data.time_resolved["repro_agg"], :food_level .== 0.4)
 
 # For easier access while developing this code, we can as well create aliases for some of the entries 
 # in the dataset. 
@@ -221,7 +225,6 @@ That means, the symmetric bounded loss is applied to each part of the dataset,
 then combined to calculate the total distance.
 =#
 
-
 observed = data
 predicted = yhat
 
@@ -273,13 +276,11 @@ end
     @test isfinite(loss)
 end
 
-
 #=
 Below we define the priors as truncated Normal distributions with a constant CV of 1,000% around the initial guess.
 =#
 
 begin 
-
     fitted_params = [
         :X_emb_int_0,
         :Idot_max_rel_emb_0,
@@ -291,7 +292,7 @@ begin
         :H_p_0
     ]
 
-    σs = fill(1.0, length(fitted_params))
+    cvs = fill(1.0, length(fitted_params))
 
     cvs[1] = 0.1 # we have a pretty good idea of the egg from data - narrowing this prior
 
@@ -393,20 +394,13 @@ Below is an example that uses the Optim package.
 
 using Optim
 
-data = Utils.data_from_config("test/config/data_config_example.yml")
-
-data.weights["time_resolved"]
-data.weights["scalar"]
-
 begin # adjusted weights to only fit to growth + misc traits
     f(x) = simulate_data(intguess, priors.params, x) |>     # minimization function
     x -> ABC.compute_loss(x, data)
 
     x0 = [mean(p) for p in priors.priors]    # initial guessses
     optim = optimize(  # performing the optimization
-        f, x0, NelderMead(), 
-        lower = fill(0, length(fitted_params)),
-        upper = upper_limits
+        f, x0, NelderMead(maxiter = 100)
         )   
     bestfit = optim.minimizer   # retrieving the estimates
     yhat_bestfit = simulate_data(intguess, priors.params, bestfit)   # plotting the prediction
@@ -421,41 +415,3 @@ end
 data.scalar["misc_traits"]
 yhat_bestfit.scalar["misc_traits"]
 
-
-#=
-## Model fitting with Bayesian optimization
-
-Another option is to use Bayesian optimization from the BayesianOptimization package.
-
-The code is adapted from the usage example on Github.
-=#
-
-using BayesianOptimization
-using GaussianProcesses, Distributions
-
-# Choose as a model an elastic GP with input dimensions 2.
-# The GP is called elastic, because data can be appended efficiently.
-model = ElasticGPE(length(fitted_params),# 2 input dimensions
-                   mean = BayesianOptimization.MeanConst(0.),         
-                   kernel = SEArd([0., 0.], 5.),
-                   logNoise = 0.,
-                   capacity = 3000)              # the initial capacity of the GP is 3000 samples.
-set_priors!(model.mean, [Normal(1, 2)])
-
-# Optimize the hyperparameters of the GP using maximum a posteriori (MAP) estimates every 50 steps
-modeloptimizer = MAPGPOptimizer(every = 50, noisebounds = [-4, 3],       # bounds of the logNoise
-                                kernbounds = [[-1, -1, 0], [4, 4, 10]],  # bounds of the 3 parameters GaussianProcesses.get_param_names(model.kernel)
-                                maxeval = 40)
-opt = BOpt(f,
-           model,
-           UpperConfidenceBound(),                   # type of acquisition
-           modeloptimizer,                        
-           fill(0, length(fitted_params)), upper_limits, # lowerbounds, upperbounds         
-           repetitions = 5,                          # evaluate the function for each input 5 times
-           maxiterations = 100,                      # evaluate at 100 input positions
-           sense = Min,                              # minimize the function
-           acquisitionoptions = (method = :LD_LBFGS, # run optimization of acquisition function with NLopts :LD_LBFGS method
-                                 restarts = 5,       # run the NLopt method from 5 random initial conditions each time.
-                                 maxtime = 0.1,      # run the NLopt method for at most 0.1 second each time
-                                 maxeval = 1000),    # run the NLopt methods for at most 1000 iterations (for other options see https://github.com/JuliaOpt/NLopt.jl)
-            verbosity = Progress)
