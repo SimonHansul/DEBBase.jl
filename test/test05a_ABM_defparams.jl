@@ -135,7 +135,7 @@ simODE = DEBODE.simulator(Params(spc = SpeciesParams(tau_R = Inf)))
 eval_df = @chain sim, simODE begin
     [@select(x, :t, :S, :R, :H) for x in _]
     leftjoin(_[1], _[2], on = :t, makeunique = true)
-    drop_na
+    drop_missing
     @transform(
         :relerr_S = :S ./ :S_1,
         :relerr_H = :H ./ :H_1,

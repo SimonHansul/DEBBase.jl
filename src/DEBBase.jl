@@ -45,7 +45,7 @@ module Utils
     using ..ParamStructs: AbstractParams, AbstractSpeciesParams, AbstractGlobalParams, AbstractParamCollection
 
     include("Utils/utils.jl")
-    export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_na, drop_na!, replace_na!, get_treatment_names, lab, read_W3C, ismin, sol_to_df, sol_to_mat
+    export skipinf, vectify, which_in, geomrange, diffvec, fround, drop_missing, drop_missing!, replace_missing!, get_treatment_names, lab, read_W3C, ismin, sol_to_df, sol_to_mat
 
     include("Utils/ioutils.jl")
     export params_from_config, save_config
@@ -143,7 +143,7 @@ module ABC
     using Dates
     using Random
 
-    using ..Utils: fround, AbstractDataset
+    using ..Utils: fround, AbstractDataset, drop_missing
     using ..ParamStructs: AbstractParams, AbstractParamCollection
 
     include("ABC/priors.jl")

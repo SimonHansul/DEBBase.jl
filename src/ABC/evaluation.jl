@@ -92,9 +92,15 @@ function summarize_accepted(
 end
 
 """
-    ppc(defaultparams::Any, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
+    posterior_predictions(
+    defaultparams::Any, 
+    simulator, 
+    accepted::AbstractDataFrame, 
+    priors::Priors; 
+    n_samples = 1000
+    )
 
-Compute posterior predictions for posterior predictive check.
+Compute posterior predictions.
 
 - `defaultparam::Any`: default parameters used in simulator
 - `simulator`: simulator function with signature `simulator(defaultparams, priors.params, sample)`, where 
@@ -106,18 +112,22 @@ kwargs
 
 - `n_samples = 1000`: number of samples from `accepted_particles` to evaluate
 """
-function ppc(defaultparams::Any, simulator, accepted::AbstractDataFrame, priors::Priors; n_samples = 1000) 
-    @info("Running posterior predictive check with $n_samples samples on $(Threads.nthreads()) threads")
-    sim = Vector{DataFrame}(undef, n_samples) # predictions
+function posterior_predictions(
+    defaultparams::Any, 
+    simulator, 
+    accepted::AbstractDataFrame, 
+    priors::Priors; 
+    n_samples = 1000
+    )
 
-    @threads for i in 1:n_samples # for the given number of samples
+    @info("Running posterior predictions with $n_samples samples on $(Threads.nthreads()) threads")
+    sim = Vector{Union{AbstractDataFrame,AbstractDataset}}(undef, n_samples) # predictions
+
+    @threads for i in 1:n_samples 
         sample = posterior_sample(accepted)
-        sim_i = simulator(defaultparams, priors.params, sample) # evaluate the sample 
-        sim_i[!,:n_sample] .= i # add ID column
-        sim[i] = sim_i # collect results
+        sim_i = simulator(defaultparams, priors.params, sample)
+        sim[i] = sim_i 
     end
-
-    sim = vcat(sim...) # convert Vector of DataFrames to DataFrame
 
     return sim
 end
