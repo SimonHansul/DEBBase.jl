@@ -1,8 +1,8 @@
 using Pkg; Pkg.activate("test")
 
 using Plots, StatsPlots, StatsBase
-default(legendtitlefontsize = 10)
-using DataFrames, DataFramesMeta, CSV
+default(legendtitlefontsize = 10) 
+using DataFrames, DataFramesMeta, CSV, YAML
 
 using Revise
 
@@ -17,6 +17,10 @@ using DEBBase.Figures
 
 data = Utils.data_from_config("test/config/data_config_example.yml")
 
+# We only use the highest food level for this test to simplify the test a little
+
+data.time_resolved["growth_agg"] = @subset(data.time_resolved["growth_agg"], :food_level .== 0.4)
+data.time_resolved["repro_agg"] = @subset(data.time_resolved["repro_agg"], :food_level .== 0.4)
 
 # For easier access while developing this code, we can as well create aliases for some of the entries 
 # in the dataset. 
@@ -154,6 +158,8 @@ end
     return_raw = false, # optionally return the raw simulation output
     ) where R <: Real
 
+    @assert !(:Idot_max_rel_emb_0 in parnames) "Idot_max_rel_emb_0 is provided as parameter, but this value is calculated internally"
+
     params = deepcopy(defaultparams) # this is unfortunately still necessary if we use multithreading - might be easier to replace if we eventually switch to distributed computing
 
     # assigning parameter samples
@@ -163,6 +169,8 @@ end
     end
 
     params.spc.k_J_0 = ((1 - params.spc.kappa_0) / params.spc.kappa_0) * params.spc.k_M_0
+    params.spc.Idot_max_rel_emb_0 = params.spc.Idot_max_rel_0
+
     # generating the simulation output
     sim = DataFrame()
     for food_level in food_levels 
@@ -221,7 +229,6 @@ That means, the symmetric bounded loss is applied to each part of the dataset,
 then combined to calculate the total distance.
 =#
 
-
 observed = data
 predicted = yhat
 
@@ -273,46 +280,48 @@ end
     @test isfinite(loss)
 end
 
-
 #=
 Below we define the priors as truncated Normal distributions with a constant CV of 1,000% around the initial guess.
 =#
 
 begin 
-
     fitted_params = [
         :X_emb_int_0,
-        :Idot_max_rel_emb_0,
-        :K_X_0,
         :Idot_max_rel_0,
+        #:Idot_max_rel_emb_0,
+        #:K_X_0,
         :kappa_0,
-        :eta_AS_0,
-        :k_M_0,
+        #:eta_AS_0,
+        #:k_M_0,
         :H_p_0
     ]
 
     cvs = fill(1.0, length(fitted_params))
 
-    cvs[1] = 0.1 # we have a pretty good idea of the egg from data - narrowing this prior
+    cvs[1] = 1.0 # we have a pretty good idea of the egg from data - narrowing this prior
+    cvs[2] = 1.0 # same for maximum ingestion
 
     lower_limits = fill(0., length(fitted_params))
-    lower_limits[3] = 0.1 # extremely low values of K_X can wreak havoc in the ODE solving. putting a lower limit
-
     upper_limits = [
         Inf,
         Inf, 
-        Inf, 
-        Inf, 
+        #Inf, 
+        #INf,
         1,
-        1,
-        Inf,
+        #1,
+        #Inf,
         Inf
     ]
 
     priors = Priors(
         fitted_params, 
         [
-            deftruncnorm(eval(:(intguess.spc.$param)), cv, u = upper) for (param,upper,cv) in zip(fitted_params,upper_limits,cvs)
+            deflognorm(
+                eval(:(intguess.spc.$param)), 
+                sigma, 
+                u = upper
+                ) 
+                for (param,upper,sigma) in zip(fitted_params,upper_limits,cvs)
         ]
     )
 
@@ -320,11 +329,56 @@ begin
     plot(priors, layout = (3, 3), size = (800,500), leg = false, ylabel = gridylabel("Density", 3, 3))
 end
 
+
 #=
+## Prior predictive check
+=#
+
+
+using DEBBase.ABC
+
+prior_predictions = ABC.prior_predictice_check(
+    priors, 
+    intguess, 
+    simulate_data, 
+    data, 
+    ABC.compute_loss
+    );
+
+begin
+    prior_predictive_plot = plot_data(data)
+
+    for p in prior_predictions.predictions
+        @df p.time_resolved["growth_agg"] plot!(
+            prior_predictive_plot, subplot = 1,
+            :t_birth, :drymass_mean, group = :food_level, 
+            color = :gray, label = ""
+        )
+
+        @df p.time_resolved["repro_agg"] plot!(
+            prior_predictive_plot, subplot = 2,
+            :t_birth, :cum_repro_mean, group = :food_level,
+            color = :gray, label = ""
+        )
+
+    end
+
+    prior_predictive_plot
+end
+
+plot(
+    histogram(prior_predictions.distances, leg = false, fill = :gray, fillalpha = .5, lw = 1.5), 
+    xlabel = "Loss", ylabel = "Count", 
+    title = "Distribution of losses in prior predictive check \n $(100*sum(isfinite.(prior_predictions.distances)/length(prior_predictions.distances)))% valid losses",
+    titlefontsize = 10
+)
+
+#=
+## Parameter inference
+
 Before we scale up the parameter inference, 
 we can try a small SMC run with a strict rejection threshold and fewer samples. 
 
-This will give us an indiciation wether the loss function 
 =#
 
 #addprocs()
@@ -332,16 +386,18 @@ This will give us an indiciation wether the loss function
 #q_eps = [0.2, 0.5]
 
 begin
-    @time smc = SMC(
+    @time "Inferring posteriors using SMC" smc = SMC(
         priors,
         intguess,
         simulate_data,
         ABC.compute_loss,
         data;
-        n_pop = 100_000, 
-        q_eps = .2,
+        n_pop = 5_000, 
+        q_eps = .1,
         k_max = 5
     )
+
+    # quick check of the point estimate
 
     bestfit = deepcopy(intguess)
     ABC.posterior_sample!(
@@ -350,18 +406,50 @@ begin
     )
 
     yhat_bestfit = simulate_data(bestfit)
-    sim_bestfit = simulate_data(bestfit, return_raw = true)
+    sim_bestfit = simulate_data(bestfit; return_raw = true)
 
     plt_bestfit = plot_data(data, size = (800,500), leg = [false :topleft])
     @df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level)
     @df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level)
     display(plt_bestfit)
 end
-         
+
+
+smc.accepted.distance |> minimum
+using Plots.Measures
+begin
+    distplot = plot(
+        smc.priors, 
+        size = (800,350), 
+        label = "prior", 
+        bottommargin= 5mm
+        )
+    for (i,param) in enumerate(priors.params)
+        density!(
+            smc.accepted[:,param], 
+            weights = Weights(smc.accepted.weight),
+            color = :gray, lw = 1.5, fill = true, fillalpha = .25,
+            label = "posterior",
+            subplot = i
+            )
+    end
+    distplot        
+end
+
+post_pred = ABC.posterior_predictions(
+    intguess,
+    simulate_data,
+    smc.accepted,
+    priors
+)
+
+plot_data(data)
+
 
 #=
 ## Plausability check
 =#
+
 
 sim_bestfit = combine(groupby(sim_bestfit, :food_level)) do df
     df[!,:dI] = diffvec(df.I)
@@ -396,20 +484,13 @@ Below is an example that uses the Optim package.
 
 using Optim
 
-data = Utils.data_from_config("test/config/data_config_example.yml")
-
-data.weights["time_resolved"]
-data.weights["scalar"]
-
 begin # adjusted weights to only fit to growth + misc traits
     f(x) = simulate_data(intguess, priors.params, x) |>     # minimization function
     x -> ABC.compute_loss(x, data)
 
-    x0 = [mean(p) for p in priors.priors]    # initial guessses
-    optim = optimize(  # performing the optimization
-        f, x0, NelderMead(), 
-        lower = fill(0, length(fitted_params)),
-        upper = upper_limits
+    x0 = [mode(p.untruncated) for p in priors.priors]    # initial guessses
+    @time "Fitting model using Nelder Mead" optim = optimize(  # performing the optimization
+        f, x0, NelderMead(maxiter = 100)
         )   
     bestfit = optim.minimizer   # retrieving the estimates
     yhat_bestfit = simulate_data(intguess, priors.params, bestfit)   # plotting the prediction
@@ -424,41 +505,4 @@ end
 data.scalar["misc_traits"]
 yhat_bestfit.scalar["misc_traits"]
 
-
-#=
-## Model fitting with Bayesian optimization
-
-Another option is to use Bayesian optimization from the BayesianOptimization package.
-
-The code is adapted from the usage example on Github.
-=#
-
-using BayesianOptimization
-using GaussianProcesses, Distributions
-
-# Choose as a model an elastic GP with input dimensions 2.
-# The GP is called elastic, because data can be appended efficiently.
-model = ElasticGPE(length(fitted_params),# 2 input dimensions
-                   mean = BayesianOptimization.MeanConst(0.),         
-                   kernel = SEArd([0., 0.], 5.),
-                   logNoise = 0.,
-                   capacity = 3000)              # the initial capacity of the GP is 3000 samples.
-set_priors!(model.mean, [Normal(1, 2)])
-
-# Optimize the hyperparameters of the GP using maximum a posteriori (MAP) estimates every 50 steps
-modeloptimizer = MAPGPOptimizer(every = 50, noisebounds = [-4, 3],       # bounds of the logNoise
-                                kernbounds = [[-1, -1, 0], [4, 4, 10]],  # bounds of the 3 parameters GaussianProcesses.get_param_names(model.kernel)
-                                maxeval = 40)
-opt = BOpt(f,
-           model,
-           UpperConfidenceBound(),                   # type of acquisition
-           modeloptimizer,                        
-           fill(0, length(fitted_params)), upper_limits, # lowerbounds, upperbounds         
-           repetitions = 5,                          # evaluate the function for each input 5 times
-           maxiterations = 100,                      # evaluate at 100 input positions
-           sense = Min,                              # minimize the function
-           acquisitionoptions = (method = :LD_LBFGS, # run optimization of acquisition function with NLopts :LD_LBFGS method
-                                 restarts = 5,       # run the NLopt method from 5 random initial conditions each time.
-                                 maxtime = 0.1,      # run the NLopt method for at most 0.1 second each time
-                                 maxeval = 1000),    # run the NLopt methods for at most 1000 iterations (for other options see https://github.com/JuliaOpt/NLopt.jl)
-            verbosity = Progress)
+[mode(p.untruncated) for p in priors.priors]

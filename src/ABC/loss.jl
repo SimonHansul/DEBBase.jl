@@ -7,6 +7,7 @@
 @enum SetPenalty proportional infinite
 
 check_if_valid(x::AbstractVector) = @. isfinite(x) & !ismissing(x)
+
 robust_log_transform(x::Real) = begin
     if x>= 0
         return (log(x + 1) + 1e-10)
@@ -88,7 +89,7 @@ function symmetric_bounded_loss_with_penalty(
     # this applies a penalty for missing values / NaNs in the predicted values
     penalty_factor = begin 
         if penalty_for_nans == proportional
-            sum(valid_idcs_pred)/length(predicted)
+            length(predicted)/sum(valid_idcs_pred)
         else
             Inf
         end
@@ -105,8 +106,7 @@ function symmetric_bounded_loss_with_penalty(
     let n = length(obs_filt), d = obs_filt, p = pred_filt
         pᵢ = (sum(p)/n)^2
         dᵢ = (sum(d)/n)^2
-        loss = sum(@. (weight/n) * ( ( (d - p)^2 ) / ( pᵢ + dᵢ)) )
-        #loss = sum( (obs_filt ./ maximum(obs_filt)).^2 - (pred_filt ./ maximum(obs_filt)).^2)/n
+        loss = sum(@. (weight/n) * (( (d - p)^2 ) / ( pᵢ + dᵢ)))
 
         return loss * penalty_factor
     end
@@ -132,7 +132,7 @@ args:
 
 kwargs:
 
-- return_all: returns the losses for all response variables if true. Otherwise, return averaged loss
+- return_all: returns the losses for all response variables if true. Otherwise, return averaged loss. This option only works if directly calling this function, not if it is nested into compute_loss() or similar.
 """
 function compute_time_resolved_loss(
     name::AbstractString,
@@ -157,6 +157,7 @@ function compute_time_resolved_loss(
         makeunique = true, 
         renamecols = "_observed" => "_predicted"
         ) |> 
+        drop_missing |>
         x -> groupby(x, grouping_vars) |> # apply desired grouping
         x -> combine(x) do df # calculate loss for each response variable
 
@@ -170,6 +171,7 @@ function compute_time_resolved_loss(
                     df[:,col_observed],
                     weight = weight
                     )
+
                 append!(losses, DataFrame(response = response, loss = loss))
             end # for response
 
@@ -180,6 +182,10 @@ function compute_time_resolved_loss(
         return loss_per_response_var
     end
 
+    if isempty(skipmissing(loss_per_response_var.loss))
+        return Inf
+    end
+    
     # return average and valid length of the data vector
     return mean(skipmissing(loss_per_response_var.loss))
 end
@@ -265,6 +271,7 @@ function compute_scalar_loss(
                     )
             end
         end |> 
+        drop_missing |>
         x -> groupby(x, grouping_vars) |> # apply grouping
         x -> combine(x) do df # compute loss for each response var
             losses = DataFrame()
@@ -290,6 +297,10 @@ function compute_scalar_loss(
 
     if return_all
         return loss_per_response_var, nothing
+    end
+
+    if isempty(skipmissing(loss_per_response_var.loss))
+        return Inf
     end
 
     return mean(skipmissing(loss_per_response_var.loss))
@@ -395,5 +406,13 @@ function compute_loss(
         return time_resolved_loss, scalar_loss
     end
 
-    return mean([time_resolved_loss, scalar_loss])
+    total_loss = mean([time_resolved_loss, scalar_loss])
+
+    # if there are still missing values, this leads to infite distance, 
+    # which in turn leads to rejection of the sample in the SMC algorithm
+    if ismissing(total_loss)
+        return Inf
+    else
+        return total_loss
+    end 
 end

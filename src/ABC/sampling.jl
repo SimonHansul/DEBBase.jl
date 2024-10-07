@@ -79,3 +79,56 @@ Get the best fit from `accepted` (particle with minimum distance) and assign to 
 function bestfit(defparams::AbstractParams, accepted::AbstractDataFrame)
     return posterior_sample(accepted[accepted.distance.==minimum(accepted.distance),:])
 end
+
+
+
+"""
+    prior_predictice_check(
+        priors, 
+        defaultparams, 
+        simulator,
+        data, 
+        distfunc;
+        n = 100
+        )::NamedTuple
+
+Evaluate n prior samples for prior predictive check.
+"""
+function prior_predictice_check(
+    priors, 
+    defaultparams, 
+    simulator,
+    data, 
+    distfunc;
+    n = 100
+    )::NamedTuple
+
+    distances = Vector{Float64}(undef, n)
+    predictions = Vector{Union{AbstractDataset,DataFrame}}(undef,n)
+    samples = Vector{Vector{Float64}}(undef, n)
+    params = deepcopy(defaultparams)
+
+    for i in 1:n
+        
+        prior_sample = rand(priors)
+
+        prediction = simulator(
+            params,
+            priors.params,
+            prior_sample
+        )
+
+        distance = distfunc(prediction, data)
+
+        predictions[i] = prediction
+        distances[i] = distance
+        samples[i] = prior_sample
+
+    end
+
+    return (
+        predictions = predictions,
+        distances = distances,
+        samples = samples
+    )
+end

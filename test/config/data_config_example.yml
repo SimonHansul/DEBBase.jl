@@ -1,6 +1,10 @@
 # example for a data config file
 # data is divided into time-resolved and scalar
-# the minimum information required for each entry is a name and path
+# the minimum information required for each entry is a name, path and weight
+
+# tabular data needs to be in tidy format sensu Wickham (https://vita.had.co.nz/papers/tidy-data.pdf)
+# data should be cleared of missing values
+
 # the basic structure is 
 # time_resolved:
 #   - name: 
@@ -32,8 +36,8 @@ time_resolved:
     response_vars: 
       - drymass_mean
     weight: 1
-    description: Daphnia pulex growth at two food levels, aggregated over individuals # optional 
-    source: Hansul et al. (2024) Environ. Toxicol. Chem. # optional
+    description: Daphnia pulex growth at two food levels, aggregated over individuals # optional but recommended
+    source: Hansul et al. (2024) Environ. Toxicol. Chem. # optional but recommended
   - name: repro_agg
     path: test/data/dp3_test_data_repro_tidy_agg.csv
     time_var: t_birth
@@ -70,7 +74,7 @@ scalar:
       - source: Derived from raw data by Hansul et al. (2024) Environ. Toxicol. Chem.
   - name: misc_traits
     path: test/data/dpulex_misc_traits.yml
-    response_vars: # if scalar data is given in a yml file, response_vars are nto strictly needed
+    response_vars: # if scalar data is given in a yml file, response_vars are not strictly needed
       - age_at_birth
       - egg_drymass
       - S_max_rel

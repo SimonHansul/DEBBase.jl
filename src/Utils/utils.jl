@@ -49,11 +49,11 @@ end
 
 
 """
-    drop_na(df::AbstractDataFrame; verbose=false)::DataFrame
+    drop_missing(df::AbstractDataFrame; verbose=false)::DataFrame
 
 Drop all rows with missing values from data frame.
 """
-function drop_na(df::AbstractDataFrame; verbose=false)::DataFrame
+function drop_missing(df::AbstractDataFrame; verbose=false)::DataFrame
     n0 = nrow(df)
     df2 = df[completecases(df),:]
     dn = nrow(df2)-n0
@@ -63,7 +63,7 @@ function drop_na(df::AbstractDataFrame; verbose=false)::DataFrame
     return df2
 end
 
-function replace_na!(
+function replace_missing!(
     df::AbstractDataFrame,
     cols::Vector{Symbol};
     replace_val = 0.0

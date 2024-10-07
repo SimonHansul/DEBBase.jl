@@ -72,7 +72,6 @@ begin # aggregating the tidy growth data
         c = :black, lw = 2, marker = [:diamond :circle], linestyle = [:dash :solid],
         xlabel = "Time since birth (d)", ylabel = "Mean dry mass (mg)", legendtitle = "Food level (mg/d)"
         )
-
 end
 
 begin # calculating additional summary statistics from the growth data
@@ -91,8 +90,8 @@ begin # calculating additional summary statistics from the growth data
     CSV.write("test/data/dp3_test_data_growth_stats.csv", growth_stats)
 
     plot(
-        (@df growth_stats[:,[:food_level,:max_drymass]] |> drop_na boxplot(string.(:food_level), :max_drymass)),
-        (@df growth_stats[:,[:food_level,:drymass_at_birth]] |> drop_na boxplot(string.(:food_level), :drymass_at_birth)),
+        (@df growth_stats[:,[:food_level,:max_drymass]] |> drop_missing boxplot(string.(:food_level), :max_drymass)),
+        (@df growth_stats[:,[:food_level,:drymass_at_birth]] |> drop_missing boxplot(string.(:food_level), :drymass_at_birth)),
         leg = false, 
         xlabel = "Food level (mg/d)", ylabel = ["Maximum dry mass (mg)" "Dry mass at birth (mg)"], 
         ylim = [(0.025, 0.12) (0, 0.015)], 
@@ -181,8 +180,8 @@ begin # computing additional summary statistics from repro data
     CSV.write("test/data/dp3_test_data_repro_stats.csv", repro_stats)
 
     plot(
-        (@df drop_na(repro_stats[:,[:food_level,:birth_to_first_hatch]]) boxplot(string.(:food_level), :birth_to_first_hatch)),
-        (@df drop_na(repro_stats[:,[:food_level,:final_cum_repro]]) boxplot(string.(:food_level), :final_cum_repro)), 
+        (@df drop_missing(repro_stats[:,[:food_level,:birth_to_first_hatch]]) boxplot(string.(:food_level), :birth_to_first_hatch)),
+        (@df drop_missing(repro_stats[:,[:food_level,:final_cum_repro]]) boxplot(string.(:food_level), :final_cum_repro)), 
         xlabel = "Food level (mg/d)", 
         ylabel = ["Birth to first hatch (d)" "Final cumulative reproduction (#)"], leg = false, 
         ylim = [(4, 10) (20, 100)]
