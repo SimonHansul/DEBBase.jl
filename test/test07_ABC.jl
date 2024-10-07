@@ -2,7 +2,7 @@ using Pkg; Pkg.activate("test")
 
 using Plots, StatsPlots, StatsBase
 default(legendtitlefontsize = 10)
-using DataFrames, DataFramesMeta, CSV, YAML
+using DataFrames, DataFramesMeta, CSV
 
 using Revise
 
@@ -291,7 +291,7 @@ begin
         :H_p_0
     ]
 
-    σs = fill(1.0, length(fitted_params))
+    cvs = fill(1.0, length(fitted_params))
 
     cvs[1] = 0.1 # we have a pretty good idea of the egg from data - narrowing this prior
 
@@ -312,7 +312,7 @@ begin
     priors = Priors(
         fitted_params, 
         [
-            deftruncnorm(eval(:(intguess.spc.$param)), sigma, u = upper) for (param,upper,sigma) in zip(fitted_params,upper_limits,σs)
+            deftruncnorm(eval(:(intguess.spc.$param)), cv, u = upper) for (param,upper,cv) in zip(fitted_params,upper_limits,cvs)
         ]
     )
 
@@ -327,6 +327,10 @@ we can try a small SMC run with a strict rejection threshold and fewer samples.
 This will give us an indiciation wether the loss function 
 =#
 
+#addprocs()
+#n_pop = [5_000, 10_000, 20_000] # possible setup for hyperparam optimization
+#q_eps = [0.2, 0.5]
+
 begin
     @time smc = SMC(
         priors,
@@ -334,9 +338,9 @@ begin
         simulate_data,
         ABC.compute_loss,
         data;
-        n_pop = 1_000, 
-        q_eps = .5,
-        k_max = 1
+        n_pop = 100_000, 
+        q_eps = .2,
+        k_max = 5
     )
 
     bestfit = deepcopy(intguess)
@@ -352,7 +356,6 @@ begin
     @df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level)
     @df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level)
     display(plt_bestfit)
-
 end
          
 
