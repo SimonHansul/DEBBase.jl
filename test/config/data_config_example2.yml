@@ -74,10 +74,6 @@ scalar:
       - source: Derived from raw data by Hansul et al. (2024) Environ. Toxicol. Chem.
   - name: misc_traits
     path: test/data/dpulex_misc_traits.yml
-    response_vars: # if scalar data is given in a yml file, response_vars are not strictly needed. they will be automatically recognized
-      - age_at_birth
-      - egg_drymass
-      - S_max_rel
     weight: 1
     description: General life-history traits for Daphnia pulex
     source: Various, listed in source file

@@ -27,20 +27,15 @@ data = Utils.data_from_config("test/config/data_config_example.yml")
 
 # We only use the highest food level for this test to simplify the test a little
 
-data.time_resolved["growth_agg"] = @subset(data.time_resolved["growth_agg"], :food_level .== 0.4)
-data.time_resolved["repro_agg"] = @subset(data.time_resolved["repro_agg"], :food_level .== 0.4)
-
-data.scalar["growth_stats_agg"] = @subset(data.scalar["growth_stats_agg"], :food_level .== 0.4)
-data.scalar["repro_stats_agg"] = @subset(data.scalar["repro_stats_agg"], :food_level .== 0.4)
+#data.time_resolved["growth_agg"] = @subset(data.time_resolved["growth_agg"], :food_level .== 0.4)
+#data.scalar["growth_stats_agg"] = @subset(data.scalar["growth_stats_agg"], :food_level .== 0.4)
 
 # For easier access while developing this code, we can as well create aliases for some of the entries 
 # in the dataset. 
 # This does by the way not allocate new memory.
 
 growth = data.time_resolved["growth_agg"] 
-repro = data.time_resolved["repro_agg"]
 stats_growth = data.scalar["growth_stats_agg"]
-stats_repro = data.scalar["repro_stats_agg"]
 traits = data.scalar["misc_traits"]
 
 # We also define a function to plot the time-resolved data.
@@ -56,13 +51,13 @@ function plot_data(data::Utils.Dataset; kwargs...)
         xlabel = "Time since birth (d)", ylabel = "Mean dry mass (mg)", legendtitle = "Food level (mg/d)"
         )
 
-    @df data.time_resolved["repro_agg"] plot!(plt, subplot = 2,
-        :t_birth, :cum_repro_mean, group = :food_level, 
-        yerr = :cum_repro_sd,
-        c = :black, lw = 2, marker = [:diamond :circle], linestyle = [:dash :solid],
-        xlabel = "Time since birth (d)", ylabel = "Mean cumulative \n reproduction (#)", 
-        legendtitle = "Food level (mg/d)"
-        )
+    #@df data.time_resolved["repro_agg"] plot!(plt, subplot = 2,
+    #    :t_birth, :cum_repro_mean, group = :food_level, 
+    #    yerr = :cum_repro_sd,
+    #    c = :black, lw = 2, marker = [:diamond :circle], linestyle = [:dash :solid],
+    #    xlabel = "Time since birth (d)", ylabel = "Mean cumulative \n reproduction (#)", 
+    #    legendtitle = "Food level (mg/d)"
+    #    )
     
     return plt
 end
@@ -123,7 +118,7 @@ function compute_repro_agg(sim::DataFrame, params::AbstractParamCollection)
         @select(:t, :t_birth, :food_level, :R)
         @transform(:cum_repro_mean = @. trunc(:R / params.spc.X_emb_int_0)) # NOTE: this is only valid if we don't simulate individual variability on X_emb
         @transform(:t_birth = :t) # instead of shifting the repro values, we shift the time-values - since t_birth = t - age_at_birth and we shift by age_at_birth, we can just say t_birth = t
-        select(Not(:t)) # not needed anymore
+        @select(Not(:t)) # not needed anymore
     end
 end
 
@@ -232,6 +227,39 @@ end
 
 
 #=
+## Refining the initial guess
+=#
+begin
+    Z = maximum(data.time_resolved["growth_agg"].drymass_mean) / DEBODE.calc_S_max(SpeciesParams())
+
+    intguess = Utils.params_from_config(Params, "test/config/param_config_abctest.yml") # loads a config file containing the global settings. we could as well enter the values here, but the config file can help with reproducibility
+
+
+    spc = intguess.spc
+    spc.Idot_max_rel_0 = 1.5 #*= Z^(1/3)#
+    spc.Idot_max_rel_emb_0 = spc.Idot_max_rel_0
+    spc.X_emb_int_0 *= Z
+    spc.H_p_0 = 0.03
+    spc.K_X_0 = 1e-3 # guess for the half-saturation constant (mg/L)
+
+    yhat = simulate_data(intguess, return_raw = true)
+
+    @df yhat plot(
+        plot(:t, :X_p, group = :food_level),
+        plot(:t, :S, group = :food_level),
+        plot(:t, :f_X, group = :food_level)
+    )
+
+    #plot(layout = (1,3)) #plot_data(data)
+    #
+    #@df yhat.time_resolved["growth_agg"] plot!(:t_birth, :drymass_mean ./ maximum(:drymass_mean), group = :food_level, lw = 2, label = "Initial guess", subplot = 1)
+    #@df yhat.time_resolved["repro_agg"] plot!(:t_birth, :cum_repro_mean ./ spc.X_emb_int_0, group = :food_level, lw = 2, subplot = 2, label = "")
+    
+end
+
+
+
+#=
 ## Defining the distance function
 
 The symmetric bounded loss function is used as 
@@ -246,7 +274,7 @@ predicted = yhat
 @testset begin
     @info "Computing loss for time-resolved data"
 
-    loss = ABC.compute_time_resolved_loss("repro_agg", predicted, observed)
+    loss = ABC.compute_time_resolved_loss("growth_agg", predicted, observed)
 
     @test isfinite(loss)
 end
@@ -300,7 +328,7 @@ begin
         :X_emb_int_0,
         :Idot_max_rel_0,
         #:Idot_max_rel_emb_0,
-        #:K_X_0,
+        :K_X_0,
         :kappa_0,
         :eta_AS_0,
         :k_M_0,
@@ -317,7 +345,7 @@ begin
         Inf,
         Inf, 
         #Inf, 
-        #Inf,
+        Inf,
         1,
         1,
         Inf,
@@ -397,6 +425,10 @@ we can try a small SMC run with a strict rejection threshold and fewer samples.
 #n_pop = [5_000, 10_000, 20_000] # possible setup for hyperparam optimization
 #q_eps = [0.2, 0.5]
 
+# trying higher weight for growth_stats_agg
+
+data.weights["scalar"]["growth_stats_agg"] = 1
+
 begin
     @time "Inferring posteriors using SMC" smc = SMC(
         priors,
@@ -404,9 +436,9 @@ begin
         simulate_data,
         ABC.compute_loss,
         data;
-        n_pop = 7_500, 
-        q_eps = .2,
-        k_max = 5
+        n_pop = 5_000, #7_500, 
+        q_eps = .1,
+        k_max = 10
     )
 
     # quick check of the point estimate
@@ -432,9 +464,9 @@ begin
         smc.priors, 
         size = (800,400), 
         label = "prior", 
-        bottommargin= 5mm, 
-        layout = (2,3), 
+        layout = (3,3), 
         ylabel = gridylabel("Density", 2, 3), 
+        bottommargin= 5mm, 
         leftmargin = 5mm
         )
     for (i,param) in enumerate(priors.params)
@@ -470,6 +502,8 @@ end
 
 #=
 ## Plausability check
+
+Plotting the unobserved states to test whether it i 
 =#
 
 
@@ -494,8 +528,6 @@ end
     :t_birth, :drymass_mean, group = :food_level
     )
 
-
-
 #=
 
 ## Model fitting with Nelder Mead
@@ -511,7 +543,13 @@ begin # adjusted weights to only fit to growth + misc traits
 
     x0 = [mode(p.untruncated) for p in priors.priors]    # initial guessses
     @time "Fitting model using Nelder Mead" optim = optimize(  # performing the optimization
-        f, x0, NelderMead(maxiter = 100)
+        f, 
+        lower_limits,
+        upper_limits,
+        x0, 
+        #GradientDescent()
+        #Fminbox(GradientDescent()),
+        Fminbox(NelderMead(maxiter = 100)), 
         )   
     bestfit = optim.minimizer   # retrieving the estimates
     yhat_bestfit = simulate_data(intguess, priors.params, bestfit)   # plotting the prediction
@@ -522,7 +560,10 @@ begin # adjusted weights to only fit to growth + misc traits
     display(plt_bestfit)
 end
 
-data.scalar["misc_traits"]
-yhat_bestfit.scalar["misc_traits"]
 
 [mode(p.untruncated) for p in priors.priors]
+
+
+plt = plot(priors, size = (1200,450), bottommargin = 5mm)
+[vline!([b], subplot = i) for (i,b) in enumerate(bestfit)]
+plt

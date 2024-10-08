@@ -19,7 +19,7 @@ d = Truncated(Normal(1, 1), 0, Inf)
 @test Utils.deserialize(d) == "Truncated(Normal{Float64}(1.0, 1.0, ), 0.0, Inf)"
 
 @info "Loading a config file and checking values"
-pload = params_from_config(Params, "test/config/save_config_example.yml")
+pload = params_from_config(Params, "test/config/param_config_save_example.yml")
 @test pload.spc.Z == LogNormal(1, 1) 
 
 
