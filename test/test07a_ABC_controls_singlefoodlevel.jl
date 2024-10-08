@@ -393,6 +393,10 @@ we can try a small SMC run with a strict rejection threshold and fewer samples.
 
 =#
 
+#addprocs()
+#n_pop = [5_000, 10_000, 20_000] # possible setup for hyperparam optimization
+#q_eps = [0.2, 0.5]
+
 begin
     @time "Inferring posteriors using SMC" smc = SMC(
         priors,
