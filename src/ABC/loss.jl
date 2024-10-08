@@ -211,7 +211,7 @@ function compute_time_resolved_loss(
     time_resolved_losses = Union{Missing,Float64}[]
 
     for (i,name) in enumerate(datanames)
-        loss = ABC.compute_time_resolved_loss(
+        loss = compute_time_resolved_loss(
             name, predicted, 
             observed; 
             inner_loss_function = inner_loss_function, 

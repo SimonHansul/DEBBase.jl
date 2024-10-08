@@ -1,3 +1,11 @@
+#=
+## Estimating DEB parameters from control data at a single food level
+=#
+
+#=
+## Setup
+=#
+
 using Pkg; Pkg.activate("test")
 
 using Plots, StatsPlots, StatsBase
@@ -21,6 +29,9 @@ data = Utils.data_from_config("test/config/data_config_example.yml")
 
 data.time_resolved["growth_agg"] = @subset(data.time_resolved["growth_agg"], :food_level .== 0.4)
 data.time_resolved["repro_agg"] = @subset(data.time_resolved["repro_agg"], :food_level .== 0.4)
+
+data.scalar["growth_stats_agg"] = @subset(data.scalar["growth_stats_agg"], :food_level .== 0.4)
+data.scalar["repro_stats_agg"] = @subset(data.scalar["repro_stats_agg"], :food_level .== 0.4)
 
 # For easier access while developing this code, we can as well create aliases for some of the entries 
 # in the dataset. 
@@ -291,8 +302,8 @@ begin
         #:Idot_max_rel_emb_0,
         #:K_X_0,
         :kappa_0,
-        #:eta_AS_0,
-        #:k_M_0,
+        :eta_AS_0,
+        :k_M_0,
         :H_p_0
     ]
 
@@ -306,10 +317,10 @@ begin
         Inf,
         Inf, 
         #Inf, 
-        #INf,
-        1,
-        #1,
         #Inf,
+        1,
+        1,
+        Inf,
         Inf
     ]
 
@@ -369,7 +380,8 @@ end
 plot(
     histogram(prior_predictions.distances, leg = false, fill = :gray, fillalpha = .5, lw = 1.5), 
     xlabel = "Loss", ylabel = "Count", 
-    title = "Distribution of losses in prior predictive check \n $(100*sum(isfinite.(prior_predictions.distances)/length(prior_predictions.distances)))% valid losses",
+    title = "Distribution of losses in prior predictive check \n 
+        $(round(100*sum(isfinite.(prior_predictions.distances)/length(prior_predictions.distances))))% valid losses",
     titlefontsize = 10
 )
 
@@ -388,8 +400,8 @@ begin
         simulate_data,
         ABC.compute_loss,
         data;
-        n_pop = 5_000, 
-        q_eps = .1,
+        n_pop = 7_500, 
+        q_eps = .2,
         k_max = 5
     )
 
@@ -410,15 +422,16 @@ begin
     display(plt_bestfit)
 end
 
-
-smc.accepted.distance |> minimum
 using Plots.Measures
 begin
     distplot = plot(
         smc.priors, 
-        size = (800,350), 
+        size = (800,400), 
         label = "prior", 
-        bottommargin= 5mm
+        bottommargin= 5mm, 
+        layout = (2,3), 
+        ylabel = gridylabel("Density", 2, 3), 
+        leftmargin = 5mm
         )
     for (i,param) in enumerate(priors.params)
         density!(
@@ -439,7 +452,16 @@ post_pred = ABC.posterior_predictions(
     priors
 )
 
-plot_data(data)
+begin    
+    vpcplot = plot_data(data)
+    
+    for yhat in post_pred
+        @df yhat.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level, alpha = .05, color = 1, label = "")
+        @df yhat.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level, alpha = .05, color = 1, label = "")
+    end
+
+    vpcplot
+end
 
 
 #=
@@ -464,7 +486,6 @@ end
 )
 
 
-
 @df yhat_bestfit.time_resolved["growth_agg"] plot(
     :t_birth, :drymass_mean, group = :food_level
     )
@@ -475,7 +496,7 @@ end
 
 ## Model fitting with Nelder Mead
 
-Below is an example that uses the Optim package.
+Below is an example that uses the Optim package and Nelder-Mead.
 =#
 
 using Optim
@@ -496,7 +517,6 @@ begin # adjusted weights to only fit to growth + misc traits
     @df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level, lw = 2)
     display(plt_bestfit)
 end
-
 
 data.scalar["misc_traits"]
 yhat_bestfit.scalar["misc_traits"]

@@ -38,6 +38,17 @@ time_resolved:
     weight: 1
     description: Daphnia pulex growth at two food levels, aggregated over individuals # optional but recommended
     source: Hansul et al. (2024) Environ. Toxicol. Chem. # optional but recommended
+  - name: repro_agg
+    path: test/data/dp3_test_data_repro_tidy_agg.csv
+    time_var: t_birth
+    grouping_vars:
+      - food_level
+    response_vars:
+      - cum_repro_mean
+    weight: 1
+    meta:
+      - description: Daphnia pulex reproduction at two food levels, aggregated over individuals
+      - source: Hansul et al. (2024) Environ. Toxicol. Chem.
 scalar:  
   - name: growth_stats_agg
     path: test/data/dp3_test_data_growth_stats_agg.csv
@@ -50,6 +61,17 @@ scalar:
     meta:
       - description: Growth statistics at two food levels, derived from the time-resolved data, aggregated over individuals
       - source: Derived from raw data Hansul et al. (2024) Environ. Toxicol. Chem.
+  - name: repro_stats_agg
+    path: test/data/dp3_test_data_repro_stats_agg.csv
+    grouping_vars:
+      - food_level
+    response_vars:
+      - birth_to_first_hatch_mean
+      - final_cum_repro_mean
+    weight: 1
+    meta:
+      - description: Repro statistics at two food levels, derived from the time-resolved data, aggregated over individuals
+      - source: Derived from raw data by Hansul et al. (2024) Environ. Toxicol. Chem.
   - name: misc_traits
     path: test/data/dpulex_misc_traits.yml
     response_vars: # if scalar data is given in a yml file, response_vars are not strictly needed. they will be automatically recognized
