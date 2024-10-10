@@ -6,7 +6,7 @@
 ## Setup
 =#
 
-using Pkg; Pkg.activate("test")
+@time using Pkg; Pkg.activate("test")
 
 using Plots, StatsPlots, StatsBase
 default(legendtitlefontsize = 10) 
@@ -14,7 +14,7 @@ using DataFrames, DataFramesMeta, CSV, YAML
 
 using Revise
 
-using DEBBase.Utils
+@time using DEBBase.Utils
 using DEBBase.DEBODE
 using DEBBase.ABC
 using DEBBase.Figures
@@ -85,7 +85,7 @@ begin
     spc.H_p_0 = 0.03
     spc.K_X_0 = 1.0 # guess for the half-saturation constant (mg/L)
 
-    yhat = DEBODE.simulator(intguess; reltol = 1e-10)
+    yhat = DEBODE.simulator(intguess)
 
     plot_data(data)
 
@@ -171,7 +171,6 @@ end
     # assigning parameter samples
     for (par,val) in zip(parnames,parvals)
         setproperty!(params.spc, par, val)
-        #eval(:(params.spc.$par = $val))
     end
 
     params.spc.k_J_0 = ((1 - params.spc.kappa_0) / params.spc.kappa_0) * params.spc.k_M_0
@@ -229,6 +228,7 @@ end
 #=
 ## Refining the initial guess
 =#
+
 begin
     Z = maximum(data.time_resolved["growth_agg"].drymass_mean) / DEBODE.calc_S_max(SpeciesParams())
 
@@ -242,9 +242,9 @@ begin
     spc.H_p_0 = 0.03
     spc.K_X_0 = 1e-3 # guess for the half-saturation constant (mg/L)
 
-    yhat = simulate_data(intguess, return_raw = true)
+    sim = simulate_data(intguess, return_raw = true)
 
-    @df yhat plot(
+    @df sim plot(
         plot(:t, :X_p, group = :food_level),
         plot(:t, :S, group = :food_level),
         plot(:t, :f_X, group = :food_level)
@@ -258,12 +258,10 @@ begin
 end
 
 
-
 #=
 ## Defining the distance function
 
-The symmetric bounded loss function is used as 
-    our "inner" distance function. 
+The symmetric bounded loss function is used as our "inner" distance function. 
 That means, the symmetric bounded loss is applied to each part of the dataset, 
 then combined to calculate the total distance.
 =#
@@ -325,31 +323,28 @@ Below we define the priors as truncated Normal distributions with a constant CV 
 
 begin 
     fitted_params = [
-        :X_emb_int_0,
+        #:X_emb_int_0,
         :Idot_max_rel_0,
         #:Idot_max_rel_emb_0,
-        :K_X_0,
-        :kappa_0,
-        :eta_AS_0,
-        :k_M_0,
-        :H_p_0
+        #:K_X_0,
+        #:kappa_0,
+        #:eta_AS_0,
+        #:k_M_0,
+        #:H_p_0
     ]
 
     cvs = fill(1.0, length(fitted_params))
 
-    cvs[1] = 1.0 # we have a pretty good idea of the egg from data - narrowing this prior
-    cvs[2] = 1.0 # same for maximum ingestion
-
     lower_limits = fill(0., length(fitted_params))
     upper_limits = [
-        Inf,
+        #Inf,
         Inf, 
         #Inf, 
-        Inf,
-        1,
-        1,
-        Inf,
-        Inf
+        #Inf,
+        #1,
+        #1,
+        #Inf,
+        #Inf
     ]
 
     priors = Priors(
@@ -364,7 +359,6 @@ begin
         ]
     )
 
-
     plot(priors, layout = (3, 3), size = (800,500), leg = false, ylabel = gridylabel("Density", 3, 3))
 end
 
@@ -373,16 +367,17 @@ end
 ## Prior predictive check
 =#
 
-
 using DEBBase.ABC
 
-prior_predictions = ABC.prior_predictice_check(
+
+@time prior_predictions = ABC.prior_predictive_check(
     priors, 
     intguess, 
     simulate_data, 
     data, 
     ABC.compute_loss
     );
+
 
 begin
     prior_predictive_plot = plot_data(data)
@@ -436,8 +431,8 @@ begin
         simulate_data,
         ABC.compute_loss,
         data;
-        n_pop = 5_000, #7_500, 
-        q_eps = .1,
+        n_pop = 3_000, #7_500, 
+        q_eps = .3,
         k_max = 10
     )
 

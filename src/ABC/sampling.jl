@@ -94,7 +94,7 @@ end
 
 Evaluate n prior samples for prior predictive check.
 """
-function prior_predictice_check(
+function prior_predictive_check(
     priors, 
     defaultparams, 
     simulator,

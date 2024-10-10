@@ -47,17 +47,15 @@ function initialize_threaded(
     distance,
     data::Any
     )
-    particles = Vector{Vector{Float64}}(undef, n_pop) #[copy(params) for _ in 1:n_pop] # predefine vector of parameter samples
+    particles = Matrix{Float64}(undef, n_pop) #[copy(params) for _ in 1:n_pop] # predefine vector of parameter samples
     distances = Vector{Float64}(undef, n_pop)
     weights = ones(n_pop) |> x -> x ./ sum(x)
 
     @info("...Evaluating initial population...")
 
-    #@threads for i in eachindex(particles)
-    for i in eachindex(particles)
-    
-        particles[i] = [rand(p) for p in priors.priors] 
-        prediction = simulator(params, priors.params, particles[i])
+    @threads for i in eachindex(particles)    
+        particles[i,:] = [rand(p) for p in priors.priors] 
+        prediction = simulator(params, priors.params, particles[i,:])
         distances[i] = distance(prediction, data)
     end
 
@@ -87,25 +85,52 @@ function initialize_threaded(
     data::Any
     )
 
-    particles = Vector{Vector{Float64}}(undef, n_pop) # predefine vector of parameter samples
+    particles = Matrix{Float64}(undef, n_pop) # predefine vector of parameter samples
     distances = Vector{Float64}(undef, n_pop)
     weights = ones(n_pop) |> x -> x ./ sum(x)
 
     @info("...Evaluation of initial population...")
 
     @threads for i in 1:n_pop
-        particles[i] = [rand(p) for p in priors[1].priors] # sample from parameteric priors
+        particles[i,:] = [rand(p) for p in priors[1].priors] # sample from parameteric priors
         
         acc_sample = posterior_sample(priors[2]) # get sample of accepted values and assign
         j = 0 # index counter for acc_sample
-        for k in eachindex(particles[i]) # for all parameters
+        for k in eachindex(particles[i,:]) # for all parameters
             if String(priors[1].params[k]) in DEBABC.get_par_names(priors[2]) # check if the value is supplied in the accepted values
                 j += 1 # if so, increment counter
-                particles[i][k] = acc_sample[j] # assign the value
+                particles[i,:][k] = acc_sample[j] # assign the value
             end
         end
 
-        prediction = simulator(params, priors[1].params, particles[i])
+        prediction = simulator(params, priors[1].params, particles[i,:])
+        distances[i] = distance(prediction, data)
+    end
+
+    return particles, distances, weights 
+end
+
+"""
+Initialize a population using distributed computing. 
+"""
+function initialize_distributed(
+    n_pop::Int64, 
+    params::Union{AbstractParams,AbstractParamCollection}, 
+    priors::Priors,
+    simulator,
+    distance,
+    data::Any
+    )
+
+    particles = SharedMatrix(Matrix{Float64}(undef, n_pop, length(priors.params))) # predefine vector of parameter samples
+    distances = SharedVector(Vector{Float64}(undef, n_pop))
+    weights = SharedVector(ones(n_pop) |> x -> x ./ sum(x))
+
+    @info("...Evaluation of initial population...")
+
+    @distributed for i in 1:n_pop   
+        particles[i,:] = [rand(p) for p in priors.priors] 
+        prediction = simulator(params, priors.params, particles[i,:])
         distances[i] = distance(prediction, data)
     end
 
@@ -113,7 +138,7 @@ function initialize_threaded(
 end
 
 function reject(
-    particles::Vector{Vector{Float64}},
+    particles::Matrix{Float64},
     distances::Vector{Float64}, 
     weights::Vector{Float64}, 
     q_eps::Float64
@@ -121,7 +146,7 @@ function reject(
 
     epsilon = quantile(distances[isfinite.(distances)], q_eps) # acceptance threshold
     mask = distances .< epsilon # indices of accepted samples
-    accepted_particles = particles[mask] # accepted samples
+    accepted_particles = particles[mask,:] # accepted samples
     accepted_distances = distances[mask] # distances associated with accepted samples
     accepted_weights = weights[mask] # weights associated with accepted samples
 
@@ -149,7 +174,7 @@ Calculate perturbation kernel scales from a Vector of accepted particles.
 function calculatescales(
     num_params::Int64, 
     parnames::Vector{Symbol}, 
-    accepted_particles::Vector{Vector{Float64}}
+    accepted_particles::Matrix{Float64}
     )
     scales = Vector(undef, num_params) # initialize scales
     for (k,parname) in enumerate(parnames)
@@ -172,7 +197,7 @@ end
 
 """
     resample(
-        accepted_particles::Vector{Vector{Float64}}, 
+        accepted_particles::Matrix{Float64}, 
         accepted_distances::Vector{Float64},
         accepted_weights::Vector{Float64},
         priors::Priors,
@@ -184,7 +209,7 @@ end
 Resample from previously accepted particles, with account for SMC sampling weights.
 """
 function resample(
-    accepted_particles::Vector{Vector{Float64}}, 
+    accepted_particles::Matrix{Float64}, 
     accepted_distances::Vector{Float64},
     accepted_weights::Vector{Float64},
     priors::Priors,
@@ -194,15 +219,19 @@ function resample(
     )
     
     scales = calculatescales(num_params, parnames, accepted_particles)
-    idcs = sample(eachindex(accepted_particles), Weights(accepted_weights), n_pop) # indices of the re-sampled particles
+    idcs = sample( # re-sample particles by index
+        eachindex(eachrow(accepted_particles)), 
+        Weights(accepted_weights), 
+        n_pop
+        )
     
-    particles = [copy(accepted_particles[i]) for i in idcs] # resampled particles
+    particles = copy(accepted_particles[idcs,:]) # resampled particles
     distances = [accepted_distances[i] for i in  idcs] # distances associated with resampled particles
     weights = [accepted_weights[i] for i in idcs] #accepted_weights[idcs] # weights associated with resampled particles
 
-    for (i,particle) in enumerate(particles) # iterate over particles
+    for (i,particle) in eunumerate(eachrow(particles)) # iterate over particles
         for (k,parname) in enumerate(parnames) # iterate over parameters
-            old_value = particle[k] #getparam(particle, parname) # retrieve the old value
+            old_value = particle[k] # retrieve the old value
             kernel = gaussiankernel( # define the perturbation kernel
                     old_value, # make sure boundaries are respected
                     scales[k], 
@@ -210,8 +239,8 @@ function resample(
                     maximum(priors.priors[k])
                 )
             new_value = rand(kernel) # sample the perturbed value
-            particle[k] = new_value #assign!(particle, parname, new_value) # update value in the particle
-            particles[i] = particle # update the particle
+            particle[k] = new_value # update value in the particle
+            particles[i,:] = particle # update the particle
         end
     end
 
@@ -256,9 +285,12 @@ function calculateweights_threaded(
     @info("...Calculating weights...")
 
     weights = Vector(undef, length(particles))
+
+    minima = minimum.(priors.priors)
+    maxima = maximum.(priors.priors)
     
     @threads for i in eachindex(particles) # for every perturbed particle
-        particle = particles[i] # get the particle
+        particle = particles[i,:] # get the particle
         priorprob = prod([pdf(prior, particle[k]) for (k,prior) in enumerate(priors.priors)]) # calculate prior probability
         denominator = 0. # start to calculate the denominator, which is a sum
         for (j,particle) in enumerate(particles) # for every particle
@@ -266,13 +298,13 @@ function calculateweights_threaded(
             old_particle = accepted_particles[accepted_idcs[j]] # get the unperturbed value
             old_weight = accepted_weights[accepted_idcs[j]] # get the old weight
             for (k,parname) in enumerate(parnames) # for every parameter in the particle
-                old_value = old_particle[k] #getparam(old_particle, parname) # get the unperturbed value
-                value = particle[k] #getparam(particle, parname) # get the perturbed value
+                old_value = old_particle[k] # get the unperturbed value
+                value = particle[k] # get the perturbed value
                 kernel = gaussiankernel( # define the perturbation kernel
                     old_value, # make sure boundaries are respected
                     scales[k], # use scales to define kernel
-                    minimum(priors.priors[k]), # respect lower limit
-                    maximum(priors.priors[k])  # respect upper limit
+                    minima[k], #minimum(priors.priors[k]), # respect lower limit
+                    maxima[k] #maximum(priors.priors[k])  # respect upper limit
                 )
                 kernelprob *= pdf(kernel, value) # update the probability
             end
@@ -314,7 +346,7 @@ function evaluate_threaded(
     distances = Vector{Float64}(undef, length(particles))
 
     @threads for i in eachindex(particles)
-        particle = particles[i]
+        particle = particles[i,:]
         prediction = simulator(params, priors.params, particle)
         dist = distance(prediction, data)
         distances[i] = dist
@@ -394,7 +426,6 @@ function SMC(
     )
 
     @info("Executing SMC with $((k_max+1) * n_pop) samples on $(Threads.nthreads()) threads.")
-    start = now() # record computation time
 
     intermediate_dists = DataFrame()
 

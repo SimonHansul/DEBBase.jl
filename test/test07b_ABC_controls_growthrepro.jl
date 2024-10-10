@@ -8,13 +8,14 @@
 
 using Pkg; Pkg.activate("test")
 
-using Plots, StatsPlots, StatsBase
+using Plots, StatsPlots, Plots.Measures 
+using StatsBase
 default(legendtitlefontsize = 10) 
 using DataFrames, DataFramesMeta, CSV
 
 using Revise
 
-using DEBBase.Utils
+@time using DEBBase.Utils
 using DEBBase.DEBODE
 using DEBBase.ABC
 using DEBBase.Figures
@@ -22,11 +23,17 @@ using DEBBase.Figures
 #=
 ## Loading a data config file
 
-This time we use both food levels, but only one endpoint.
+This time we use both response variables, but still only a single food level.
 
 =# 
 
 data = Utils.data_from_config("test/config/data_config_example2.yml")
+
+data.time_resolved["growth_agg"] = @subset(data.time_resolved["growth_agg"], :food_level .== 0.4)
+data.time_resolved["repro_agg"] = @subset(data.time_resolved["repro_agg"], :food_level .== 0.4)
+data.scalar["growth_stats_agg"] = @subset(data.scalar["growth_stats_agg"], :food_level .== 0.4)
+data.scalar["growth_stats_agg"] = @subset(data.scalar["growth_stats_agg"], :food_level .== 0.4)
+
 
 
 # For easier access while developing this code, we can as well create aliases for some of the entries 
@@ -46,13 +53,13 @@ function plot_data(data::Utils.Dataset; kwargs...)
         xlabel = "Time since birth (d)", ylabel = "Mean dry mass (mg)", legendtitle = "Food level (mg/d)"
         )
 
-    #@df data.time_resolved["repro_agg"] plot!(plt, subplot = 2,
-    #    :t_birth, :cum_repro_mean, group = :food_level, 
-    #    yerr = :cum_repro_sd,
-    #    c = :black, lw = 2, marker = [:diamond :circle], linestyle = [:dash :solid],
-    #    xlabel = "Time since birth (d)", ylabel = "Mean cumulative \n reproduction (#)", 
-    #    legendtitle = "Food level (mg/d)"
-    #    )
+    @df data.time_resolved["repro_agg"] plot!(plt, subplot = 2,
+        :t_birth, :cum_repro_mean, group = :food_level, 
+        yerr = :cum_repro_sd,
+        c = :black, lw = 2, marker = [:diamond :circle], linestyle = [:dash :solid],
+        xlabel = "Time since birth (d)", ylabel = "Mean cumulative \n reproduction (#)", 
+        legendtitle = "Food level (mg/d)"
+        )
     
     return plt
 end
@@ -100,7 +107,7 @@ using DEBBase.ParamStructs
 using DataStructures
 
 # TODO: this can be done more generically, so we don't have to re-write the entire simulator every time
-function compute_growth_agg(sim::DataFrame)
+function compute_growth_agg(sim::DataFrame, params::AbstractParamCollection)
     return @chain sim begin
         @select(:t_birth, :food_level, :S, :R)
         @transform(:drymass_mean = @. :S)
@@ -117,8 +124,8 @@ function compute_repro_agg(sim::DataFrame, params::AbstractParamCollection)
     end
 end
 
-function compute_growth_stats_agg(yhat::Utils.AbstractDataset)
-    @chain yhat.time_resolved["growth_agg"] begin
+function compute_growth_stats_agg(sim::AbstractDataFrame, params::AbstractParamCollection)
+    @chain sim begin
         groupby(:food_level)
         combine(_) do df
             return DataFrame(
@@ -129,8 +136,8 @@ function compute_growth_stats_agg(yhat::Utils.AbstractDataset)
     end
 end
 
-function compute_repro_stats_agg(yhat::Utils.AbstractDataset)
-    return @chain yhat.time_resolved["repro_agg"] begin
+function compute_repro_stats_agg(sim::AbstractDataFrame, params::AbstractParamCollection)
+    return @chain sim begin
         groupby(:food_level)
         combine(_) do df
             return DataFrame(
@@ -194,13 +201,13 @@ end
 
     # adding simulated time-resolved data
 
-    yhat.time_resolved["growth_agg"] = compute_growth_agg(sim)
+    yhat.time_resolved["growth_agg"] = compute_growth_agg(sim, params)
     yhat.time_resolved["repro_agg"] = compute_repro_agg(sim, params)
 
     # adding simulated scalar data
 
-    yhat.scalar["growth_stats_agg"] = compute_growth_stats_agg(yhat)
-    yhat.scalar["repro_stats_agg"] = compute_repro_stats_agg(yhat)
+    yhat.scalar["growth_stats_agg"] = compute_growth_stats_agg(yhat.time_resolved["growth_agg"], params)
+    yhat.scalar["repro_stats_agg"] = compute_repro_stats_agg(yhat.time_resolved["repro_agg"], params)
 
     yhat.scalar["misc_traits"] = compute_misc_traits(sim, params)
 
@@ -230,70 +237,19 @@ That means, the symmetric bounded loss is applied to each part of the dataset,
 then combined to calculate the total distance.
 =#
 
-observed = data
-predicted = yhat
-
-@testset begin
-    @info "Computing loss for time-resolved data"
-
-    loss = ABC.compute_time_resolved_loss("growth_agg", predicted, observed)
-
-    @test isfinite(loss)
-end
-
-@testset begin
-    @info "Computing loss for scalar data in tabular format"
-    name = "growth_stats_agg"
-
-    observed_df = observed.scalar[name]
-    predicted_df = predicted.scalar[name]
-    grouping_vars = observed.grouping_vars["scalar"][name]
-    response_vars = observed.response_vars["scalar"][name]
-
-    loss = ABC.compute_scalar_loss(predicted_df, observed_df, response_vars, grouping_vars)
-
-    @test isfinite(loss)
-end
-
-@testset begin
-    @info "Computing loss for scalar data in dict format"
-    name = "misc_traits"
-
-    observed_dict = observed.scalar[name]
-    predicted_dict = predicted.scalar[name]
-    grouping_vars = observed.grouping_vars["scalar"][name]
-    response_vars = observed.response_vars["scalar"][name]
-
-    println(grouping_vars)
-
-    loss = ABC.compute_scalar_loss(
-        predicted_dict, observed_dict,
-        response_vars, grouping_vars
-        )
-
-    @test isfinite(loss)
-end
-
-@testset begin
-    @info "Computing total loss"
-
-    loss = ABC.compute_loss(predicted, observed)
-    @test isfinite(loss)
-end
-
 #=
-Below we define the priors as truncated Normal distributions with a constant CV of 1,000% around the initial guess.
+Below we define the priors around the initial guesss
 =#
 
 begin 
     fitted_params = [
-        :X_emb_int_0,
+        #:X_emb_int_0,
         :Idot_max_rel_0,
         #:Idot_max_rel_emb_0,
-        :K_X_0,
+        #:K_X_0,
         :kappa_0,
-        :eta_AS_0,
-        :k_M_0,
+        #:eta_AS_0,
+        #:k_M_0,
         :H_p_0
     ]
 
@@ -304,13 +260,13 @@ begin
 
     lower_limits = fill(0., length(fitted_params))
     upper_limits = [
-        Inf,
+        #Inf,
         Inf, 
         #Inf, 
-        Inf,
+        #Inf,
         1,
-        1,
-        Inf,
+        #1,
+        #Inf,
         Inf
     ]
 
@@ -326,8 +282,21 @@ begin
         ]
     )
 
+    # plotting priors with dynamic adjustment of plot layout
+    nrows = Int(ceil(length(priors.params)/3))
+    plt = plot(
+        priors, 
+        layout = (nrows, 3), 
+        size = (800,250*nrows), leg = false, 
+        ylabel = gridylabel("Density", nrows, 3),
+        bottommargin = 5mm, 
+        leftmargin = 5mm
+        )
 
-    plot(priors, layout = (3, 3), size = (800,500), leg = false, ylabel = gridylabel("Density", 3, 3))
+    # removing superfluous plots
+    [plot!(xaxis = false, yaxis = false, xticks = [], yticks = [], subplot = i) for i in length(priors.params)+1:length(plt.subplots)]
+
+    display(plt)
 end
 
 
@@ -335,15 +304,21 @@ end
 ## Prior predictive check
 =#
 
+begin
+    priorsample = rand(priors)
+    print(Dict(zip(priors.params, priorsample)))
 
-using DEBBase.ABC
+    @time sim = simulate_data(intguess, priors.params, priorsample)
+end
 
-prior_predictions = ABC.prior_predictice_check(
+
+@time prior_predictions = ABC.prior_predictive_check(
     priors, 
     intguess, 
     simulate_data, 
     data, 
-    ABC.compute_loss
+    ABC.compute_loss;
+    n = 100
     );
 
 begin
@@ -386,15 +361,16 @@ we can try a small SMC run with a strict rejection threshold and fewer samples.
 =#
 
 begin
-    @time "Inferring posteriors using SMC" smc = SMC(
+    #@time "Inferring posteriors using SMC" smc = SMC(
+    smc = SMC(
         priors,
         intguess,
         simulate_data,
         ABC.compute_loss,
         data;
-        n_pop = 50_000, 
-        q_eps = .2,
-        k_max = 5
+        n_pop = 3_000, 
+        q_eps = .3,
+        k_max = 10
     )
 
     # quick check of the point estimate
@@ -409,12 +385,57 @@ begin
     sim_bestfit = simulate_data(bestfit; return_raw = true)
 
     plt_bestfit = plot_data(data, size = (800,500), leg = [false :topleft])
+
     @df yhat_bestfit.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level)
     @df yhat_bestfit.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level)
+    
     display(plt_bestfit)
 end
 
-using Plots.Measures
+#=
+## Visual predictive check
+=#
+
+begin 
+    posterior_predictions = ABC.posterior_predictions(
+        intguess, 
+        simulate_data,
+        smc.accepted,
+        priors
+        )
+    
+    vpc = plot_data(data)
+    
+    for pred in posterior_predictions
+        @df @subset(pred.time_resolved["growth_agg"], :food_level .== 0.4) plot!(
+            vpc, subplot = 1, 
+            :t_birth, :drymass_mean, 
+            color = :gray, alpha = .1, label = ""
+            )
+
+        @df @subset(pred.time_resolved["repro_agg"], :food_level .== 0.4) plot!(
+            vpc, subplot = 2, 
+            :t_birth, :cum_repro_mean, 
+            color = :gray, alpha = .1, label = ""
+            )
+    end
+
+    
+    #@chain posterior_predictions begin
+    #    map(x -> x.time_resolved["growth_agg"], _)
+    #    vcat(_...)
+    #    sort!(:t_birth)
+    #    @subset(:food_level .== 0.4)
+    #    @df _ lineplot!(vpc, :t_birth, :drymass_mean)
+    #end
+
+    vpc
+end
+
+#=
+## Marginal poseriors
+=#
+
 begin
     distplot = plot(
         smc.priors, 
@@ -437,23 +458,6 @@ begin
     distplot        
 end
 
-post_pred = ABC.posterior_predictions(
-    intguess,
-    simulate_data,
-    smc.accepted,
-    priors
-)
-
-begin    
-    vpcplot = plot_data(data)
-    
-    for yhat in post_pred
-        @df yhat.time_resolved["growth_agg"] plot!(subplot = 1, :t_birth, :drymass_mean, group = :food_level, alpha = .05, color = 1, label = "")
-        @df yhat.time_resolved["repro_agg"] plot!(subplot = 2, :t_birth, :cum_repro_mean, group = :food_level, alpha = .05, color = 1, label = "")
-    end
-
-    vpcplot
-end
 
 
 #=

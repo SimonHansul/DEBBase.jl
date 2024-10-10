@@ -430,20 +430,31 @@ with dose-response functions - this is rarely done but, imho, would be a useful 
     p::Union{AbstractParamCollection,NamedTuple},
     t::Real
     )::Nothing 
+    
+    # we can use map() or a for-loop to calculate the response over all chemical stressors
+    # so far it doesn't seem to make much of a difference in terms of performance
+    # TBD
+    
+    u.y_G = map((f, D, e, b) -> f(D, (e, b)), p.spc.drc_functs_G, u.D_G, p.spc.e_G, p.spc.b_G) |> prod
+    u.y_M = map((f, D, e, b) -> f(D, (e, b)), p.spc.drc_functs_M, u.D_M, p.spc.e_M, p.spc.b_M) |> prod
+    u.y_A = map((f, D, e, b) -> f(D, (e, b)), p.spc.drc_functs_A, u.D_A, p.spc.e_A, p.spc.b_A) |> prod
+    u.y_R = map((f, D, e, b) -> f(D, (e, b)), p.spc.drc_functs_R, u.D_R, p.spc.e_R, p.spc.b_R) |> prod
+    u.h_z = map((f, D, e, b) -> f(D, (e, b)), p.spc.drc_functs_h, u.D_h, p.spc.e_h, p.spc.b_h) |> sum
+    
 
-    u.y_G = 1. # reset relative responses
-    u.y_M = 1.
-    u.y_A = 1.
-    u.y_R = 1.
-    u.h_z = 0. # reset hazard rate
-
-    for z in eachindex(u.C_W) # for each stressor
-        u.y_G *= p.spc.drc_functs_G[z](u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) # caclulate relative responses
-        u.y_M *= p.spc.drc_functs_M[z](u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z]))
-        u.y_A *= p.spc.drc_functs_A[z](u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) 
-        u.y_R *= p.spc.drc_functs_R[z](u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) 
-        u.h_z += p.spc.drc_functs_h[z](u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) # calculate hazard rate
-    end
+    #u.y_G = 1. # reset relative responses
+    #u.y_M = 1.
+    #u.y_A = 1.
+    #u.y_R = 1.
+    #u.h_z = 0. # reset hazard rate
+    
+    #for z in eachindex(u.C_W) # for each stressor
+    #    u.y_G *= p.spc.drc_functs_G[z](u.D_G[z], (p.spc.e_G[z], p.spc.b_G[z])) # caclulate relative responses
+    #    u.y_M *= p.spc.drc_functs_M[z](u.D_M[z], (p.spc.e_M[z], p.spc.b_M[z]))
+    #    u.y_A *= p.spc.drc_functs_A[z](u.D_A[z], (p.spc.e_A[z], p.spc.b_A[z])) 
+    #    u.y_R *= p.spc.drc_functs_R[z](u.D_R[z], (p.spc.e_R[z], p.spc.b_R[z])) 
+    #    u.h_z += p.spc.drc_functs_h[z](u.D_h[z], (p.spc.e_h[z], p.spc.b_h[z])) # calculate hazard rate
+    #end
 
     return nothing
 end
@@ -566,6 +577,45 @@ function apply_stressors!(du, u, p, t)
 end
 
 
+"""
+Agent-level part of the DEBBase ODE model without chemical stress.
+"""
+@inline function DEBODE_agent!(du, u, p, t)
+    
+    #dD!(du, u, p, t) # change in damage
+    #y_z_IA!(du, u, p, t) # response to chemical stressors
+    tempcorr!(du, u, p, t) # response to temperature
+    #apply_stressors!(du, u, p, t) # apply all stressor / environmental effects to baseline parameters
+
+    #### auxiliary state variables (record cumulative values)
+    dI!(du, u, p, t)
+    dA!(du, u, p, t) 
+    dM!(du, u, p, t) 
+    dJ!(du, u, p, t)
+    #dQ!(du, u, p, t)# dissipation flux is currently not used - outcommented since this currently does memory allocations
+
+    #### major state variables
+    dS!(du, u, p, t) # structures
+    dS_max_hist!(du, u, p, t) # reference structure
+    dH!(du, u, p, t) # maturity 
+    dH_b!(du, u, p, t) # estimate of maturity at birth
+    dR!(du, u, p, t) # reproduction buffer
+
+    return nothing
+end
+
+"""
+DEBODE model without chemical stress.
+"""
+function DEBODE!(du, u, p, t)
+    DEBODE_global!(du, u, p, t)
+    DEBODE_agent!(du, u, p, t)
+end
+
+
+"""
+Agent-level part of the DEBODE model with arbitrary number of stressors, assuming IA to compute combined effects.
+"""
 @inline function DEBODE_agent_IA!(du, u, p, t)
     
     dD!(du, u, p, t) # change in damage
@@ -590,7 +640,10 @@ end
     return nothing
 end
 
-@inline function DEBODE_IA!(du, u, p, t)
+"""
+DEBODE model with arbitrary number of stressors, assuming IA to compute combined effects. 
+"""
+function DEBODE_IA!(du, u, p, t)
     DEBODE_global!(du, u, p, t)
     DEBODE_agent_IA!(du, u, p, t)
 end

@@ -74,6 +74,9 @@ scalar:
       - source: Derived from raw data by Hansul et al. (2024) Environ. Toxicol. Chem.
   - name: misc_traits
     path: test/data/dpulex_misc_traits.yml
+    response_vars:
+      - age_at_birth
+      - egg_drymass
     weight: 1
     description: General life-history traits for Daphnia pulex
     source: Various, listed in source file

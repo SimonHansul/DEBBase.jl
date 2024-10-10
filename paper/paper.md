@@ -26,13 +26,15 @@ bibliography: paper.bib
 The responses of organisms and populations to environmental stressors are the outcome 
 of complex interactions within organisms, between organisms and with the environment, 
 which can be unravelled and possibly predicted with dynamic models.
-To this end Dynamic Energy Budget (DEB) theory provides a generic theory 
+Dynamic Energy Budget (DEB) theory provides a generic theory 
 to model the life history of organisms and their responses to the environment. <br>
-To this end, we developed the Julia package `DEBBase.jl`, which provides 
-a relatively simple base model which can be either executed as system of differential equations 
-or within an agent-based framework. 
+To provide a basis for DEB modelling in the Julia language, we developed the package `DEBBase.jl`, 
+defining a base model which can be either executed as system of differential equations 
+or within an agent-based framework. <br>
 This provides a basis to simulate the effects of chemical mixtures and other environmental factors,
-such as temperature on isolated individuals as well as in populations.
+such as temperature on isolated individuals as well as in populations. <br>
+The base model can be extended to account for physiological idiosyncracies of individual species. <br>
+
 
 # Statement of need
 

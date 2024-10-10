@@ -14,6 +14,7 @@ using Base.Threads
 using Random
 using YAML
 using DataStructures
+using Distributed
 
  # definition of type hierarchy for parameter structures 
 module ParamStructs
@@ -56,7 +57,6 @@ module Utils
     include("Utils/outputprocessing.jl")
     export relative_response, idcol!
 end
-
 
 
 module DEBODE
@@ -132,6 +132,8 @@ Submodule for parameter estimation using approximate bayesian computation.
 """
 module ABC
 
+    using Distributed
+    
     using DataFrames, DataStructures
     using StatsBase
     using KernelDensity
@@ -144,7 +146,8 @@ module ABC
     using Random
 
     using ..Utils: fround, AbstractDataset, drop_missing
-    using ..ParamStructs: AbstractParams, AbstractParamCollection
+    using ..ParamStructs: AbstractParams, AbstractParamCollection        
+
 
     include("ABC/priors.jl")
     export Priors, ppc
