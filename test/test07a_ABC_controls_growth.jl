@@ -27,8 +27,8 @@ data = Utils.data_from_config("test/config/data_config_example.yml")
 
 # We only use the highest food level for this test to simplify the test a little
 
-#data.time_resolved["growth_agg"] = @subset(data.time_resolved["growth_agg"], :food_level .== 0.4)
-#data.scalar["growth_stats_agg"] = @subset(data.scalar["growth_stats_agg"], :food_level .== 0.4)
+data.time_resolved["growth_agg"] = @subset(data.time_resolved["growth_agg"], :food_level .== 0.4)
+data.scalar["growth_stats_agg"] = @subset(data.scalar["growth_stats_agg"], :food_level .== 0.4)
 
 # For easier access while developing this code, we can as well create aliases for some of the entries 
 # in the dataset. 

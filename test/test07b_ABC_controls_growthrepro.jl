@@ -236,7 +236,7 @@ predicted = yhat
 @testset begin
     @info "Computing loss for time-resolved data"
 
-    loss = ABC.compute_time_resolved_loss("repro_agg", predicted, observed)
+    loss = ABC.compute_time_resolved_loss("growth_agg", predicted, observed)
 
     @test isfinite(loss)
 end
